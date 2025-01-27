@@ -39,13 +39,15 @@ zstyle ':vcs_info:git:*' formats '%b'
 PROMPT='%{$fg_bold[green]%}%n@%{$reset_color%}%{$fg_bold[blue]%}%~%{$reset_color%}%{$reset_color%} $ '
 RPROMPT=\$vcs_info_msg_0_
 
-# The next line updates PATH for the Google Cloud SDK.
-if [ -f '/Users/paulle/Downloads/google-cloud-sdk/path.zsh.inc' ]; then . '/Users/paulle/Downloads/google-cloud-sdk/path.zsh.inc'; fi
-
-# The next line enables shell command completion for gcloud.
-if [ -f '/Users/paulle/Downloads/google-cloud-sdk/completion.zsh.inc' ]; then . '/Users/paulle/Downloads/google-cloud-sdk/completion.zsh.inc'; fi
-
 # RUBY
 # By default, binaries installed by gem will be placed into:
 export PATH="$HOME/.asdf/installs/ruby/3.3.0/bin:$PATH"
 
+# PSQL
+export PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH"
+
+# The next line updates PATH for the Google Cloud SDK.
+if [ -f '/Users/paul/google-cloud-sdk/path.zsh.inc' ]; then . '/Users/paul/google-cloud-sdk/path.zsh.inc'; fi
+
+# The next line enables shell command completion for gcloud.
+if [ -f '/Users/paul/google-cloud-sdk/completion.zsh.inc' ]; then . '/Users/paul/google-cloud-sdk/completion.zsh.inc'; fi

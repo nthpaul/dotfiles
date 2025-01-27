@@ -5,7 +5,6 @@ $MYVIMRN
 .aws/
 .bundle/
 .cache/
-.config/
 .cups/
 .cursor-tutor-1/
 .cursor-tutor/
@@ -28,16 +27,12 @@ $MYVIMRN
 .psql_history
 .ssh/
 .swiftpm/
-.tool-versions
-.tool-versionss
 .vim/
 .viminfo
-.vscode/
 .yarn/
 .yarnrc
 .zcompdump
 .zhist
-.zprofile
 .zprofile.pysave
 .zsh_history
 .zsh_sessions/
@@ -66,3 +61,12 @@ neovim/
 projects/
 snyk
 text_file
+.boto
+.gcloud-credentials/
+.python_history
+.skipbuddy
+.wgetrc
+google-cloud-sdk/
+.vscode/
+.config/
+
