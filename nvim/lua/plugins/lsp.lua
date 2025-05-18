@@ -51,9 +51,6 @@ return {
       function(server_name)
         local server_config = {
           capabilities = capabilities,
-          -- on_attach = function(client, bufnr)
-          --   vim.api.nvim_buf_set_option(bufnr, "omnifunc", "v:lua.vim.lsp.omnifunc")
-          -- end
         }
 
         if server_name == "lua_ls"
@@ -73,11 +70,14 @@ return {
           server_config.filetypes = { "elixir", "eelixir", "heex", "surface" }
           server_config.root_dir = require("lspconfig.util").root_pattern("mix.exs", ".git") or vim.fn.getcwd()
           server_config.settings = {
-            elixirLS = {
-              dialyzerEnabled = false, -- disable dialyzer for faster startup
-              fetchDeps = false, -- avoid fetching deps automatically
-            },
+            elixirls = {
+              -- dialyzerEnabled = true,
+              -- fetchDeps = true,
+              workingDirectory = { mode = "location" },
+              format = true
+            }
           }
+          server_config.root_dir = vim.fs.dirname(vim.fs.find('.git', { path = vim.fn.getcwd(), upward = true })[1]) or require("lspconfig.util").root_pattern("tsconfig.json", "package.json", ".git") or vim.fn.getcwd()
         end
 
         if server_name == "ts_ls" then
@@ -86,6 +86,32 @@ return {
         end
 
         require("lspconfig")[server_name].setup(server_config)
+      end
+    })
+
+    -- local buffer mappings for when lsp server attaches
+    vim.api.nvim_create_autocmd("LspAttach", {
+      group = vim.api.nvim_create_augroup("keymaps_on_lsp_attach", {}),
+      callback = function(event)
+        print("LSP attached to buffer: " .. event.buf) -- to debug lsp
+        -- check `:help vim.lsp.*` for docs on any of the below functions
+        local opts = { buffer = event.buf, silent = true }
+
+        -- keymaps
+        opts.desc = "Show LSP references"
+        vim.keymap.set("n", "gr", "<cmd>Telescope lsp_references<CR>", opts)
+
+        opts.desc = "Go to definition"
+        vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
+
+        opts.desc = "Go to declaration"
+        vim.keymap.set("n", "gD", vim.lsp.buf.declaration, opts)
+
+        opts.desc = "Rename all instances of the referenced object in the current buffer"
+        vim.keymap.set("n", "<leader>prn", vim.lsp.buf.rename, opts)
+
+        opts.desc = "Show code actions available at current cursor"
+        vim.keymap.set("n", "<leader>ca", function() vim.lsp.buf.code_action() end, opts)
       end
     })
   end
