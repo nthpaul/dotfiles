@@ -1,0 +1,15 @@
+background-blur-radius = 20
+background-opacity = 0.8
+
+font-size = 16
+font-thicken
+font-thicken-strength = 50 
+font-family = Hack Nerd Font Mono Regular
+font-feature = -calt, -liga, -dlig
+
+window-padding-x = 5
+window-padding-y = 5
+
+macos-titlebar-proxy-icon = hidden
+
+theme = light:dayfox,dark:carbonfox
