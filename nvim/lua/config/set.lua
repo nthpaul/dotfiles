@@ -23,3 +23,5 @@ vim.opt.signcolumn = "no"
 vim.opt.backspace = {"start", "eol", "indent"}
 
 vim.opt.updatetime = 50
+vim.opt.hlsearch = true
+vim.g.editorconfig = true

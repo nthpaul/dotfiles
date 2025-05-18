@@ -20,6 +20,9 @@ return {
         vim.keymap.set('n', '<leader>ff', builtin.find_files, {})
         vim.keymap.set('n', '<leader>fb', builtin.buffers, { desc = 'Telescope buffers' })
         vim.keymap.set("n", "<leader>gs", ":Telescope git_status<CR>")
+        vim.keymap.set("n", "<leader>fs", function()
+          builtin.grep_string({ search = vim.fn.input("Grep > ")})
+        end)
 
         -- fun
         vim.keymap.set('n', '<leader>fth', ':Telescope colorscheme<CR>')

@@ -32,3 +32,6 @@ vim.keymap.set("i", "C-c", "<Esc>")
 
 -- word replacement
 vim.keymap.set("n", "<leader>s", [[:%s/\<<C-r><C-w>\>/<C-r><C-w>/gI<Left><Left><Left>]], { desc = 'Replace word cursor is on globally' })
+
+-- copy current filepath to clipboard
+vim.keymap.set("n", "<leader>fp", [[:let @+ = expand('%:p')<CR>]], { desc = 'Copy current filepath to clipboard' })

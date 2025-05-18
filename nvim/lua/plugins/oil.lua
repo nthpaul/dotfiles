@@ -19,5 +19,12 @@ return {
         })
 
         vim.keymap.set("n", "-", "<CMD>Oil --float<CR>", { desc = "Open parent directory in float" })
+
+        vim.api.nvim_create_autocmd("FileType", {
+          pattern = "oil",
+          callback = function()
+            vim.opt_local.cursorline = true
+          end
+        })
     end,
 }
