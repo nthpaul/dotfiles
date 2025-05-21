@@ -1,30 +1,57 @@
 return {
-    'nvim-telescope/telescope.nvim',
-    dependencies = {
-        'nvim-lua/plenary.nvim',
-    },
-    config = function()
-        local actions = require('telescope.actions')
-        require('telescope').setup({
-            defaults = {
-                mappings = {
-                    i = {
-                        ["<C-k>"] = actions.move_selection_previous,
-                        ["<C-j>"] = actions.move_selection_next,
-                    }
-                }
+  'nvim-telescope/telescope.nvim',
+  dependencies = {
+    'nvim-lua/plenary.nvim',
+    { "nvim-telescope/telescope-fzf-native.nvim", build = "make" },
+    "nvim-tree/nvim-web-devicons",
+    "andrew-george/telescope-themes",
+  },
+  config = function()
+    local telescope = require('telescope')
+    local actions = require('telescope.actions')
+    local builtin = require('telescope.builtin')
+
+    telescope.load_extension('fzf')
+    telescope.load_extension('themes')
+
+    telescope.setup({
+      defaults = {
+        path_display = { "smart" },
+        mappings = {
+          i = {
+            ["<C-k>"] = actions.move_selection_previous,
+            ["<C-j>"] = actions.move_selection_next,
+          }
+        },
+        extensions = {
+          themes = {
+            enable_preview = true,
+            previewer = true,
+            persist = {
+              enabled = true,
+              path = vim.fn.stdpath("config") .. "/lua/plugins/theme.lua"
             }
-        })
+          },
+        }
+      }
+    })
 
-        local builtin = require('telescope.builtin')
-        vim.keymap.set('n', '<leader>ff', builtin.find_files, {})
-        vim.keymap.set('n', '<leader>fb', builtin.buffers, { desc = 'Telescope buffers' })
-        vim.keymap.set("n", "<leader>gs", ":Telescope git_status<CR>")
-        vim.keymap.set("n", "<leader>fs", function()
-          builtin.grep_string({ search = vim.fn.input("Grep > ")})
-        end)
+    vim.keymap.set('n', '<leader>ff', builtin.find_files, { desc = 'Telescope find files' })
+    vim.keymap.set('n', '<leader>fr', builtin.oldfiles, { desc = 'Telescope recent files' })
+    vim.keymap.set('n', '<leader>fb', builtin.buffers, { desc = 'Telescope buffers' })
+    vim.keymap.set("n", "<leader>gs", ":Telescope git_status<CR>", { desc = 'Telescope git status' })
+    vim.keymap.set("n", "<leader>fs", function()
+      builtin.grep_string({ search = vim.fn.input("Grep > ") })
+    end, { desc = 'Telescope grep string' })
+    vim.keymap.set("n", "<leader>fcw", function()
+      builtin.grep_string({ search = vim.fn.expand("<cword>") })
+    end, { desc = 'Telescope grep current word' })
+    -- vim.keymap.set("n", "<leader>fcf", function()
+    --   builtin.live_grep({ search = vim.fn.expand("%:t") })
+    -- end, { desc = 'Telescope references to the current file' })
 
-        -- fun
-        vim.keymap.set('n', '<leader>fth', ':Telescope colorscheme<CR>')
-    end
+    -- fun
+    vim.keymap.set('n', '<leader>fth', ':Telescope themes<CR>', { desc = 'Telescope colorscheme' })
+    vim.keymap.set('n', '<leader>km', ':Telescope keymaps<CR>', { desc = 'Telescope keymaps' })
+  end
 }

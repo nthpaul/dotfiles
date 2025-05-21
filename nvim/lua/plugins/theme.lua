@@ -19,9 +19,9 @@ return {
     priority = 1000,
     config = function()
       require('nightfox').setup({
-	options = {
-	  transparent = true
-	}
+        options = {
+          transparent = true
+        }
       })
     end
   },
@@ -33,7 +33,17 @@ return {
     priority = 1000,
     config = function()
       require("noirbuddy").setup({
-	preset = "slate"
+        preset = "slate"
       })
     end
-}}
+  },
+  {
+    "ellisonleao/gruvbox.nvim",
+    priority = 1000,
+    config = function()
+      require("gruvbox").setup({
+        transparent_mode = true
+      })
+    end
+  }
+}

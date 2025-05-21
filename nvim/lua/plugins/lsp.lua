@@ -1,12 +1,13 @@
 return {
   "neovim/nvim-lspconfig",
   dependencies = {
-    { "williamboman/mason.nvim", version = "1.11.0" },
+    { "williamboman/mason.nvim",           version = "1.11.0" },
     { "williamboman/mason-lspconfig.nvim", version = "1.32.0" },
     "hrsh7th/nvim-cmp",
     "hrsh7th/cmp-nvim-lsp",
     "hrsh7th/cmp-buffer",
-    "hrsh7th/cmp-path"
+    "hrsh7th/cmp-path",
+    "stevearc/conform.nvim"
   },
 
   config = function()
@@ -54,7 +55,8 @@ return {
         }
 
         if server_name == "lua_ls"
-          then server_config.settings = {
+        then
+          server_config.settings = {
             Lua = {
               diagnostics = {
                 globals = { 'vim' } -- recognize `vim` as a global
@@ -82,7 +84,8 @@ return {
 
         if server_name == "ts_ls" then
           server_config.filetypes = { "javascript", "javascriptreact", "typescript", "typescriptreact" }
-          server_config.root_dir = vim.fs.dirname(vim.fs.find('.git', { path = vim.fn.getcwd(), upward = true })[1]) or require("lspconfig.util").root_pattern("tsconfig.json", "package.json", ".git") or vim.fn.getcwd()
+          server_config.root_dir = vim.fs.dirname(vim.fs.find('.git', { path = vim.fn.getcwd(), upward = true })[1]) or
+              require("lspconfig.util").root_pattern("tsconfig.json", "package.json", ".git") or vim.fn.getcwd()
         end
 
         require("lspconfig")[server_name].setup(server_config)
@@ -93,7 +96,7 @@ return {
     vim.api.nvim_create_autocmd("LspAttach", {
       group = vim.api.nvim_create_augroup("keymaps_on_lsp_attach", {}),
       callback = function(event)
-        print("LSP attached to buffer: " .. event.buf) -- to debug lsp
+        -- print("LSP attached to buffer: " .. event.buf) -- to debug lsp
         -- check `:help vim.lsp.*` for docs on any of the below functions
         local opts = { buffer = event.buf, silent = true }
 
@@ -112,9 +115,27 @@ return {
 
         opts.desc = "Show code actions available at current cursor"
         vim.keymap.set("n", "<leader>ca", function() vim.lsp.buf.code_action() end, opts)
-
       end
+    })
+
+    require("conform").setup({
+      formatters_by_ft = {
+        lua = { "stylua" },
+        python = { "isort", "black" },
+        javascript = { "prettier" },
+        typescript = { "prettier" },
+        typescriptreact = { "prettier" },
+        javascriptreact = { "prettier" },
+        tailwind = { "prettier" },
+        html = { "prettier" },
+        css = { "prettier" },
+        scss = { "prettier" },
+        elixir = { "fallback" } -- for some reason it just times out, so might as well not format
+      },
+      format_on_save = {
+        timeout_ms = 2000,
+        lsp_format = "fallback"
+      }
     })
   end
 }
-
