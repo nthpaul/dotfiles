@@ -18,7 +18,7 @@ vim.opt.smartcase = true
 
 vim.opt.termguicolors = true
 vim.opt.scrolloff = 8
-vim.opt.signcolumn = "no"
+vim.opt.signcolumn = "yes"
 
 vim.opt.backspace = { "start", "eol", "indent" }
 
