@@ -12,12 +12,12 @@ vim.keymap.set("n", "n", "nzzzv", { desc = "center with zz when navigating verti
 vim.keymap.set("n", "N", "Nzzzv", { desc = "center with zz when navigating vertically" })
 
 -- better up + down
-vim.keymap.set('n', 'j', 'gj', { desc = 'Up', noremap = true })
-vim.keymap.set('n', 'k', 'gk', { desc = 'Down', noremap = true })
+vim.keymap.set("n", "j", "gj", { desc = "Up", noremap = true })
+vim.keymap.set("n", "k", "gk", { desc = "Down", noremap = true })
 
 -- move lines up and down in visual line mode
 vim.keymap.set("v", "J", ":m '>+1<CR>gv=gv", { desc = "move lines down in visual selection" })
-vim.keymap.set("v", "K", ":m '>-2<CR>gv=gv", { desc = "move lines up in visual selection" })
+vim.keymap.set("v", "K", ":m '<-2<CR>gv=gv", { desc = "move lines up in visual selection" })
 
 -- shift left or right
 opts.desc = "Shift right in visual selection"
@@ -35,8 +35,12 @@ vim.keymap.set("n", "x", [["_x]], { desc = "delete single char without saving to
 vim.keymap.set("i", "C-c", "<Esc>", { desc = "exit insert mode" })
 
 -- word replacement
-vim.keymap.set("n", "<leader>s", [[:%s/\<<C-r><C-w>\>/<C-r><C-w>/gI<Left><Left><Left>]],
-  { desc = 'Replace word cursor is on globally' })
+vim.keymap.set(
+	"n",
+	"<leader>s",
+	[[:%s/\<<C-r><C-w>\>/<C-r><C-w>/gI<Left><Left><Left>]],
+	{ desc = "Replace word cursor is on globally" }
+)
 
 -- copy current filepath to clipboard
-vim.keymap.set("n", "<leader>fp", [[:let @+ = expand('%:p')<CR>]], { desc = 'Copy current filepath to clipboard' })
+vim.keymap.set("n", "<leader>fp", [[:let @+ = expand('%:p')<CR>]], { desc = "Copy current filepath to clipboard" })

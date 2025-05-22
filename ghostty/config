@@ -1,15 +1,28 @@
+theme = light:dayfox,dark:carbonfox
+macos-titlebar-proxy-icon = hidden
 background-blur-radius = 20
 background-opacity = 0.85
 
 font-size = 16
 font-thicken
-font-thicken-strength = 50 
 font-family = Hack Nerd Font Mono Regular
 font-feature = -calt, -liga, -dlig
+font-thicken-strength = 50 
 
 window-padding-x = 5
 window-padding-y = 5
 
-macos-titlebar-proxy-icon = hidden
+unfocused-split-opacity=0.70
+unfocused-split-fill=#000000
+split-divider-color=#000000
 
-theme = light:dayfox,dark:carbonfox
+# mac keybinds (super is cmd key on mac)
+
+# keybind = global:opt+space=toggle_visibility
+
+keybind = super+h=goto_split:left
+keybind = super+l=goto_split:right
+keybind = super+k=goto_split:top
+keybind = super+j=goto_split:bottom
+
+keybind = super+n=new_window
