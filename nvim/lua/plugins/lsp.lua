@@ -87,7 +87,7 @@ return {
 				"isort",
 				"pylint",
 				"clangd",
-				"eslint_d",
+				{ "eslint_d", verion = "13.1.2" },
 				"trivy",
 			},
 		})

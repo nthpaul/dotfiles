@@ -1,0 +1,76 @@
+{
+  "auto_install_extensions": {},
+  "edit_predictions": {
+    "mode": "subtle",
+    "copilot": {
+      "proxy": null,
+      "proxy_no_verify": null
+    },
+    "enabled_in_text_threads": false
+  },
+  "agent": {
+    "version": "2",
+    "enabled": true,
+    "button": true,
+    "dock": "right",
+    "default_width": 640,
+    "default_height": 320,
+    "default_model": {
+      "provider": "zed.dev",
+      "model": "claude-3-7-sonnet-latest"
+    },
+    "editor_model": {
+      "provider": "zed.dev",
+      "model": "claude-3-7-sonnet-latest"
+    },
+    "single_file_review": true
+  },
+  "show_completions_on_input": true,
+  "base_keymap": "VSCode",
+  "current_line_highlight": "gutter",
+  "show_edit_predictions": true,
+  "preferred_line_length": 100,
+  "soft_wrap": "prefer_line",
+  "vim_mode": true,
+  "ui_font_size": 16,
+  "ui_font_family": "Zed Plex Sans",
+  "buffer_font_size": 15,
+  "buffer_font_family": "Zed Plex Mono",
+  "theme": {
+    "mode": "system",
+    "light":"Dayfox",
+    "dark": "Catppuccin Macchiato"
+  },
+  "autosave": "off",
+  "format_on_save": "on",
+  "relative_line_numbers": true,
+  "formatter": {
+    "code_actions": {
+      "source.fixAll.eslint": true,
+      // "source.organizeImports": true
+    }
+  },
+  "restore_on_save": "last_session",
+  "cursor_blink": false,
+  "cursor_shape": "hollow",
+  "hide_mouse": "on_typing",
+  "scrollbar": {
+    "show": "auto",
+    "cursors": true,
+    "git_diff": true,
+    "search_results": true,
+    "selected_text": true,
+    "selected_symbol": true,
+    "diagnostics": "all",
+    "axes": {
+      "horizontal": true,
+      "vertical": true
+    }
+  },
+  "unnecessary_code_fade": 0.3,
+  "use_autoclose": true,
+  "telemetry": {
+    "diagnostics": false,
+    "metrics": false
+  }
+}

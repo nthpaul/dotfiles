@@ -21,6 +21,11 @@ return {
 				yaml = { "prettier" },
 				json = { "prettier" },
 			},
+			formatters = {
+				prettier = {
+					prepend_args = { "--config-precedence", "prefer-file" },
+				},
+			},
 			format_on_save = {
 				timeout_ms = 2000,
 				lsp_format = "fallback",
