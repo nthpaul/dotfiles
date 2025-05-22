@@ -7,7 +7,7 @@ font-size = 16
 font-thicken
 font-family = Hack Nerd Font Mono Regular
 font-feature = -calt, -liga, -dlig
-font-thicken-strength = 50 
+font-thicken-strength = 50
 
 window-padding-x = 5
 window-padding-y = 5
@@ -25,4 +25,17 @@ keybind = super+l=goto_split:right
 keybind = super+k=goto_split:top
 keybind = super+j=goto_split:bottom
 
+keybind = super+\=toggle_split_zoom
+keybind = super+e=equalize_splits
+
+keybind = super+up=resize_split:up,10
+keybind = super+down=resize_split:down,10
+keybind = super+left=resize_split:left,10
+keybind = super+right=resize_split:right,10
+
 keybind = super+n=new_window
+keybind = super+t=new_tab
+
+keybind = global:super+g=toggle_quick_terminal
+
+keybind = super+)=inspector:toggle
