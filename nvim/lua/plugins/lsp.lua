@@ -127,7 +127,7 @@ return {
 					}
 				end
 
-				if server_name == "ts_ls" then
+				if server_name == "ts_ls" or server_name == "eslint" then
 					server_config.filetypes = { "javascript", "javascriptreact", "typescript", "typescriptreact" }
 					server_config.root_dir = vim.fs.dirname(
 						vim.fs.find(".git", { path = vim.fn.getcwd(), upward = true })[1]

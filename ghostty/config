@@ -3,7 +3,7 @@ macos-titlebar-proxy-icon = hidden
 background-blur-radius = 20
 background-opacity = 0.85
 
-font-size = 16
+font-size = 14
 font-thicken
 font-family = Hack Nerd Font Mono Regular
 font-feature = -calt, -liga, -dlig
