@@ -159,8 +159,8 @@ return {
 				opts.desc = "Go to implementations"
 				vim.keymap.set("n", "gi", "<CMD>Telescope lsp_implementations<CR>", opts)
 
-				opts.desc = "Go to type definition"
-				vim.keymap.set("n", "gt", "<CMD>Telescope lsp_type_definitions<CR>", opts)
+				-- opts.desc = "Go to type definition"
+				-- vim.keymap.set("n", "gt", "<CMD>Telescope lsp_type_definitions<CR>", opts)
 
 				opts.desc = "Rename all instances of the referenced object in the current buffer"
 				vim.keymap.set("n", "<leader>prn", vim.lsp.buf.rename, opts)

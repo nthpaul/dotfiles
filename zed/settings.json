@@ -39,7 +39,7 @@
   "theme": {
     "mode": "system",
     "light":"Dayfox",
-    "dark": "Catppuccin Macchiato"
+    "dark": "Ayu Dark"
   },
   "autosave": "off",
   "format_on_save": "on",
@@ -72,5 +72,13 @@
   "telemetry": {
     "diagnostics": false,
     "metrics": false
+  },
+  "ui_font_features": {
+    // Disable ligatures:
+    "calt": false
+  },
+  "buffer_font_features": {
+    // Disable ligatures:
+    "calt": false
   }
 }

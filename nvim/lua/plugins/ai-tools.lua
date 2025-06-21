@@ -1,12 +1,29 @@
 return {
-	-- {
-	-- 	"augmentcode/augment.vim",
-	-- 	config = function()
-	-- 		vim.keymap.set("n", "<leader>;", ":Augment chat-toggle<CR>")
-	-- 		vim.keymap.set("n", "<leader>:", ":Augment chat<CR>")
-	-- 		vim.keymap.set("n", "<leader>'", ":Augment chat-new<CR>")
-	-- 	end,
-	-- },
+	{
+		"augmentcode/augment.vim",
+		config = function()
+			vim.keymap.set("n", "<leader>;", ":Augment chat-toggle<CR>")
+			vim.keymap.set("n", "<leader>:", ":Augment chat<CR>")
+			vim.keymap.set("n", "<leader>'", ":Augment chat-new<CR>")
+		end,
+	},
+	{
+		"github/copilot.vim",
+		config = function()
+			vim.api.nvim_set_keymap(
+				"i",
+				"<M-CR>",
+				'copilot#Accept("<CR>")',
+				{ expr = true, noremap = true, silent = true }
+			)
+			vim.g.copilot_no_tab_map = true
+			-- vim.cmd(":Copilot disable")
+			-- keymaps to disable and enable copilot
+			vim.api.nvim_set_keymap("n", "<leader>cpd", ":Copilot disable<CR>", { noremap = true, silent = true })
+			vim.api.nvim_set_keymap("n", "<leader>cpe", ":Copilot enable<CR>", { noremap = true, silent = true })
+		end,
+	},
+
 	{
 		"yetone/avante.nvim",
 		event = "VeryLazy",
@@ -14,14 +31,17 @@ return {
 		opts = {
 			-- add any opts here
 			-- for example
-			provider = "openai",
-			openai = {
-				endpoint = "https://api.openai.com/v1",
-				model = "gpt-4o", -- your desired model (or use gpt-4o, etc.)
-				timeout = 30000, -- Timeout in milliseconds, increase this for reasoning models
-				temperature = 0,
-				max_completion_tokens = 8192, -- Increase this to include reasoning tokens (for reasoning models)
-				--reasoning_effort = "medium", -- low|medium|high, only used for reasoning models
+			providers = {
+				openai = {
+					endpoint = "https://api.openai.com/v1",
+					model = "gpt-4.1", -- your desired model (or use gpt-4o, etc.)
+					timeout = 30000, -- Timeout in milliseconds, increase this for reasoning models
+					extra_request_body = {
+						temperature = 0,
+						max_completion_tokens = 8192, -- Increase this to include reasoning tokens (for reasoning models)
+						--reasoning_effort = "medium", -- low|medium|high, only used for reasoning models
+					},
+				},
 			},
 		},
 		-- if you want to build from source then do `make BUILD_FROM_SOURCE=true`

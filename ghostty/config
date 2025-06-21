@@ -1,7 +1,7 @@
 theme = light:dayfox,dark:carbonfox
 macos-titlebar-proxy-icon = hidden
 background-blur-radius = 20
-background-opacity = 0.85
+background-opacity = 1.0
 
 font-size = 14
 font-thicken
