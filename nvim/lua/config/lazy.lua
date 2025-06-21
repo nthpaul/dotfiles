@@ -29,6 +29,3 @@ require("lazy").setup({
 	},
 	change_detection = { notify = false },
 })
-
--- fun stuff
-require("current-theme")

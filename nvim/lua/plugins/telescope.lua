@@ -52,7 +52,7 @@ return {
 		end, { desc = "Telescope grep string" })
 
 		-- Config specific
-		vim.keymap.set("n", "<leader>fth", ":Telescope themes<CR>", { desc = "Telescope colorscheme" })
 		vim.keymap.set("n", "<leader>km", ":Telescope keymaps<CR>", { desc = "Telescope keymaps" })
+		vim.keymap.set("n", "<leader>fth", ":Telescope themes<CR>", { desc = "Telescope colorscheme" })
 	end,
 }
