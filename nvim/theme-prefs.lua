@@ -1,4 +1,4 @@
 return {
   dark = "carbonfox",
-  light = "dayfox"
+  light = "dawnfox"
 }

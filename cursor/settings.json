@@ -72,7 +72,7 @@
   "editor.formatOnSave": true,
   "editor.renderLineHighlight": "gutter",
   "editor.lineNumbers": "relative",
-  "editor.fontSize": 13,
+  "editor.fontSize": 14,
 
   // DIFF EDITOR
   "diffEditor.ignoreTrimWhitespace": false,
@@ -112,6 +112,7 @@
   "vscode_custom_css.imports": [
     null,
     "file:///Users/paul/.cursor/extensions/yesitsfebreeze.smearcursor-1.1.2/_smearcursor.js"
-  ]
+  ],
+  "terminal.integrated.fontSize": 14
   // "nxConsole.showNodeVersionOnStartup": false,
 }
