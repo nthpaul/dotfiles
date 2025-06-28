@@ -106,8 +106,6 @@ return {
 			})
 
 			-- Open minimap at startup
-			map.open()
-
 			vim.keymap.set("n", "<leader>mm", function()
 				map.toggle()
 			end, { desc = "Toggle mini map" })

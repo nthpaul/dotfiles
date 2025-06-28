@@ -113,6 +113,7 @@
     null,
     "file:///Users/paul/.cursor/extensions/yesitsfebreeze.smearcursor-1.1.2/_smearcursor.js"
   ],
-  "terminal.integrated.fontSize": 14
+  "terminal.integrated.fontSize": 14,
+  "augment.nextEdit.showDiffInHover": true
   // "nxConsole.showNodeVersionOnStartup": false,
 }
