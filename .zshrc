@@ -39,7 +39,7 @@ PROMPT='%{$fg_bold[green]%}%n@%{$reset_color%}%{$fg_bold[blue]%}%~%{$reset_color
 RPROMPT=\$vcs_info_msg_0_
 
 # ASDF
-. "$HOME/.asdf/asdf.sh"
+# . "$HOME/.asdf/asdf.sh"
 
 # PSQL
 export PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH"
@@ -48,12 +48,6 @@ export PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH"
 # export PATH="$HOME/anaconda3/bin:$PATH"  # commented out by conda initialize
 
 # POSTGRES export PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH"
-# The next line updates PATH for the Google Cloud SDK.
-if [ -f '/Users/paul/google-cloud-sdk/path.zsh.inc' ]; then . '/Users/paul/google-cloud-sdk/path.zsh.inc'; fi
-
-# The next line enables shell command completion for gcloud.
-if [ -f '/Users/paul/google-cloud-sdk/completion.zsh.inc' ]; then . '/Users/paul/google-cloud-sdk/completion.zsh.inc'; fi
-
 # bun completions
 [ -s "/Users/paul/.bun/_bun" ] && source "/Users/paul/.bun/_bun"
 
@@ -83,3 +77,12 @@ source <(fzf --zsh)
 if [ -f "$HOME/.env" ]; then
     export $(cat "$HOME/.env" | xargs)
 fi
+
+eval "$(direnv hook zsh)"
+. $(brew --prefix asdf)/libexec/asdf.sh
+
+# The next line updates PATH for the Google Cloud SDK.
+if [ -f '/Users/paul/Downloads/google-cloud-sdk/path.zsh.inc' ]; then . '/Users/paul/Downloads/google-cloud-sdk/path.zsh.inc'; fi
+
+# The next line enables shell command completion for gcloud.
+if [ -f '/Users/paul/Downloads/google-cloud-sdk/completion.zsh.inc' ]; then . '/Users/paul/Downloads/google-cloud-sdk/completion.zsh.inc'; fi

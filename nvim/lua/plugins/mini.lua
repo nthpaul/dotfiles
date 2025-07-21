@@ -44,28 +44,28 @@ return {
 			})
 		end,
 	},
-	{
-		"echasnovski/mini.trailspace",
-		event = { "BufReadPre", "BufNewFile" },
-		config = function()
-			local trailspace = require("mini.trailspace")
-			trailspace.setup({
-				only_in_normal_buffers = true,
-			})
-
-			vim.keymap.set("n", "<leader>tt", function()
-				trailspace.trim()
-			end, { desc = "Trim trailing whitespace" })
-
-			-- Unhighlight on cursor move
-			vim.api.nvim_create_autocmd("CursorMoved", {
-				pattern = "*",
-				callback = function()
-					require("mini.trailspace").unhighlight()
-				end,
-			})
-		end,
-	},
+	-- {
+	-- 	"echasnovski/mini.trailspace",
+	-- 	event = { "BufReadPre", "BufNewFile" },
+	-- 	config = function()
+	-- 		local trailspace = require("mini.trailspace")
+	-- 		trailspace.setup({
+	-- 			only_in_normal_buffers = true,
+	-- 		})
+	--
+	-- 		vim.keymap.set("n", "<leader>tt", function()
+	-- 			trailspace.trim()
+	-- 		end, { desc = "Trim trailing whitespace" })
+	--
+	-- 		-- Unhighlight on cursor move
+	-- 		vim.api.nvim_create_autocmd("CursorMoved", {
+	-- 			pattern = "*",
+	-- 			callback = function()
+	-- 				require("mini.trailspace").unhighlight()
+	-- 			end,
+	-- 		})
+	-- 	end,
+	-- },
 	{
 		"echasnovski/mini.splitjoin",
 		config = function()
