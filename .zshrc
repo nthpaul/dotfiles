@@ -82,7 +82,7 @@ eval "$(direnv hook zsh)"
 . $(brew --prefix asdf)/libexec/asdf.sh
 
 # The next line updates PATH for the Google Cloud SDK.
-if [ -f '/Users/paul/Downloads/google-cloud-sdk/path.zsh.inc' ]; then . '/Users/paul/Downloads/google-cloud-sdk/path.zsh.inc'; fi
+if [ -f '/Users/paul/google-cloud-sdk/path.zsh.inc' ]; then . '/Users/paul/google-cloud-sdk/path.zsh.inc'; fi
 
 # The next line enables shell command completion for gcloud.
-if [ -f '/Users/paul/Downloads/google-cloud-sdk/completion.zsh.inc' ]; then . '/Users/paul/Downloads/google-cloud-sdk/completion.zsh.inc'; fi
+if [ -f '/Users/paul/google-cloud-sdk/completion.zsh.inc' ]; then . '/Users/paul/google-cloud-sdk/completion.zsh.inc'; fi

@@ -1,4 +1,6 @@
-vim.g.netrw_bufsettings = 'noma nomod nu nowrap ro nobl' -- add relative line numbers to netrw
+-- vim.g.netrw_bufsettings = "noma nomod nu nowrap ro nobl" -- add relative line numbers to netrw
+
+vim.opt.winborder = "rounded"
 vim.opt.relativenumber = true
 vim.opt.number = true
 
@@ -25,3 +27,4 @@ vim.opt.backspace = { "start", "eol", "indent" }
 vim.opt.updatetime = 50
 vim.opt.hlsearch = true
 vim.g.editorconfig = true
+vim.swapfile = false

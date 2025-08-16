@@ -44,6 +44,8 @@ return {
 		vim.keymap.set("n", "<leader>ff", builtin.find_files, { desc = "Telescope find files" })
 		vim.keymap.set("n", "<leader>fr", builtin.oldfiles, { desc = "Telescope recent files" })
 		vim.keymap.set("n", "<leader>fb", builtin.buffers, { desc = "Telescope buffers" })
+		vim.keymap.set("n", "<leader>ft", "<CMD>Telescope treesitter<CR>", { desc = "Telescope treesitter" })
+		vim.keymap.set("n", "<leader>flg", "<CMD>Telescope live_grep<CR>", { desc = "Telescope live grep" })
 
 		-- Workspace specific
 		vim.keymap.set("n", "<leader>fgs", ":Telescope git_status<CR>", { desc = "Telescope git status" })
