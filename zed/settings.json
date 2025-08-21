@@ -13,7 +13,7 @@
     "enabled": true,
     "button": true,
     "dock": "right",
-"default_width": 640,
+    "default_width": 640,
     "default_height": 320,
     "default_model": {
       "provider": "zed.dev",
@@ -34,15 +34,15 @@
   "buffer_font_family": "Zed Plex Mono",
   "theme": {
     "mode": "system",
-    "light":"Dayfox",
-    "dark": "Carbonfox"
+    "light": "Dayfox",
+    "dark": "Carbonfox - blurred"
   },
   "autosave": "off",
   "format_on_save": "on",
   "relative_line_numbers": true,
   "formatter": {
     "code_actions": {
-      "source.fixAll.eslint": true,
+      "source.fixAll.eslint": true
       // "source.organizeImports": true
     }
   },
