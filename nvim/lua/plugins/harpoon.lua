@@ -50,5 +50,12 @@ return {
 		vim.keymap.set("n", "<leader><C-5>", function()
 			harpoon:list():replace_at(5)
 		end)
+
+		vim.keymap.set("n", "<C-s-n>", function()
+			harpoon:list():next()
+		end)
+		vim.keymap.set("n", "<C-s-p>", function()
+			harpoon:list():prev()
+		end)
 	end,
 }
