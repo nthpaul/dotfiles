@@ -15,7 +15,7 @@ return {
 		opts = {},
 		config = function()
 			require("tokyonight").setup({
-				-- transparent = true,
+				transparent = true,
 				styles = {
 					-- sidebars = "transparent",
 					-- floats = "transparent",
@@ -29,7 +29,7 @@ return {
 		config = function()
 			require("nightfox").setup({
 				options = {
-					-- transparent = true
+					transparent = true,
 				},
 			})
 		end,

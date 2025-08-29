@@ -2,10 +2,10 @@ window-save-state = always
 
 theme = light:dayfox,dark:carbonfox
 macos-titlebar-proxy-icon = hidden
-background-blur-radius = 20
-background-opacity = 1.0
+background-blur-radius = 255
+background-opacity = 0.8
 
-font-size = 14
+font-size = 17
 font-thicken
 font-family = Hack Nerd Font Mono Regular
 font-feature = -calt, -liga, -dlig
