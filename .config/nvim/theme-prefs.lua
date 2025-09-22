@@ -1,4 +1,4 @@
 return {
-  dark = "rose-pine",
+  dark = "zenwritten",
   light = "zenwritten"
 }

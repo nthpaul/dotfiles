@@ -65,7 +65,6 @@ return {
 		priority = 1000,
 		-- you can set set configuration options here
 		config = function()
-			vim.cmd.colorscheme("zenwritten")
 			vim.g.zenwritten_transparent_background = "true"
 			vim.g.rosebones_transparent_background = "true"
 		end,
@@ -81,7 +80,6 @@ return {
 					transparency = true,
 				},
 			})
-			vim.cmd("colorscheme rose-pine")
 		end,
 	},
 	{
