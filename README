@@ -1,0 +1,5 @@
+For tmux, you might want to manually point at the config file like so:
+
+```plaintext
+tmux source-file /where/your/tmux/conf/lives/.tmux.conf
+```
