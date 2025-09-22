@@ -15,10 +15,10 @@ return {
 		opts = {},
 		config = function()
 			require("tokyonight").setup({
-				-- transparent = true,
+				transparent = true,
 				styles = {
-					-- sidebars = "transparent",
-					-- floats = "transparent",
+					sidebars = "transparent",
+					floats = "transparent",
 				},
 			})
 		end,
@@ -29,7 +29,7 @@ return {
 		config = function()
 			require("nightfox").setup({
 				options = {
-					-- transparent = true
+					transparent = true,
 				},
 			})
 		end,
@@ -52,6 +52,46 @@ return {
 		config = function()
 			require("gruvbox").setup({
 				transparent_mode = true,
+			})
+		end,
+	},
+	{
+		"zenbones-theme/zenbones.nvim",
+		-- Optionally install Lush. Allows for more configuration or extending the colorscheme
+		-- If you don't want to install lush, make sure to set g:zenbones_compat = 1
+		-- In Vim, compat mode is turned on as Lush only works in Neovim.
+		dependencies = "rktjmp/lush.nvim",
+		lazy = false,
+		priority = 1000,
+		-- you can set set configuration options here
+		config = function()
+			vim.cmd.colorscheme("zenwritten")
+			vim.g.zenwritten_transparent_background = "true"
+			vim.g.rosebones_transparent_background = "true"
+		end,
+	},
+	{
+		"rose-pine/neovim",
+		name = "rose-pine",
+		config = function()
+			require("rose-pine").setup({
+				styles = {
+					bold = true,
+					italic = true,
+					transparency = true,
+				},
+			})
+			vim.cmd("colorscheme rose-pine")
+		end,
+	},
+	{
+		"projekt0n/github-nvim-theme",
+		name = "github-theme",
+		lazy = false,
+		priority = 1000,
+		config = function()
+			require("github-theme").setup({
+				-- nothing here for now
 			})
 		end,
 	},

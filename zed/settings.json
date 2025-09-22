@@ -35,7 +35,7 @@
   "theme": {
     "mode": "system",
     "light": "Dayfox",
-    "dark": "Carbonfox - blurred"
+    "dark": "Carbonfox - opaque"
   },
   "autosave": "off",
   "format_on_save": "on",

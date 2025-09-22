@@ -1,4 +1,5 @@
 alias vim='nvim'
+alias ls='gls -lahps --author --group-directories-first --color=auto'
 export PATH="/Users/paul/.local/bin:$PATH"
 
 # export KERL_CONFIGURE_OPTIONS="--with-ssl=/opt/homebrew/opt/openssl@1.1 \
@@ -44,9 +45,6 @@ RPROMPT=\$vcs_info_msg_0_
 # PSQL
 export PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH"
 
-# CONDA
-# export PATH="$HOME/anaconda3/bin:$PATH"  # commented out by conda initialize
-
 # POSTGRES export PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH"
 # bun completions
 [ -s "/Users/paul/.bun/_bun" ] && source "/Users/paul/.bun/_bun"
@@ -55,6 +53,8 @@ export PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH"
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
 
+# CONDA
+# export PATH="$HOME/anaconda3/bin:$PATH"  # commented out by conda initialize
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
 __conda_setup="$('/opt/anaconda3/bin/conda' 'shell.zsh' 'hook' 2> /dev/null)"
@@ -75,7 +75,7 @@ source <(fzf --zsh)
 
 # Load .env
 if [ -f "$HOME/.env" ]; then
-    export $(cat "$HOME/.env" | xargs)
+    # export $(cat "$HOME/.env" | xargs)
 fi
 
 eval "$(direnv hook zsh)"

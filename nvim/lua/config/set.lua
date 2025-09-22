@@ -1,4 +1,5 @@
 -- vim.g.netrw_bufsettings = "noma nomod nu nowrap ro nobl" -- add relative line numbers to netrw
+vim.opt.swapfile = false -- Get rid of annoying swapfiles
 
 vim.opt.winborder = "rounded"
 vim.opt.relativenumber = true
@@ -27,4 +28,3 @@ vim.opt.backspace = { "start", "eol", "indent" }
 vim.opt.updatetime = 50
 vim.opt.hlsearch = true
 vim.g.editorconfig = true
-vim.swapfile = false

@@ -9,34 +9,36 @@ return {
 		"hrsh7th/cmp-nvim-lsp",
 		"hrsh7th/cmp-buffer",
 		"hrsh7th/cmp-path",
-		"catgoose/nvim-colorizer.lua",
-		"roobert/tailwindcss-colorizer-cmp.nvim",
+		-- "catgoose/nvim-colorizer.lua",
+		-- "roobert/tailwindcss-colorizer-cmp.nvim",
 	},
 
 	config = function()
 		-- COMPLETIONS SETUP
 		local cmp = require("cmp")
-		local colorizer = require("colorizer")
-		local tailwindcss_colorizer = require("tailwindcss-colorizer-cmp")
-
-		colorizer.setup({
-			user_default_options = {
-				tailwind = true,
-			},
-			filetypes = {
-				"*",
-			},
-		})
+		-- local colorizer = require("colorizer")
+		-- local tailwindcss_colorizer = require("tailwindcss-colorizer-cmp")
+		--
+		-- colorizer.setup({
+		-- 	user_default_options = {
+		-- 		tailwind = true,
+		-- 	},
+		-- 	filetypes = {
+		-- 		"tsx",
+		-- 		"js",
+		-- 		"jsx",
+		-- 	},
+		-- })
 
 		-- makes tailwind colors show up in completion menu
-		tailwindcss_colorizer.setup({
-			color_square_width = 2,
-		})
-		vim.api.nvim_create_autocmd({ "BufReadPost", "BufNewFile" }, {
-			callback = function()
-				vim.cmd("ColorizerAttachToBuffer")
-			end,
-		})
+		-- tailwindcss_colorizer.setup({
+		-- 	color_square_width = 2,
+		-- })
+		-- vim.api.nvim_create_autocmd({ "BufReadPost", "BufNewFile" }, {
+		-- 	callback = function()
+		-- 		vim.cmd("ColorizerAttachToBuffer")
+		-- 	end,
+		-- })
 
 		-- setup completions keybindings
 		cmp.setup({

@@ -51,10 +51,10 @@ return {
 			harpoon:list():replace_at(5)
 		end)
 
-		vim.keymap.set("n", "<C-s-n>", function()
+		vim.keymap.set("n", "<C-S-N>", function()
 			harpoon:list():next()
 		end)
-		vim.keymap.set("n", "<C-s-p>", function()
+		vim.keymap.set("n", "<C-S-P>", function()
 			harpoon:list():prev()
 		end)
 	end,
