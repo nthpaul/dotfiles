@@ -1,1 +1,1 @@
-vim.cmd("colorscheme zenwritten")
+vim.cmd("colorscheme carbonfox")

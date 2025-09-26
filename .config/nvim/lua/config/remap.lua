@@ -42,5 +42,10 @@ vim.keymap.set(
 	{ desc = "Replace word cursor is on globally" }
 )
 
--- copy current filepath to clipboard
-vim.keymap.set("n", "<leader>fp", [[:let @+ = expand('%:p')<CR>]], { desc = "Copy current filepath to clipboard" })
+-- copy current absolute filepath to clipboard
+vim.keymap.set(
+	"n",
+	"<leader>fp",
+	[[:let @+ = expand('%:p')<CR>]],
+	{ desc = "Copy current absolute filepath to clipboard" }
+)
