@@ -44,6 +44,8 @@ RPROMPT=\$vcs_info_msg_0_
 
 # PSQL
 export PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH"
+export LDFLAGS="-L/opt/homebrew/opt/postgresql@17/lib"
+export CPPFLAGS="-I/opt/homebrew/opt/postgresql@17/include"
 
 # POSTGRES export PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH"
 # bun completions
@@ -78,11 +80,17 @@ if [ -f "$HOME/.env" ]; then
     # export $(cat "$HOME/.env" | xargs)
 fi
 
-eval "$(direnv hook zsh)"
-. $(brew --prefix asdf)/libexec/asdf.sh
+# . $(brew --prefix asdf)/libexec/asdf.sh
 
 # The next line updates PATH for the Google Cloud SDK.
 if [ -f '/Users/paul/google-cloud-sdk/path.zsh.inc' ]; then . '/Users/paul/google-cloud-sdk/path.zsh.inc'; fi
 
 # The next line enables shell command completion for gcloud.
 if [ -f '/Users/paul/google-cloud-sdk/completion.zsh.inc' ]; then . '/Users/paul/google-cloud-sdk/completion.zsh.inc'; fi
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+# JAVA
+export PATH="/opt/homebrew/opt/openjdk/bin:$PATH"
