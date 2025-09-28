@@ -40,7 +40,7 @@ PROMPT='%{$fg_bold[green]%}%n@%{$reset_color%}%{$fg_bold[blue]%}%~%{$reset_color
 RPROMPT=\$vcs_info_msg_0_
 
 # ASDF
-# . "$HOME/.asdf/asdf.sh"
+. "$HOME/.asdf/asdf.sh"
 
 # PSQL
 export PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH"
@@ -80,7 +80,7 @@ if [ -f "$HOME/.env" ]; then
     # export $(cat "$HOME/.env" | xargs)
 fi
 
-# . $(brew --prefix asdf)/libexec/asdf.sh
+. $(brew --prefix asdf)/libexec/asdf.sh
 
 # The next line updates PATH for the Google Cloud SDK.
 if [ -f '/Users/paul/google-cloud-sdk/path.zsh.inc' ]; then . '/Users/paul/google-cloud-sdk/path.zsh.inc'; fi
