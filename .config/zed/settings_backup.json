@@ -9,6 +9,7 @@
     "enabled_in_text_threads": false
   },
   "agent": {
+    "version": "2",
     "enabled": true,
     "button": true,
     "dock": "right",
@@ -34,7 +35,7 @@
   "theme": {
     "mode": "system",
     "light": "Ayu Light",
-    "dark": "Gruvbox Dark Soft"
+    "dark": "Ayu Dark"
   },
   "autosave": "off",
   "format_on_save": "on",

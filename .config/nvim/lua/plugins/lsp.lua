@@ -161,8 +161,8 @@ return {
 				opts.desc = "Go to implementations"
 				vim.keymap.set("n", "gi", "<CMD>Telescope lsp_implementations<CR>", opts)
 
-				opts.desc = "Go to type definition"
-				vim.keymap.set("n", "gt", "<CMD>Telescope lsp_type_definitions<CR>", opts)
+				-- opts.desc = "Go to type definition"
+				-- vim.keymap.set("n", "gt", "<CMD>Telescope lsp_type_definitions<CR>", opts)
 
 				-- opts.desc = "See all symbols in your rtp"
 				-- vim.keymap.set("n", "<Leader>f-", "<CMD>Telescope symbols<CR>", opts)

@@ -1,4 +1,4 @@
 return {
-  dark = "carbonfox",
-  light = "zenwritten"
+  dark = "zenburned",
+  light = "tokyobones"
 }

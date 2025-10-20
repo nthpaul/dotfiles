@@ -1,0 +1,36 @@
+return {
+	-- {
+	-- 	"ldelossa/litee.nvim",
+	-- 	event = "VeryLazy",
+	-- 	opts = {
+	-- 		notify = { enabled = false },
+	-- 		panel = {
+	-- 			orientation = "bottom",
+	-- 			panel_size = 10,
+	-- 		},
+	-- 	},
+	-- 	config = function(_, opts)
+	-- 		require("litee.lib").setup(opts)
+	-- 	end,
+	-- },
+	-- {
+	-- 	"ldelossa/litee-calltree.nvim",
+	-- 	event = "VeryLazy",
+	-- 	dependencies = { "ldelossa/litee.nvim" },
+	-- 	opts = {
+	-- 		keymaps = {
+	-- 			-- toggle_node = "o",
+	-- 			-- toggle_node_recursive = "O",
+	-- 			-- goto_node = "g",
+	-- 			-- goto_node_split = "s",
+	-- 			-- goto_node_vsplit = "v",
+	-- 			-- goto_node_tab = "t",
+	-- 			on_open = "panel",
+	-- 			map_resize_keys = false,
+	-- 		},
+	-- 		config = function(_, opts)
+	-- 			require("litee.calltree").setup(opts)
+	-- 		end,
+	-- 	},
+	-- },
+}
