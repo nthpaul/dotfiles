@@ -93,4 +93,12 @@ return {
 			})
 		end,
 	},
+	{
+		"AlessandroYorba/Alduin",
+		lazy = false,
+		priority = 1000,
+		config = function()
+			vim.g.alduin_Shout_Fire_Breath = 1
+		end,
+	},
 }
