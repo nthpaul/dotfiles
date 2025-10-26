@@ -1,4 +1,4 @@
 return {
-  dark = "gruvbox",
-  light = "gruvbox"
+  dark = "terafox",
+  light = "tokyobones"
 }
