@@ -29,3 +29,11 @@ require("lazy").setup({
 	},
 	change_detection = { notify = false },
 })
+
+-- AUTOCOMMANDS
+
+-- 1. watch for external writes that update the current buffer
+vim.api.nvim_create_autocmd({ "FocusGained", "BufEnter", "CursorHold" }, {
+	pattern = "*",
+	command = "silent! checktime",
+})

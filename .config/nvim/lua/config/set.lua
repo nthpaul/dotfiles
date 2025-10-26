@@ -28,3 +28,6 @@ vim.opt.backspace = { "start", "eol", "indent" }
 vim.opt.updatetime = 50
 vim.opt.hlsearch = true
 vim.g.editorconfig = true
+
+-- read all changes (incl. external) in realtime
+vim.opt.autoread = true
