@@ -6,7 +6,7 @@ theme = light:Rose Pine Dawn, dark:Rose Pine
 # macos-titlebar-proxy-icon = hidden
 background-blur-radius = 255
 background-opacity=1.0
-background-opacity = 0.8
+# background-opacity = 0.8
 
 font-size = 14
 font-thicken
