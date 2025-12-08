@@ -3,7 +3,7 @@ alias vim='nvim'
 alias lzg='lazygit'
 
 alias ls='gls -lahps --author --group-directories-first --color=auto'
-export PATH="/Users/paul/.local/bin:$PATH"
+# export PATH="/Users/ple/.local/bin:$PATH"
 export PATH="/Users/ple/.local/bin:$PATH"
 
 # export KERL_CONFIGURE_OPTIONS="--with-ssl=/opt/homebrew/opt/openssl@1.1 \
@@ -53,7 +53,7 @@ export CPPFLAGS="-I/opt/homebrew/opt/postgresql@17/include"
 
 # POSTGRES export PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH"
 # bun completions
-[ -s "/Users/paul/.bun/_bun" ] && source "/Users/paul/.bun/_bun"
+[ -s "/Users/ple/.bun/_bun" ] && source "/Users/ple/.bun/_bun"
 
 # bun
 export BUN_INSTALL="$HOME/.bun"
@@ -87,10 +87,10 @@ fi
 # . $(brew --prefix asdf)/libexec/asdf.sh
 
 # The next line updates PATH for the Google Cloud SDK.
-if [ -f '/Users/paul/google-cloud-sdk/path.zsh.inc' ]; then . '/Users/paul/google-cloud-sdk/path.zsh.inc'; fi
+if [ -f '/Users/ple/google-cloud-sdk/path.zsh.inc' ]; then . '/Users/ple/google-cloud-sdk/path.zsh.inc'; fi
 
 # The next line enables shell command completion for gcloud.
-if [ -f '/Users/paul/google-cloud-sdk/completion.zsh.inc' ]; then . '/Users/paul/google-cloud-sdk/completion.zsh.inc'; fi
+if [ -f '/Users/ple/google-cloud-sdk/completion.zsh.inc' ]; then . '/Users/ple/google-cloud-sdk/completion.zsh.inc'; fi
 
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
