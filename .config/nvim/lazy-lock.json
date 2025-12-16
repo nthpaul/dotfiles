@@ -1,6 +1,5 @@
 {
   "Alduin": { "branch": "master", "commit": "6575a0f167fef521c404681b96caebdb2b9cc4cd" },
-  "augment.vim": { "branch": "main", "commit": "97418c9dfc1918fa9bdd23863ea3d2e49130727f" },
   "auto-dark-mode.nvim": { "branch": "master", "commit": "e300259ec777a40b4b9e3c8e6ade203e78d15881" },
   "auto-session": { "branch": "main", "commit": "517a75727d28a4d1ee9c79b56dde239a5408778f" },
   "cmp-buffer": { "branch": "main", "commit": "b74fab3656eea9de20a9b8116afa3cfc4ec09657" },
@@ -8,7 +7,7 @@
   "cmp-path": { "branch": "main", "commit": "c642487086dbd9a93160e1679a1327be111cbc25" },
   "colorbuddy.nvim": { "branch": "master", "commit": "8b968581e5c19d22a861d5f3fe5dbd83394fa681" },
   "conform.nvim": { "branch": "master", "commit": "fbcb4fa7f34bfea9be702ffff481a8e336ebf6ed" },
-  "cursor-agent.nvim": { "branch": "main", "commit": "e0b86624ccfd5f98af46a780049037fa07521331" },
+  "copilot.vim": { "branch": "release", "commit": "f89e977c87180519ba3b942200e3d05b17b1e2fc" },
   "github-theme": { "branch": "main", "commit": "c106c9472154d6b2c74b74565616b877ae8ed31d" },
   "gitsigns.nvim": { "branch": "main", "commit": "20ad4419564d6e22b189f6738116b38871082332" },
   "gruvbox.nvim": { "branch": "main", "commit": "5e0a460d8e0f7f669c158dedd5f9ae2bcac31437" },

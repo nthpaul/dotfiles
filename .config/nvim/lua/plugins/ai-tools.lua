@@ -1,36 +1,36 @@
 return {
-	{
-		"augmentcode/augment.vim",
-		config = function()
-			vim.keymap.set("n", "<leader>;", ":Augment chat-toggle<CR>")
-			vim.keymap.set("n", "<leader>:", ":Augment chat<CR>")
-			vim.keymap.set("n", "<leader>'", ":Augment chat-new<CR>")
-		end,
-	},
-	{
-		"xTacobaco/cursor-agent.nvim",
-		config = function()
-			vim.keymap.set("n", "<leader>aa", ":CursorAgent<CR>", { desc = "Cursor Agent: Toggle terminal" })
-			vim.keymap.set("v", "<leader>as", ":CursorAgentSelection<CR>", { desc = "Cursor Agent: Send selection" })
-			vim.keymap.set("n", "<leader>ab", ":CursorAgentBuffer<CR>", { desc = "Cursor Agent: Send buffer" })
-		end,
-	},
 	-- {
-	-- 	"github/copilot.vim",
+	-- 	"augmentcode/augment.vim",
 	-- 	config = function()
-	-- 		vim.api.nvim_set_keymap(
-	-- 			"i",
-	-- 			"<M-CR>",
-	-- 			'copilot#Accept("<CR>")',
-	-- 			{ expr = true, noremap = true, silent = true }
-	-- 		)
-	-- 		vim.g.copilot_no_tab_map = true
-	-- 		-- vim.cmd(":Copilot disable")
-	-- 		-- keymaps to disable and enable copilot
-	-- 		vim.api.nvim_set_keymap("n", "<leader>cpd", ":Copilot disable<CR>", { noremap = true, silent = true })
-	-- 		vim.api.nvim_set_keymap("n", "<leader>cpe", ":Copilot enable<CR>", { noremap = true, silent = true })
+	-- 		vim.keymap.set("n", "<leader>;", ":Augment chat-toggle<CR>")
+	-- 		vim.keymap.set("n", "<leader>:", ":Augment chat<CR>")
+	-- 		vim.keymap.set("n", "<leader>'", ":Augment chat-new<CR>")
 	-- 	end,
 	-- },
+	-- {
+	-- 	"xTacobaco/cursor-agent.nvim",
+	-- 	config = function()
+	-- 		vim.keymap.set("n", "<leader>aa", ":CursorAgent<CR>", { desc = "Cursor Agent: Toggle terminal" })
+	-- 		vim.keymap.set("v", "<leader>as", ":CursorAgentSelection<CR>", { desc = "Cursor Agent: Send selection" })
+	-- 		vim.keymap.set("n", "<leader>ab", ":CursorAgentBuffer<CR>", { desc = "Cursor Agent: Send buffer" })
+	-- 	end,
+	-- },
+	{
+		"github/copilot.vim",
+		config = function()
+			vim.api.nvim_set_keymap(
+				"i",
+				"<M-CR>",
+				'copilot#Accept("<CR>")',
+				{ expr = true, noremap = true, silent = true }
+			)
+			vim.g.copilot_no_tab_map = true
+			-- vim.cmd(":Copilot disable")
+			-- keymaps to disable and enable copilot
+			vim.api.nvim_set_keymap("n", "<leader>cpd", ":Copilot disable<CR>", { noremap = true, silent = true })
+			vim.api.nvim_set_keymap("n", "<leader>cpe", ":Copilot enable<CR>", { noremap = true, silent = true })
+		end,
+	},
 	-- 	{
 	-- 		"yetone/avante.nvim",
 	-- 		event = "VeryLazy",
