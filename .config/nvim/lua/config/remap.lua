@@ -45,7 +45,15 @@ vim.keymap.set(
 -- copy current absolute filepath to clipboard
 vim.keymap.set(
 	"n",
-	"<leader>fp",
+	"<leader>fap",
 	[[:let @+ = expand('%:p')<CR>]],
 	{ desc = "Copy current absolute filepath to clipboard" }
+)
+
+-- copy relative filepath to clipboard
+vim.keymap.set(
+	"n",
+	"<leader>frp",
+	[[:let @+ = expand('%')<CR>]],
+	{ desc = "Copy current relative filepath to clipboard" }
 )

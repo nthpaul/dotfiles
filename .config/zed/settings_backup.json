@@ -9,7 +9,6 @@
     "enabled_in_text_threads": false
   },
   "agent": {
-    "version": "2",
     "enabled": true,
     "button": true,
     "dock": "right",
@@ -32,11 +31,7 @@
   "ui_font_family": "Zed Plex Sans",
   "buffer_font_size": 14,
   "buffer_font_family": "Zed Plex Mono",
-  "theme": {
-    "mode": "system",
-    "light": "Ayu Light",
-    "dark": "Ayu Dark"
-  },
+  "theme": "Neovim default accented dark",
   "autosave": "off",
   "format_on_save": "on",
   "relative_line_numbers": true,

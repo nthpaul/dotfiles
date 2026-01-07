@@ -1,4 +1,7 @@
 {
+  "code_actions_on_format": {
+    "source.fixAll.eslint": true
+  },
   "auto_install_extensions": {},
   "edit_predictions": {
     "mode": "subtle",
@@ -31,20 +34,11 @@
   "ui_font_family": "Zed Plex Sans",
   "buffer_font_size": 14,
   "buffer_font_family": "Zed Plex Mono",
-  "theme": {
-    "mode": "system",
-    "light": "Ayu Light",
-    "dark": "Carbonfox - opaque"
-  },
+  "theme": "Neovim default accented dark",
   "autosave": "off",
   "format_on_save": "on",
-  "relative_line_numbers": true,
-  "formatter": {
-    "code_actions": {
-      "source.fixAll.eslint": true
-      // "source.organizeImports": true
-    }
-  },
+  "relative_line_numbers": "enabled",
+  "formatter": [],
   "restore_on_save": "last_session",
   "cursor_blink": false,
   "cursor_shape": "hollow",
