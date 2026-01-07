@@ -98,3 +98,9 @@ export NVM_DIR="$HOME/.nvm"
 
 # JAVA
 export PATH="/opt/homebrew/opt/openjdk/bin:$PATH"
+
+# ANDROID SDK
+export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home
+
+# Added by Antigravity
+export PATH="/Users/ple/.antigravity/antigravity/bin:$PATH"
