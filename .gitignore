@@ -1,3 +1,6 @@
 .env
 .envrc
 .DS_Store
+
+# Neovim logs
+.nvimlog
