@@ -17,7 +17,9 @@ return {
 				scss = { "prettier" },
 				graphql = { "prettier" },
 				markdown = { "prettier" },
-				elixir = { "fallback" }, -- for some reason it just times out, so might as well not format
+				elixir = { "mix" },
+				eelixir = { "mix" },
+				heex = { "mix" },
 				yaml = { "prettier" },
 				json = { "prettier" },
 			},

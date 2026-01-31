@@ -42,6 +42,13 @@ return {
 
 		-- setup completions keybindings
 		cmp.setup({
+			snippet = {
+				expand = function(args)
+					if vim.snippet then
+						vim.snippet.expand(args.body)
+					end
+				end,
+			},
 			experimental = {
 				ghost_text = false, -- predictive ghost completions
 			},
@@ -75,6 +82,7 @@ return {
 				"cssls",
 				"tailwindcss",
 				"ts_ls",
+				"eslint",
 				"elixirls",
 				"rust_analyzer",
 				"pyright",
@@ -87,29 +95,39 @@ return {
 				"prettier",
 				"stylua",
 				"isort",
+				"black",
 				"pylint",
 				"clangd",
-				{ "eslint_d", verion = "13.1.2" },
+				{ "eslint_d", version = "13.1.2" },
 				"trivy",
 			},
 		})
 
 		require("mason-lspconfig").setup_handlers({
 			function(server_name)
+				local util = require("lspconfig.util")
 				local server_config = {
 					capabilities = capabilities,
 				}
 
 				if server_name == "lua_ls" then
+					server_config.root_dir = function(fname)
+						return util.root_pattern(".git", ".luarc.json", ".luacheckrc")(fname) or util.path.dirname(fname)
+					end
 					server_config.settings = {
 						Lua = {
+							runtime = {
+								version = "LuaJIT",
+							},
 							diagnostics = {
 								globals = { "vim" }, -- recognize `vim` as a global
 							},
 							workspace = {
-								library = {
-									vim.api.nvim_get_runtime_file("", true),
-								}, -- finds files in runtime dirs in runtimepath order
+								checkThirdParty = false,
+								library = vim.api.nvim_get_runtime_file("", true), -- finds files in runtime dirs in runtimepath order
+							},
+							telemetry = {
+								enable = false,
 							},
 						},
 					}
@@ -117,7 +135,7 @@ return {
 
 				if server_name == "elixirls" then
 					server_config.filetypes = { "elixir", "eelixir", "heex", "surface" }
-					server_config.root_dir = require("lspconfig.util").root_pattern("mix.exs", ".git")(vim.fn.getcwd())
+					server_config.root_dir = util.root_pattern("mix.exs", ".git")
 					server_config.settings = {
 						elixirLS = {
 							dialyzerEnabled = true,
@@ -129,11 +147,23 @@ return {
 					}
 				end
 
-				if server_name == "ts_ls" or server_name == "eslint" then
+				if server_name == "ts_ls" then
 					server_config.filetypes = { "javascript", "javascriptreact", "typescript", "typescriptreact" }
-					server_config.root_dir = vim.fs.dirname(
-						vim.fs.find(".git", { path = vim.fn.getcwd(), upward = true })[1]
-					) or require("lspconfig.util").root_pattern("tsconfig.json", "package.json", ".git") or vim.fn.getcwd()
+					server_config.root_dir = util.root_pattern("tsconfig.json", "package.json", ".git")
+				end
+
+				if server_name == "eslint" then
+					server_config.filetypes = { "javascript", "javascriptreact", "typescript", "typescriptreact" }
+					server_config.root_dir = util.root_pattern(
+						".eslintrc",
+						".eslintrc.js",
+						".eslintrc.cjs",
+						".eslintrc.json",
+						".eslintrc.yml",
+						".eslintrc.yaml",
+						"package.json",
+						".git"
+					)
 				end
 
 				require("lspconfig")[server_name].setup(server_config)
