@@ -1,6 +1,6 @@
 {
   "github.copilot.enable": {
-    "*": false
+    "*": false,
   },
   "window.commandCenter": true,
   // AI CONFIGURATIONS
@@ -17,30 +17,30 @@
   // EDITOR CONFIGURATIONS
   "terminal.integrated.gpuAcceleration": "off",
   "[typescriptreact]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
   },
   "[typescript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
   },
   "[javascript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
   },
   "[css]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
   },
   "[json]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
   },
   "[graphql]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
   },
   "[python]": {
     "editor.formatOnSave": true,
     "editor.codeActionsOnSave": {
       "source.fixAll": "explicit",
-      "source.organizeImports": "explicit"
+      "source.organizeImports": "explicit",
     },
-    "editor.defaultFormatter": "charliermarsh.ruff"
+    "editor.defaultFormatter": "charliermarsh.ruff",
   },
   "elixirLS.suggestSpecs": false,
   "elixirLS.mixEnv": "dev",
@@ -54,19 +54,19 @@
     "editor.snippetSuggestions": "inline",
     "files.trimTrailingWhitespace": true,
     "files.insertFinalNewline": true,
-    "files.trimFinalNewlines": true
+    "files.trimFinalNewlines": true,
   },
   "[jsonc]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
   },
   "[markdown]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
   },
   "[javascriptreact]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
   },
   "editor.codeActionsOnSave": {
-    "source.fixAll": "explicit"
+    "source.fixAll": "explicit",
   },
   "editor.cursorStyle": "block",
   "editor.inlineSuggest.enabled": true,
@@ -85,7 +85,7 @@
   "workbench.settings.applyToAllProfiles": ["workbench.colorCustomizations"],
   "workbench.colorTheme": "Carbonfox",
   "workbench.colorCustomizations": {
-    "terminal.background": "#00000000"
+    "terminal.background": "#00000000",
   },
 
   // GIT
@@ -98,7 +98,7 @@
   "remote.SSH.defaultExtensions": [],
   "remote.SSH.connectTimeout": 180,
   "remote.SSH.remotePlatform": {
-    "babdc5de-0477-5997-83b4-314bc2d3c2ca": "linux"
+    "babdc5de-0477-5997-83b4-314bc2d3c2ca": "linux",
   },
 
   // RELEASE
@@ -114,11 +114,13 @@
   // OTHER
   "vscode_custom_css.imports": [
     null,
-    "file:///Users/paul/.cursor/extensions/yesitsfebreeze.smearcursor-1.1.2/_smearcursor.js"
+    "file:///Users/paul/.cursor/extensions/yesitsfebreeze.smearcursor-1.1.2/_smearcursor.js",
   ],
   "terminal.integrated.fontSize": 14,
   "augment.nextEdit.showDiffInHover": true,
   "workbench.preferredDarkColorTheme": "Visual Studio Dark",
-  "github.copilot.nextEditSuggestions.enabled": true
+  "github.copilot.nextEditSuggestions.enabled": true,
+  "gitlens.ai.model": "vscode",
+  "gitlens.ai.vscode.model": "copilot:gpt-4.1",
   // "nxConsole.showNodeVersionOnStartup": false,
 }
