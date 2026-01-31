@@ -1,7 +1,7 @@
 window-save-state = always
-theme = Vesper
+# theme = Vesper
 # theme = light:Github Light Default,dark:Github Dark Default
-# theme = light:Zenwritten Light,dark:Zenwritten Dark
+theme = light:Zenwritten Light,dark:Zenwritten Dark
 # theme = light:Rose Pine Dawn, dark:Rose Pine
 # theme = light:Dayfox, dark:Zenbones Dark
 # macos-titlebar-proxy-icon = hidden

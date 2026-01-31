@@ -1,0 +1,46 @@
+model = "gpt-5.2-codex"
+model_reasoning_effort = "high"
+tool_output_token_limit = 25000
+
+# leave room for native compaction near the 272-273k context window
+# formula: 273000 - (tool_output_token_limit +15000)
+# with tool_output_token_limit = 273000 - (25000 + 15000) = 233000
+model_auto_compact_token_limit = 233000
+
+[features]
+web_search_request = true
+
+[projects."/Users/ple/projects/traba/traba-server-node"]
+trust_level = "trusted"
+
+[projects."/Users/ple/projects/traba/traba-app"]
+trust_level = "trusted"
+
+[projects."/Users/ple/projects/traba"]
+trust_level = "trusted"
+
+[projects."/Users/ple/projects/traba/docs"]
+trust_level = "trusted"
+
+[projects."/Users/ple/projects/traba/traba"]
+trust_level = "trusted"
+
+[projects."/Users/ple"]
+trust_level = "trusted"
+
+[projects."/Users/ple/projects"]
+trust_level = "trusted"
+
+[projects."/Users/ple/projects/personal/website"]
+trust_level = "trusted"
+
+[projects."/Users/ple/.dotfiles"]
+trust_level = "trusted"
+
+[projects."/Users/ple/projects/traba/traba-interview"]
+trust_level = "trusted"
+
+[notice.model_migrations]
+"gpt-5.1-codex" = "gpt-5.1-codex-max"
+"gpt-5.1-codex-max" = "gpt-5.2-codex"
+"gpt-5.2" = "gpt-5.2-codex"

@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Shell(ls)"
+    ],
+    "deny": []
+  },
+  "version": 1,
+  "editor": {
+    "vimMode": false
+  },
+  "model": {
+    "modelId": "claude-4.5-opus-high",
+    "displayModelId": "opus-4.5",
+    "displayName": "Claude 4.5 Opus",
+    "displayNameShort": "Opus 4.5",
+    "aliases": [
+      "opus-4.5"
+    ]
+  },
+  "hasChangedDefaultModel": true,
+  "privacyCache": {
+    "ghostMode": true,
+    "privacyMode": 2,
+    "updatedAt": 1765684699840
+  },
+  "network": {
+    "useHttp1ForAgent": false
+  }
+}
