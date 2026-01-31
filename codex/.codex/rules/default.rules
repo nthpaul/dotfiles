@@ -116,3 +116,4 @@ prefix_rule(pattern=["gh", "pr", "view", "--comments", "--json", "comments"], de
 prefix_rule(pattern=["gh", "pr", "view", "--json", "reviews,reviewComments"], decision="allow")
 prefix_rule(pattern=["gh", "pr", "view", "--json", "reviews"], decision="allow")
 prefix_rule(pattern=["bash", "-lc", "cd /Users/ple/.dotfiles && stow -t ~ asdf cursor direnv ghostty github-copilot graphite nvim opencode tmux vscode yazi zed zellij zsh"], decision="allow")
+prefix_rule(pattern=["bash", "-lc", "mkdir -p /Users/ple/.local/bin && ln -sf /Users/ple/symlinked-apps/nvim-0.11.6/bin/nvim /Users/ple/.local/bin/nvim"], decision="allow")
