@@ -20,11 +20,22 @@ export HISTFILE=~/.zhist
 setopt INC_APPEND_HISTORY
 setopt EXTENDED_HISTORY
 
-export KERL_CONFIGURE_OPTIONS="--with-ssl=/opt/homebrew/opt/openssl@1.1 \
-                               --with-wx-config=/opt/homebrew/opt/wxmac/bin/wx-config \
-                               --without-javac"
-export CPPFLAGS="-I/opt/homebrew/opt/openssl@1.1/include -I/opt/homebrew/opt/unixodbc/include"
-export LDFLAGS="-L/opt/homebrew/opt/openssl@1.1/lib -L/opt/homebrew/opt/unixodbc/lib"
+if command -v brew >/dev/null 2>&1; then
+  OPENSSL_PREFIX="$(brew --prefix openssl@3 2>/dev/null || brew --prefix openssl@1.1 2>/dev/null)"
+  WX_PREFIX="$(brew --prefix wxwidgets 2>/dev/null || brew --prefix wxmac 2>/dev/null)"
+  ODBC_PREFIX="$(brew --prefix unixodbc 2>/dev/null)"
+  if [ -n "$OPENSSL_PREFIX" ]; then
+    export CPPFLAGS="-I$OPENSSL_PREFIX/include"
+    export LDFLAGS="-L$OPENSSL_PREFIX/lib"
+  fi
+  if [ -n "$ODBC_PREFIX" ]; then
+    export CPPFLAGS="$CPPFLAGS -I$ODBC_PREFIX/include"
+    export LDFLAGS="$LDFLAGS -L$ODBC_PREFIX/lib"
+  fi
+  if [ -n "$OPENSSL_PREFIX" ] && [ -n "$WX_PREFIX" ]; then
+    export KERL_CONFIGURE_OPTIONS="--with-ssl=$OPENSSL_PREFIX --with-wx-config=$WX_PREFIX/bin/wx-config --without-javac"
+  fi
+fi
 
 eval "$(direnv hook zsh)"
 
@@ -47,9 +58,14 @@ RPROMPT=\$vcs_info_msg_0_
 # . "$HOME/.asdf/asdf.sh"
 
 # PSQL
-export PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH"
-export LDFLAGS="-L/opt/homebrew/opt/postgresql@17/lib"
-export CPPFLAGS="-I/opt/homebrew/opt/postgresql@17/include"
+if command -v brew >/dev/null 2>&1; then
+  PG_PREFIX="$(brew --prefix postgresql@17 2>/dev/null)"
+  if [ -n "$PG_PREFIX" ]; then
+    export PATH="$PG_PREFIX/bin:$PATH"
+    export LDFLAGS="$LDFLAGS -L$PG_PREFIX/lib"
+    export CPPFLAGS="$CPPFLAGS -I$PG_PREFIX/include"
+  fi
+fi
 
 # POSTGRES export PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH"
 # bun completions
