@@ -1,14 +1,12 @@
 model = "gpt-5.2-codex"
 model_reasoning_effort = "high"
 tool_output_token_limit = 25000
+web_search = "live"
 
 # leave room for native compaction near the 272-273k context window
 # formula: 273000 - (tool_output_token_limit +15000)
 # with tool_output_token_limit = 273000 - (25000 + 15000) = 233000
 model_auto_compact_token_limit = 233000
-
-[features]
-web_search_request = true
 
 [projects."/Users/ple/projects/traba/traba-server-node"]
 trust_level = "trusted"
