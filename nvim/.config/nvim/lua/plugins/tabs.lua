@@ -1,0 +1,38 @@
+return {
+	{
+		"romgrk/barbar.nvim",
+		dependencies = {
+			"lewis6991/gitsigns.nvim", -- OPTIONAL: for git status
+			"nvim-tree/nvim-web-devicons", -- OPTIONAL: for file icons
+		},
+		init = function()
+			vim.g.barbar_auto_setup = false
+
+			local map = vim.keymap.set
+
+			map("n", "<leader>a[", "<Cmd>BufferPrevious<CR>", { desc = "Previous tab", silent = true })
+			map("n", "<leader>a]", "<Cmd>BufferNext<CR>", { desc = "Next tab", silent = true })
+
+			map("n", "<leader>a1", "<Cmd>BufferGoto 1<CR>", { desc = "Go to tab 1", silent = true })
+			map("n", "<leader>a2", "<Cmd>BufferGoto 2<CR>", { desc = "Go to tab 2", silent = true })
+			map("n", "<leader>a3", "<Cmd>BufferGoto 3<CR>", { desc = "Go to tab 3", silent = true })
+			map("n", "<leader>a4", "<Cmd>BufferGoto 4<CR>", { desc = "Go to tab 4", silent = true })
+			map("n", "<leader>a5", "<Cmd>BufferGoto 5<CR>", { desc = "Go to tab 5", silent = true })
+			map("n", "<leader>a6", "<Cmd>BufferGoto 6<CR>", { desc = "Go to tab 6", silent = true })
+			map("n", "<leader>a7", "<Cmd>BufferGoto 7<CR>", { desc = "Go to tab 7", silent = true })
+			map("n", "<leader>a8", "<Cmd>BufferGoto 8<CR>", { desc = "Go to tab 8", silent = true })
+			map("n", "<leader>a9", "<Cmd>BufferGoto 9<CR>", { desc = "Go to tab 9", silent = true })
+			map("n", "<leader>a0", "<Cmd>BufferLast<CR>", { desc = "Go to last tab", silent = true })
+
+			map("n", "<leader>ac", "<Cmd>BufferClose<CR>", { desc = "Close tab", silent = true })
+			map("n", "<leader>aC", "<Cmd>BufferRestore<CR>", { desc = "Restore tab", silent = true })
+		end,
+		opts = {
+			-- lazy.nvim will automatically call setup for you. put your options here, anything missing will use the default:
+			-- animation = true,
+			-- insert_at_start = true,
+			-- …etc.
+		},
+		version = "^1.0.0", -- optional: only update when a new 1.x version is released
+	},
+}
