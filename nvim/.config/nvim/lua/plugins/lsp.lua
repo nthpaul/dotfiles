@@ -98,7 +98,8 @@ return {
 				"black",
 				"pylint",
 				"clangd",
-				{ "eslint_d", version = "13.1.2" },
+				-- { "eslint_d", version = "13.1.2" },
+				"eslint",
 				"trivy",
 			},
 		})
@@ -112,7 +113,8 @@ return {
 
 				if server_name == "lua_ls" then
 					server_config.root_dir = function(fname)
-						return util.root_pattern(".git", ".luarc.json", ".luacheckrc")(fname) or util.path.dirname(fname)
+						return util.root_pattern(".git", ".luarc.json", ".luacheckrc")(fname)
+							or util.path.dirname(fname)
 					end
 					server_config.settings = {
 						Lua = {
@@ -150,6 +152,10 @@ return {
 				if server_name == "ts_ls" then
 					server_config.filetypes = { "javascript", "javascriptreact", "typescript", "typescriptreact" }
 					server_config.root_dir = util.root_pattern("tsconfig.json", "package.json", ".git")
+					server_config.init_options = {
+						hostInfo = "neovim",
+						maxTsServerMemory = 8192,
+					}
 				end
 
 				if server_name == "eslint" then

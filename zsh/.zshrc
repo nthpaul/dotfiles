@@ -118,5 +118,8 @@ export PATH="/opt/homebrew/opt/openjdk/bin:$PATH"
 # ANDROID SDK
 export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home
 
-# Added by Antigravity
-export PATH="/Users/ple/.antigravity/antigravity/bin:$PATH"
+# # Added by Antigravity
+# export PATH="/Users/ple/.antigravity/antigravity/bin:$PATH"
+
+# # OpenClaw Completion
+# source <(openclaw completion --shell zsh)
