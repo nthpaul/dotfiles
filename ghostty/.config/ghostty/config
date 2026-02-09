@@ -9,7 +9,7 @@ background-blur-radius = 255
 background-opacity=1.0
 # background-opacity = 0.8
 
-font-size = 14
+font-size = 17
 font-thicken
 font-family = Hack Nerd Font Mono Regular
 font-feature = -calt, -liga, -dlig
@@ -45,3 +45,29 @@ keybind = super+shift+w=close_surface
 # keybind = global:super+g=toggle_quick_terminal
 
 keybind = super+)=inspector:toggle
+
+# Neovim tab keymaps (pass through Cmd shortcuts)
+# keybind = super+shift+bracket_left=unbind
+# keybind = super+shift+bracket_right=unbind
+# keybind = super+1=unbind
+# keybind = super+2=unbind
+# keybind = super+3=unbind
+# keybind = super+4=unbind
+# keybind = super+5=unbind
+# keybind = super+6=unbind
+# keybind = super+7=unbind
+# keybind = super+8=unbind
+# keybind = super+9=unbind
+# keybind = super+0=unbind
+# keybind = super+digit_1=unbind
+# keybind = super+digit_2=unbind
+# keybind = super+digit_3=unbind
+# keybind = super+digit_4=unbind
+# keybind = super+digit_5=unbind
+# keybind = super+digit_6=unbind
+# keybind = super+digit_7=unbind
+# keybind = super+digit_8=unbind
+# keybind = super+digit_9=unbind
+# keybind = super+digit_0=unbind
+# keybind = super+c=unbind
+# keybind = super+shift+c=unbind
