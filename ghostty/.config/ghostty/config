@@ -42,6 +42,6 @@ keybind = super+n=new_window
 keybind = super+t=new_tab
 keybind = super+shift+w=close_surface
 
-keybind = global:super+g=toggle_quick_terminal
+# keybind = global:super+g=toggle_quick_terminal
 
 keybind = super+)=inspector:toggle

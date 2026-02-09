@@ -1,28 +1,39 @@
 {
   "permissions": {
     "allow": [
-      "Shell(ls)"
+      "Shell(ls)",
+      "Shell(grep)",
+      "Shell(head)",
+      "Shell(find)",
+      "Shell(sed)",
+      "Shell(cd)",
+      "Shell(git checkout)",
+      "Shell(git add)",
+      "Shell(git commit)",
+      "Shell(docker ps)"
     ],
     "deny": []
   },
   "version": 1,
   "editor": {
-    "vimMode": false
+    "vimMode": true,
+    "defaultBehavior": "ide"
+  },
+  "display": {
+    "showLineNumbers": true
   },
   "model": {
-    "modelId": "claude-4.5-opus-high",
-    "displayModelId": "opus-4.5",
-    "displayName": "Claude 4.5 Opus",
-    "displayNameShort": "Opus 4.5",
-    "aliases": [
-      "opus-4.5"
-    ]
+    "modelId": "composer-1",
+    "displayModelId": "composer-1",
+    "displayName": "Composer 1",
+    "displayNameShort": "Composer 1",
+    "aliases": []
   },
   "hasChangedDefaultModel": true,
   "privacyCache": {
     "ghostMode": true,
     "privacyMode": 2,
-    "updatedAt": 1765684699840
+    "updatedAt": 1765565412124
   },
   "network": {
     "useHttp1ForAgent": false
