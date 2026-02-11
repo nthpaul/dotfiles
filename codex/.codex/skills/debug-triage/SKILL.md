@@ -3,7 +3,7 @@ name: debug-triage
 description: "Debug and triage failing tests, regressions, flaky behavior, or production issues with a fast repro -> isolate -> minimal failing test -> fix -> verify workflow. Use when debugging, investigating CI failures, or minimizing regression risk in any repo."
 ---
 
-# Debug Triage
+# debug-triage
 
 ## Overview
 Apply a consistent, minimal-change debugging workflow that yields a reproducible failure, a focused fix, and verification tests.

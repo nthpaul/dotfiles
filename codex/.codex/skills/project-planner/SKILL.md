@@ -3,7 +3,7 @@ name: project-planner
 description: "Discuss, scope, and design a project before implementation. Use to gather requirements, write a concise spec, identify risks, and decompose work into atomic tasks that are CI-safe and suitable for stacked PRs."
 ---
 
-# Project Planner
+# project-planner
 
 ## Overview
 Turn ambiguous ideas into a concrete spec, milestones, and atomic tasks with clear acceptance criteria.

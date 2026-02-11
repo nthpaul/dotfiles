@@ -1,0 +1,4 @@
+interface:
+  display_name: "pr-link-review"
+  short_description: "Review GitHub/Graphite PR links quickly"
+  default_prompt: "Use $pr-link-review to review this PR link and flag risks."

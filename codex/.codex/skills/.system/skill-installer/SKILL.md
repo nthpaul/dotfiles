@@ -5,7 +5,7 @@ metadata:
   short-description: Install curated skills from openai/skills or other repos
 ---
 
-# Skill Installer
+# skill-installer
 
 Helps install skills. By default these are from https://github.com/openai/skills/tree/main/skills/.curated, but users can also provide other locations. Experimental skills live in https://github.com/openai/skills/tree/main/skills/.experimental and can be installed the same way.
 

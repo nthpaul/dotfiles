@@ -3,7 +3,7 @@ name: code-review
 description: "Perform regression-focused code reviews: identify bugs, risks, missing tests, and edge cases. Use when asked to review a PR, diff, or change set in any repo."
 ---
 
-# Code Review
+# code-review
 
 ## Overview
 Review code changes with a bias toward correctness, regression risk, and test coverage.

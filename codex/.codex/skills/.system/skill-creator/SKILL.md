@@ -5,7 +5,7 @@ metadata:
   short-description: Create or update a skill
 ---
 
-# Skill Creator
+# skill-creator
 
 This skill provides guidance for creating effective skills.
 

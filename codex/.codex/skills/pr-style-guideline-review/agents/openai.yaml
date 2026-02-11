@@ -1,0 +1,4 @@
+interface:
+  display_name: "pr-style-guideline-review"
+  short_description: "Review PRs for repo coding/style compliance"
+  default_prompt: "Use $pr-style-guideline-review to review this PR against repo coding and style guidelines before merge."

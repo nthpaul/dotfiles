@@ -3,7 +3,7 @@ name: repo-command-discovery
 description: Discover test, lint, typecheck, build, and e2e commands in an unfamiliar repo. Use when commands are unknown or ambiguous, before running tests, or when CI fails and you need the right local commands. Works across Python, Node/TS, React, Nest, and mixed monorepos.
 ---
 
-# Repo Command Discovery
+# repo-command-discovery
 
 ## Overview
 Find repo-specific commands with a portable POSIX script and confirm ambiguous cases with the user.
