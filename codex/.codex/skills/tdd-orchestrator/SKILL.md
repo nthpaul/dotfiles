@@ -3,7 +3,7 @@ name: tdd-orchestrator
 description: "Orchestrate a full TDD workflow for coding tasks: plan -> spec -> tasks -> implement -> test -> review -> debug -> summarize. Use when a user wants strict TDD, regression minimization, or end-to-end delivery across code changes in any repo."
 ---
 
-# TDD Orchestrator
+# tdd-orchestrator
 
 ## Overview
 Drive a full TDD lifecycle with Red -> Green -> Refactor gates and clear status updates. Enforce tests-first and finish with a concise, risk-aware summary.

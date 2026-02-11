@@ -3,7 +3,7 @@ name: test-design
 description: "Design test plans and test cases for new features or changes, covering boundaries, error cases, and levels (unit/integration/e2e). Use when asked to write tests or create a test plan in any repo."
 ---
 
-# Test Design
+# test-design
 
 ## Overview
 Translate requirements into a compact test plan and concrete cases that minimize regression risk.

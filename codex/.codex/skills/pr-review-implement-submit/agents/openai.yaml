@@ -1,0 +1,4 @@
+interface:
+  display_name: "pr-review-implement-submit"
+  short_description: "implement selected review feedback and update pr"
+  default_prompt: "Use $pr-review-implement-submit to apply selected review comments with repo guideline compliance checks, run checks, update the current Graphite PR, and reply to addressed threads."

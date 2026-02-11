@@ -3,7 +3,7 @@ name: repo-map
 description: "Map an unfamiliar repo quickly: find entrypoints, package boundaries, build/test configs, and key modules. Use when onboarding to a repo or locating where code lives."
 ---
 
-# Repo Map
+# repo-map
 
 ## Overview
 Build a short, accurate map of a repo's structure and entrypoints to reduce time-to-context.
