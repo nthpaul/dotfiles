@@ -1,0 +1,4 @@
+interface:
+  display_name: "pr-create-submit"
+  short_description: "create top-of-stack pr and update description"
+  default_prompt: "Use $pr-create-submit to sync/restack, move to stack top, create a PR branch (including empty-commit fallback), submit with Graphite, and update the PR description from the repo template."

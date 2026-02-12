@@ -1,6 +1,6 @@
 ---
 name: pr-review-implement-submit
-description: "Implement selected PR review feedback while enforcing repository coding/style guidelines, run repository checks/formatting, update the existing PR with Graphite, and reply on addressed review threads in a requested style. Use when the user gives numbered review decisions (listen/ignore) and wants execution end-to-end without opening a new PR."
+description: "Implement selected PR review feedback while enforcing repository coding/style guidelines, run repository checks/formatting, update the existing PR code and description (using the repo PR template), and reply on addressed review threads in a requested style. Use when the user gives numbered review decisions (listen/ignore) and wants execution end-to-end without opening a new PR."
 ---
 
 # pr-review-implement-submit
@@ -48,7 +48,21 @@ yarn format
 - run `gt restack` after checks/tests complete and before submission.
 - do not restack before checks, since restack can propagate changes upstack.
 
-### 7) update the existing PR (not a new PR)
+### 7) update PR description using the repo template
+- before submission, refresh the current PR description from the repository's PR template.
+- locate template in this order:
+  - `.github/pull_request_template.md`
+  - `.github/PULL_REQUEST_TEMPLATE.md`
+  - first matching file in `.github/pull_request_template/*.md`
+- fill template sections with the actual changes from this branch:
+  - summary of implemented review points
+  - ignored/deferred points (briefly)
+  - checks/tests run and outcomes
+  - risks or follow-ups
+- update the current PR body (for example via `gh pr edit --body-file ...`).
+- if no template exists, keep a structured body with the same sections.
+
+### 8) update the existing PR (not a new PR)
 - stage only intended files.
 - use Graphite update flow:
 ```bash
@@ -58,7 +72,7 @@ export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" && nvm use >/dev/null && gt s
 ```
 - if submit fails on hooks due node version, rerun with explicit `nvm use`.
 
-### 8) reply on addressed review threads
+### 9) reply on addressed review threads
 - reply only to threads tied to selected points.
 - style defaults when requested: all lowercase, succinct, kind, acknowledging.
 - never start replies with AI-centric praise openers such as "great point", "you’re absolutely right", or similar.
@@ -68,7 +82,7 @@ export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" && nvm use >/dev/null && gt s
 - resolve addressed threads after replying.
 - leave ignored threads unresolved.
 
-### 9) final response format
+### 10) final response format
 - summarize implemented points.
 - list checks run and outcomes.
 - include PR update status.
@@ -77,6 +91,7 @@ export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" && nvm use >/dev/null && gt s
 ## Guardrails
 - guideline compliance is mandatory: do not knowingly merge style/architecture violations against repo-local rules.
 - do not create a new PR when user says update current PR.
+- do not skip PR description refresh: align body with the repo template before submit.
 - do not include unrelated staged files; verify latest commit file list.
 - keep responses to reviewers factual and short.
 - if shell interpolation can corrupt markdown in API calls, avoid backticks in inline review replies.

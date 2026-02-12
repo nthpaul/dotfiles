@@ -28,7 +28,17 @@ jq -n \
   --argjson pullRequest "$pr_number" \
   --argjson threadData "$raw_json" \
   --argjson reviewComments "$review_comments_json" '
-  ($reviewComments
+  (
+    [
+      $threadData.data.repository.pullRequest.reviewThreads.nodes[]
+      | select(.isResolved == false)
+      | .comments.nodes[]
+      | .url
+    ]
+    | unique
+  ) as $openCommentUrls
+  | ($reviewComments
+    | map(select(.html_url as $u | $openCommentUrls | index($u)))
     | map({
         key: .html_url,
         value: {
@@ -43,6 +53,13 @@ jq -n \
         }
       })
     | from_entries) as $codeLocationByUrl
+  | (
+      [
+        $threadData.data.repository.pullRequest.reviewThreads.nodes[]
+        | select(.isResolved == false)
+        | .comments.nodes[]
+      ] | length
+    ) as $openReviewCommentCount
   | {
       repository: $repository,
       pullRequest: $pullRequest,
@@ -50,7 +67,7 @@ jq -n \
         [$threadData.data.repository.pullRequest.reviewThreads.nodes[]
           | select(.isResolved == false)] | length
       ),
-      totalReviewCommentCount: ($reviewComments | length),
+      totalReviewCommentCount: $openReviewCommentCount,
       unresolvedThreads: [
         $threadData.data.repository.pullRequest.reviewThreads.nodes[]
         | select(.isResolved == false)
