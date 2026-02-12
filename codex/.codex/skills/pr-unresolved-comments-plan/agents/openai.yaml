@@ -1,4 +1,4 @@
 interface:
   display_name: "pr-unresolved-comments-plan"
   short_description: "review unresolved pr comments before coding"
-  default_prompt: "Use $pr-unresolved-comments-plan to pull unresolved review threads, propose business and code suggestions, and ask for approval before implementation."
+  default_prompt: "Use $pr-unresolved-comments-plan to pull unresolved review threads, propose business and code suggestions, ask for approval before implementation, and update the current PR description from the repo template when implementation is approved."
