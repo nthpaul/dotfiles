@@ -5,6 +5,7 @@ alias lzg='lazygit'
 alias ls='gls -lahps --author --group-directories-first --color=auto'
 # export PATH="/Users/ple/.local/bin:$PATH"
 export PATH="/Users/ple/.local/bin:$PATH"
+[ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
 
 # export KERL_CONFIGURE_OPTIONS="--with-ssl=/opt/homebrew/opt/openssl@1.1 \
 #                                --with-wx-config=/opt/homebrew/opt/wxmac@3.1/bin/wx-config \
