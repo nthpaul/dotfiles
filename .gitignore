@@ -4,3 +4,6 @@
 
 # Neovim logs
 .nvimlog
+
+# Spotatui token cache (contains access/refresh tokens)
+spotatui/.config/spotatui/.spotify_token_cache_d420a117.json
