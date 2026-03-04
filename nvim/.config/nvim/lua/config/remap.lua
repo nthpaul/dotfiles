@@ -57,3 +57,7 @@ vim.keymap.set(
 	[[:let @+ = expand('%')<CR>]],
 	{ desc = "Copy current relative filepath to clipboard" }
 )
+
+-- delete all local marks in current buffer
+vim.keymap.set("n", "<leader>md", ":delmarks ", { desc = "Delete a single mark" })
+vim.keymap.set("n", "<leader>mD", "<cmd>delmarks!<CR>", { desc = "Delete marks in current buffer" })
