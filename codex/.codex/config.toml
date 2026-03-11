@@ -1,4 +1,4 @@
-model = "gpt-5.3-codex"
+model = "gpt-5.4"
 model_reasoning_effort = "high"
 tool_output_token_limit = 25000
 web_search = "live"
@@ -49,6 +49,9 @@ trust_level = "trusted"
 trust_level = "trusted"
 
 [projects."/Users/ple/projects/submodule-workspace"]
+trust_level = "trusted"
+
+[projects."/Users/ple/projects/work-docs"]
 trust_level = "trusted"
 
 [notice]

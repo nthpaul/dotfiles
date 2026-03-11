@@ -1,5 +1,5 @@
 window-save-state = always
-theme = Vesper
+theme = light:Dayfox,dark:Vesper
 # theme = light:Github Light Default,dark:Github Dark Default
 # theme = light:Zenwritten Light,dark:Zenwritten Dark
 # theme = light:Rose Pine Dawn, dark:Rose Pine
