@@ -24,3 +24,40 @@ The assistant may run these without asking:
 - `gt log`
 - `gt up`
 - `gt down`
+
+## Linear CLI
+
+Use the `linear` CLI when working with Linear from the terminal.
+
+Available top-level commands:
+
+- `linear auth`
+- `linear issue` / `linear i`
+- `linear team` / `linear t`
+- `linear project` / `linear p`
+- `linear project-update` / `linear pu`
+- `linear cycle` / `linear cy`
+- `linear milestone` / `linear m`
+- `linear initiative` / `linear init`
+- `linear initiative-update` / `linear iu`
+- `linear label` / `linear l`
+- `linear document` / `linear docs` / `linear doc`
+- `linear config`
+- `linear completions`
+- `linear schema`
+- `linear api`
+
+Common subcommands:
+
+- `linear auth`: `login`, `logout`, `list`, `default`, `token`, `whoami`
+- `linear issue`: `id`, `list`, `title`, `start`, `view`, `url`, `describe`, `commits`, `pull-request`, `delete`, `create`, `update`, `comment`, `attach`, `relation`
+- `linear issue comment`: `list`, `add`, `update`, `delete`
+- `linear team`: `create`, `delete`, `list`, `id`, `autolinks`, `members`
+- `linear project`: `list`, `view`, `create`, `update`, `delete`
+- `linear project-update`: `create`, `list`
+- `linear cycle`: `list`, `view`
+- `linear milestone`: `list`, `view`, `create`, `update`, `delete`
+- `linear initiative`: `list`, `view`, `create`, `archive`, `update`, `unarchive`, `delete`, `add-project`, `remove-project`
+- `linear initiative-update`: `create`, `list`
+- `linear label`: `list`, `create`, `delete`
+- `linear document`: `list`, `view`, `create`, `update`, `delete`
