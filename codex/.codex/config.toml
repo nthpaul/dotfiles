@@ -54,6 +54,9 @@ trust_level = "trusted"
 [projects."/Users/ple/projects/work-docs"]
 trust_level = "trusted"
 
+[projects."/Users/ple/projects/worktree-manager"]
+trust_level = "trusted"
+
 [notice]
 hide_full_access_warning = true
 

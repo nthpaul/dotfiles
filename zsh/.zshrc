@@ -124,3 +124,8 @@ export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home
 
 # # OpenClaw Completion
 # source <(openclaw completion --shell zsh)
+
+# worktree-manager
+if [ -f "/Users/ple/projects/worktree-manager/worktree-manager.zsh" ]; then
+  source "/Users/ple/projects/worktree-manager/worktree-manager.zsh"
+fi
