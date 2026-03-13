@@ -25,6 +25,40 @@ The assistant may run these without asking:
 - `gt up`
 - `gt down`
 
+## Worktree Manager (`wt`)
+
+Use the `wt` shell function for multi-project git worktree management with tmux session integration.
+
+Current configuration:
+
+- `WT_PROJECTS_DIR=/Users/ple/projects`
+- `WT_WORKTREES_DIR=/Users/ple/projects/worktrees`
+- `WT_BASE_BRANCH=origin/main`
+- `WT_BRANCH_PREFIX=ple`
+
+Supported commands:
+
+- `wt --home`: `cd` to `/Users/ple/projects`
+- `wt --list`: list all managed worktrees, grouped by project, and show tmux session status when present
+- `wt --rm [--force] <project> <worktree>`: remove a worktree, delete its branch when possible, and kill the associated tmux session
+- `wt <project> <worktree>`: open an existing worktree or create one, then attach or switch to tmux session `wt/<project>/<worktree>`
+- `wt <project> <worktree> <command...>`: run a command directly inside the worktree without tmux
+
+Branch and worktree resolution for `wt <project> <worktree>`:
+
+- If `/Users/ple/projects/worktrees/<project>/<worktree>` already exists, reuse it
+- If the branch is already checked out in another worktree, reuse that path
+- Otherwise fetch `origin`
+- If `origin/<worktree>` exists, create a worktree tracking that remote branch
+- Otherwise create a new branch `ple/<worktree>` from `origin/main`
+
+Behavior notes:
+
+- Worktree directory names replace `/` in the requested worktree name with `-`
+- If `.envrc` exists in a newly created worktree and `direnv` is installed, run `direnv allow`
+- New tmux sessions may run per-project post-create commands from `worktree-manager.local.zsh`
+- `wt` is a zsh shell function loaded from `/Users/ple/projects/worktree-manager/worktree-manager.zsh`
+
 ## Linear CLI
 
 Use the `linear` CLI when working with Linear from the terminal.
