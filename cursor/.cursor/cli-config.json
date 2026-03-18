@@ -20,20 +20,38 @@
     "defaultBehavior": "ide"
   },
   "display": {
-    "showLineNumbers": true
+    "showLineNumbers": true,
+    "showThinkingBlocks": true,
+    "showStatusIndicators": true
   },
   "model": {
-    "modelId": "composer-1",
-    "displayModelId": "composer-1",
-    "displayName": "Composer 1",
-    "displayNameShort": "Composer 1",
-    "aliases": []
+    "modelId": "gpt-5.4-high",
+    "displayModelId": "gpt-5.4-high",
+    "displayName": "GPT-5.4 High",
+    "displayNameShort": "GPT-5.4 High",
+    "aliases": [],
+    "maxMode": false
   },
   "hasChangedDefaultModel": true,
+  "maxMode": false,
+  "modelParameters": {
+    "claude-4.6-opus-high-thinking": [],
+    "gpt-5.4-high": []
+  },
+  "selectedModel": {
+    "modelId": "gpt-5.4-high",
+    "parameters": []
+  },
   "privacyCache": {
     "ghostMode": true,
     "privacyMode": 2,
-    "updatedAt": 1765565412124
+    "updatedAt": 1773794342902
+  },
+  "authInfo": {
+    "email": "ple@traba.work",
+    "displayName": "Paul Le",
+    "userId": 305900939,
+    "authId": "google-oauth2|user_01KAV3J7K8HE9GASSE6KN9ZTPQ"
   },
   "network": {
     "useHttp1ForAgent": false
