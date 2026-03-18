@@ -6,4 +6,8 @@
 .nvimlog
 
 # Spotatui token cache (contains access/refresh tokens)
-spotatui/.config/spotatui/.spotify_token_cache_d420a117.json
+spotatui/.config/spotatui/.spotify_token_cache*.json
+
+# Spotatui local credentials
+spotatui/.config/spotatui/client.yml
+spotatui/.config/spotatui/streaming_cache/
