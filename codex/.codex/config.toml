@@ -8,6 +8,7 @@ web_search = "live"
 # with tool_output_token_limit = 273000 - (25000 + 15000) = 233000
 model_auto_compact_token_limit = 233000
 personality = "pragmatic"
+approvals_reviewer = "user"
 
 [projects."/Users/ple/projects/traba/traba-server-node"]
 trust_level = "trusted"
