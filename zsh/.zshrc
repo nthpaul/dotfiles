@@ -1,6 +1,7 @@
 # ALIASES
 alias vim='nvim'
 alias lzg='lazygit'
+alias claude='claude --dangerously-skip-permissions'
 
 alias ls='gls -lahps --author --group-directories-first --color=auto'
 # export PATH="/Users/ple/.local/bin:$PATH"
