@@ -8,13 +8,19 @@
   "githubPullRequests.queries": [
     {
       "label": "Open PRs minus dependency PRs",
-      "query": "is:open is:pr -label:dependencies"
+      "query": "is:open is:pr -label:dependencies",
     },
     {
       "label": "Open P0 PRs",
-      "query": "is:pr is:open label:P0"
-    }
+      "query": "is:pr is:open label:P0",
+    },
   ],
   "datadog.connection.notification.suppressSignInNotification": true,
-  "workbench.colorTheme": "Vesper"
+  "workbench.colorTheme": "Vesper",
+  "github.copilot.enable": {
+    "*": false,
+    "plaintext": false,
+    "markdown": false,
+    "scminput": false,
+  },
 }
