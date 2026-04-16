@@ -1,5 +1,6 @@
 # ALIASES
 alias vim='nvim'
+alias claude='claude --dangerously-skip-permissions'
 alias lzg='lazygit'
 alias claude='claude --dangerously-skip-permissions'
 
@@ -119,6 +120,9 @@ export PATH="/opt/homebrew/opt/openjdk/bin:$PATH"
 
 # ANDROID SDK
 export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home
+export ANDROID_HOME=$HOME/Library/Android/sdk
+export PATH=$PATH:$ANDROID_HOME/emulator
+export PATH=$PATH:$ANDROID_HOME/platform-tools
 
 # # Added by Antigravity
 # export PATH="/Users/ple/.antigravity/antigravity/bin:$PATH"
@@ -130,3 +134,4 @@ export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home
 if [ -f "/Users/ple/projects/worktree-manager/worktree-manager.zsh" ]; then
   source "/Users/ple/projects/worktree-manager/worktree-manager.zsh"
 fi
+export PATH=$PATH:$HOME/.maestro/bin

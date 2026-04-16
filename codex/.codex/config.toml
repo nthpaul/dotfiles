@@ -9,6 +9,7 @@ web_search = "live"
 model_auto_compact_token_limit = 233000
 personality = "pragmatic"
 approvals_reviewer = "user"
+plan_mode_reasoning_effort = "high"
 
 [projects."/Users/ple/projects/traba/traba-server-node"]
 trust_level = "trusted"
@@ -65,3 +66,12 @@ hide_full_access_warning = true
 "gpt-5.1-codex" = "gpt-5.1-codex-max"
 "gpt-5.1-codex-max" = "gpt-5.2-codex"
 "gpt-5.2" = "gpt-5.2-codex"
+
+[mcp_servers.linear]
+url = "https://mcp.linear.app/mcp"
+
+[mcp_servers.figma]
+url = "https://mcp.figma.com/mcp"
+
+[plugins."github@openai-curated"]
+enabled = true

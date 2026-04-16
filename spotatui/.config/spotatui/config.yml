@@ -15,6 +15,7 @@ keybindings:
   seek_forwards: '>'
   next_track: n
   previous_track: p
+  force_previous_track: P
   help: '?'
   shuffle: ctrl-s
   repeat: ctrl-r
@@ -25,8 +26,10 @@ keybindings:
   audio_analysis: v
   basic_view: B
   add_item_to_queue: z
+  show_queue: Q
   open_settings: '0'
   save_settings: alt-s
+  listening_party: ctrl-p
 behavior:
   seek_milliseconds: 5000
   volume_increment: 10
@@ -38,6 +41,10 @@ behavior:
   enable_global_song_count: false
   enable_discord_rpc: true
   discord_rpc_client_id: null
+  enable_announcements: true
+  announcement_feed_url: null
+  seen_announcement_ids:
+  - 2026-02-27-major-refactor-complete
   shuffle_enabled: false
   liked_icon: ♥
   shuffle_icon: 🔀
@@ -47,6 +54,17 @@ behavior:
   paused_icon: ⏸
   set_window_title: true
   visualizer_style: Equalizer
+  dismissed_announcements: []
+  relay_server_url: wss://spotatui-party.spotatui.workers.dev/ws
+  stop_after_current_track: false
+  sidebar_width_percent: 20
+  playbar_height_rows: 6
+  library_height_percent: 30
+  startup_behavior: continue
+  disable_auto_update: false
+  auto_update_delay: '0'
+  draw_cover_art: true
+  draw_cover_art_forced: false
 theme:
   active: 255, 199, 153
   banner: 255, 199, 153
