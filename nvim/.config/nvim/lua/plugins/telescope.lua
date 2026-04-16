@@ -23,14 +23,22 @@ return {
 						["<C-j>"] = actions.move_selection_next,
 					},
 				},
-				extensions = {
-					themes = {
-						enable_preview = true,
-						previewer = true,
-						persist = {
-							enabled = true,
-							path = vim.fn.stdpath("config") .. "/lua/plugins/theme.lua",
-						},
+			},
+			pickers = {
+				find_files = {
+					hidden = true,
+				},
+				live_grep = {
+					additional_args = { "--hidden" },
+				},
+			},
+			extensions = {
+				themes = {
+					enable_preview = true,
+					previewer = true,
+					persist = {
+						enabled = true,
+						path = vim.fn.stdpath("config") .. "/lua/plugins/theme.lua",
 					},
 				},
 			},

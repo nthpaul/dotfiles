@@ -166,9 +166,9 @@ return {
 						".eslintrc.cjs",
 						".eslintrc.json",
 						".eslintrc.yml",
-						".eslintrc.yaml",
-						"package.json",
-						".git"
+						".eslintrc.yaml"
+						-- "package.json",
+						-- ".git"
 					)
 				end
 
