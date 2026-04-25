@@ -9,7 +9,7 @@ background-blur-radius = 255
 background-opacity=1.0
 # background-opacity = 0.8
 
-font-size = 17
+font-size = 14
 font-thicken
 font-family = Hack Nerd Font Mono Regular
 font-feature = -calt, -liga, -dlig
