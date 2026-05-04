@@ -1,4 +1,4 @@
-model = "gpt-5.4"
+model = "gpt-5.5"
 model_reasoning_effort = "high"
 tool_output_token_limit = 25000
 web_search = "live"
@@ -75,3 +75,14 @@ url = "https://mcp.figma.com/mcp"
 
 [plugins."github@openai-curated"]
 enabled = true
+
+[plugins."browser-use@openai-bundled"]
+enabled = true
+
+[tui.model_availability_nux]
+"gpt-5.5" = 1
+
+[marketplaces.openai-bundled]
+last_updated = "2026-05-04T14:40:18Z"
+source_type = "local"
+source = "/Users/ple/.codex/.tmp/bundled-marketplaces/openai-bundled"
