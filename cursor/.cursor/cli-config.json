@@ -88,7 +88,7 @@
   "privacyCache": {
     "ghostMode": true,
     "privacyMode": 2,
-    "updatedAt": 1778013280536
+    "updatedAt": 1778166024378
   },
   "serverConfigCache": {
     "backendUrl": "https://api2.cursor.sh",
@@ -99,7 +99,7 @@
     },
     "cliSandboxDefaultEnabled": false,
     "serverHttp2Config": 0,
-    "updatedAt": 1778013280480
+    "updatedAt": 1778165602564
   },
   "authInfo": {
     "email": "ple@traba.work",
