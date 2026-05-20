@@ -22,6 +22,9 @@ return {
 				heex = { "mix" },
 				yaml = { "prettier" },
 				json = { "prettier" },
+				rust = { "rustfmt" },
+				c = { "clang_format" },
+				cpp = { "clang_format" },
 			},
 			formatters = {
 				prettier = {

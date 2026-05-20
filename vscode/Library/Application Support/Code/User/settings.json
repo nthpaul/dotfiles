@@ -23,4 +23,5 @@
     "markdown": false,
     "scminput": false,
   },
+  "chat.disableAIFeatures": true,
 }

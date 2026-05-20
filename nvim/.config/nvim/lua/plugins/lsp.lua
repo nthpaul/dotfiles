@@ -9,38 +9,20 @@ return {
 		"hrsh7th/cmp-nvim-lsp",
 		"hrsh7th/cmp-buffer",
 		"hrsh7th/cmp-path",
-		-- "catgoose/nvim-colorizer.lua",
-		-- "roobert/tailwindcss-colorizer-cmp.nvim",
 	},
 
 	config = function()
-		-- COMPLETIONS SETUP
+		vim.diagnostic.config({
+			virtual_text = { prefix = "●" },
+			signs = true,
+			underline = true,
+			update_in_insert = false,
+			severity_sort = true,
+			float = { border = "rounded", source = "if_many" },
+		})
+
 		local cmp = require("cmp")
-		-- local colorizer = require("colorizer")
-		-- local tailwindcss_colorizer = require("tailwindcss-colorizer-cmp")
-		--
-		-- colorizer.setup({
-		-- 	user_default_options = {
-		-- 		tailwind = true,
-		-- 	},
-		-- 	filetypes = {
-		-- 		"tsx",
-		-- 		"js",
-		-- 		"jsx",
-		-- 	},
-		-- })
 
-		-- makes tailwind colors show up in completion menu
-		-- tailwindcss_colorizer.setup({
-		-- 	color_square_width = 2,
-		-- })
-		-- vim.api.nvim_create_autocmd({ "BufReadPost", "BufNewFile" }, {
-		-- 	callback = function()
-		-- 		vim.cmd("ColorizerAttachToBuffer")
-		-- 	end,
-		-- })
-
-		-- setup completions keybindings
 		cmp.setup({
 			snippet = {
 				expand = function(args)
@@ -50,7 +32,7 @@ return {
 				end,
 			},
 			experimental = {
-				ghost_text = false, -- predictive ghost completions
+				ghost_text = false,
 			},
 			mapping = {
 				["<C-n>"] = cmp.mapping.select_next_item(),
@@ -65,15 +47,9 @@ return {
 				{ name = "path" },
 			},
 		})
-		-- extend completions with lsp capabilities
-		local cmp_lsp = require("cmp_nvim_lsp")
-		local capabilities = vim.tbl_deep_extend(
-			"force",
-			vim.lsp.protocol.make_client_capabilities(),
-			cmp_lsp.default_capabilities() -- let's lsp know that nvim is capable of handling completion requests
-		)
 
-		-- LSP SETUP
+		local capabilities = require("cmp_nvim_lsp").default_capabilities()
+
 		require("mason").setup()
 		require("mason-lspconfig").setup({
 			ensure_installed = {
@@ -86,6 +62,7 @@ return {
 				"elixirls",
 				"rust_analyzer",
 				"pyright",
+				"clangd",
 			},
 			automatic_installation = true,
 		})
@@ -97,12 +74,14 @@ return {
 				"isort",
 				"black",
 				"pylint",
-				"clangd",
-				-- { "eslint_d", version = "13.1.2" },
-				"eslint",
-				"trivy",
+				"clang-format",
 			},
 		})
+
+		local ts_inlay_hints = {
+			includeInlayParameterNameHints = "all",
+			includeInlayEnumMemberValueHints = true,
+		}
 
 		require("mason-lspconfig").setup_handlers({
 			function(server_name)
@@ -122,15 +101,17 @@ return {
 								version = "LuaJIT",
 							},
 							diagnostics = {
-								globals = { "vim" }, -- recognize `vim` as a global
+								globals = { "vim" },
 							},
 							workspace = {
 								checkThirdParty = false,
-								library = vim.api.nvim_get_runtime_file("", true), -- finds files in runtime dirs in runtimepath order
+								library = vim.api.nvim_get_runtime_file("", true),
 							},
 							telemetry = {
 								enable = false,
 							},
+							hint = { enable = true },
+							completion = { callSnippet = "Replace" },
 						},
 					}
 				end
@@ -144,7 +125,7 @@ return {
 							fetchDeps = true,
 							enableTestLenses = true,
 							workingDirectory = { mode = "multi_root" },
-							format = true,
+							format = false,
 						},
 					}
 				end
@@ -156,35 +137,91 @@ return {
 						hostInfo = "neovim",
 						maxTsServerMemory = 8192,
 					}
+					server_config.settings = {
+						typescript = {
+							inlayHints = ts_inlay_hints,
+							preferences = { importModuleSpecifierPreference = "non-relative" },
+						},
+						javascript = {
+							inlayHints = ts_inlay_hints,
+							preferences = { importModuleSpecifierPreference = "non-relative" },
+						},
+					}
 				end
 
 				if server_name == "eslint" then
 					server_config.filetypes = { "javascript", "javascriptreact", "typescript", "typescriptreact" }
 					server_config.root_dir = util.root_pattern(
+						"eslint.config.js",
+						"eslint.config.mjs",
+						"eslint.config.cjs",
 						".eslintrc",
 						".eslintrc.js",
 						".eslintrc.cjs",
 						".eslintrc.json",
 						".eslintrc.yml",
-						".eslintrc.yaml"
-						-- "package.json",
-						-- ".git"
+						".eslintrc.yaml",
+						"package.json"
 					)
+				end
+
+				if server_name == "rust_analyzer" then
+					server_config.settings = {
+						["rust-analyzer"] = {
+							checkOnSave = { command = "clippy" },
+							cargo = { allFeatures = true },
+							inlayHints = {
+								enable = true,
+								parameterHints = { enable = true },
+								typeHints = { enable = true },
+							},
+						},
+					}
+				end
+
+				if server_name == "pyright" then
+					server_config.settings = {
+						python = {
+							analysis = {
+								typeCheckingMode = "basic",
+								autoSearchPaths = true,
+								useLibraryCodeForTypes = true,
+							},
+						},
+					}
+				end
+
+				if server_name == "clangd" then
+					server_config.filetypes = { "c", "cpp", "objc", "objcpp" }
+					server_config.cmd = {
+						"clangd",
+						"--background-index",
+						"--clang-tidy",
+						"--header-insertion=iwyu",
+					}
+					server_config.root_dir = util.root_pattern(
+						"compile_commands.json",
+						"compile_flags.txt",
+						".clangd",
+						"CMakeLists.txt",
+						"Makefile",
+						".git"
+					)
+					server_config.init_options = {
+						clangdFileStatus = true,
+					}
 				end
 
 				require("lspconfig")[server_name].setup(server_config)
 			end,
 		})
 
-		-- local buffer mappings for when lsp server attaches
 		vim.api.nvim_create_autocmd("LspAttach", {
 			group = vim.api.nvim_create_augroup("keymaps_on_lsp_attach", {}),
 			callback = function(event)
-				-- print("LSP attached to buffer: " .. event.buf) -- to debug lsp
-				-- check `:help vim.lsp.*` for docs on any of the below functions
+				local client = vim.lsp.get_client_by_id(event.data.client_id)
 				local opts = { buffer = event.buf, silent = true }
 
-				-- keymaps
 				opts.desc = "Show LSP references"
 				vim.keymap.set("n", "gr", "<CMD>Telescope lsp_references<CR>", opts)
 
@@ -197,12 +234,11 @@ return {
 				opts.desc = "Go to implementations"
 				vim.keymap.set("n", "gi", "<CMD>Telescope lsp_implementations<CR>", opts)
 
-				-- opts.desc = "Go to type definition"
-				-- vim.keymap.set("n", "gt", "<CMD>Telescope lsp_type_definitions<CR>", opts)
+				opts.desc = "Go to type definition"
+				vim.keymap.set("n", "gt", "<CMD>Telescope lsp_type_definitions<CR>", opts)
 
-				-- opts.desc = "See all symbols in your rtp"
-				-- vim.keymap.set("n", "<Leader>f-", "<CMD>Telescope symbols<CR>", opts)
-
+				opts.desc = "Rename symbol"
+				vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, opts)
 				opts.desc = "Rename all instances of the referenced object in the current buffer"
 				vim.keymap.set("n", "<leader>prn", vim.lsp.buf.rename, opts)
 
@@ -211,17 +247,18 @@ return {
 					vim.lsp.buf.code_action()
 				end, opts)
 
-				-- PROJECT DIAGNOSTICS
-				-- error diagnostics in current buffer
 				opts.desc = "Go to next diagnostic"
 				vim.keymap.set("n", "[d", function()
 					vim.diagnostic.goto_next()
 				end, opts)
 
-				opts.desc = "Go to prev diagostic"
+				opts.desc = "Go to prev diagnostic"
 				vim.keymap.set("n", "]d", function()
 					vim.diagnostic.goto_prev()
 				end, opts)
+
+				opts.desc = "Show diagnostic float"
+				vim.keymap.set("n", "<leader>e", vim.diagnostic.open_float, opts)
 
 				opts.desc = "Show current buffer diagnostics"
 				vim.keymap.set("n", "<leader>fd", "<CMD>Telescope diagnostics bufnr=0<CR>", opts)
@@ -239,9 +276,34 @@ return {
 				end, opts)
 
 				opts.desc = "Show function signature"
+				vim.keymap.set("n", "gs", vim.lsp.buf.signature_help, opts)
 				vim.keymap.set("i", "<C-h>", function()
 					vim.lsp.buf.signature_help()
 				end, opts)
+
+				if not client then
+					return
+				end
+
+				if vim.lsp.inlay_hint and client.supports_method("textDocument/inlayHint") then
+					vim.lsp.inlay_hint.enable(true, { bufnr = event.buf })
+				end
+
+				if client.supports_method("textDocument/documentHighlight") then
+					local highlight_group = vim.api.nvim_create_augroup("lsp_document_highlight_" .. event.buf, {
+						clear = false,
+					})
+					vim.api.nvim_create_autocmd({ "CursorHold", "CursorHoldI" }, {
+						buffer = event.buf,
+						group = highlight_group,
+						callback = vim.lsp.buf.document_highlight,
+					})
+					vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {
+						buffer = event.buf,
+						group = highlight_group,
+						callback = vim.lsp.buf.clear_references,
+					})
+				end
 			end,
 		})
 	end,
