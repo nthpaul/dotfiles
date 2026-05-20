@@ -47,30 +47,39 @@ return {
 		end,
 	},
 
-	-- {
-	-- 	"augmentcode/augment.vim",
-	-- 	config = function()
-	-- 		vim.keymap.set("n", "<leader>;", ":Augment chat-toggle<CR>")
-	-- 		vim.keymap.set("n", "<leader>:", ":Augment chat<CR>")
-	-- 		vim.keymap.set("n", "<leader>'", ":Augment chat-new<CR>")
-	-- 	end,
-	-- },
-	-- {
-	-- 	"xTacobaco/cursor-agent.nvim",
-	-- 	config = function()
-	-- 		vim.keymap.set("n", "<leader>aa", ":CursorAgent<CR>", { desc = "Cursor Agent: Toggle terminal" })
-	-- 		vim.keymap.set("v", "<leader>as", ":CursorAgentSelection<CR>", { desc = "Cursor Agent: Send selection" })
-	-- 		vim.keymap.set("n", "<leader>ab", ":CursorAgentBuffer<CR>", { desc = "Cursor Agent: Send buffer" })
-	-- 	end,
-	-- },
-	-- {
-	-- 	"github/copilot.vim",
-	-- 	config = function()
-	-- 		vim.keymap.set("n", "<leader>aa", ":CursorAgent<CR>", { desc = "Cursor Agent: Toggle terminal" })
-	-- 		vim.keymap.set("v", "<leader>as", ":CursorAgentSelection<CR>", { desc = "Cursor Agent: Send selection" })
-	-- 		vim.keymap.set("n", "<leader>ab", ":CursorAgentBuffer<CR>", { desc = "Cursor Agent: Send buffer" })
-	-- 	end,
-	-- },
+	{
+		"augmentcode/augment.vim",
+		config = function()
+			vim.keymap.set("n", "<leader>;", ":Augment chat-toggle<CR>")
+			vim.keymap.set("n", "<leader>:", ":Augment chat<CR>")
+			vim.keymap.set("n", "<leader>'", ":Augment chat-new<CR>")
+		end,
+	},
+	{
+		"aug6th/cursoragent.nvim",
+		dependencies = {
+			"nvim-lua/plenary.nvim",
+			{ "folke/snacks.nvim", opts = { terminal = {} } },
+		},
+		config = function()
+			require("cursoragent").setup({
+				terminal = {
+					split_side = "right",
+					split_width_percentage = 0.4,
+					provider = "auto",
+					git_repo_cwd = true,
+				},
+				track_selection = true,
+			})
+
+			-- Quick questions: ask mode + MCP @-mentions (no manual file paste).
+			vim.keymap.set("n", "<leader>cq", ":CursorAgentAsk<CR>", { desc = "Cursor: ask (quick question)" })
+			vim.keymap.set("n", "<leader>ct", ":CursorAgent<CR>", { desc = "Cursor: toggle agent terminal" })
+			vim.keymap.set("n", "<leader>cb", ":CursorAgentBuffer<CR>", { desc = "Cursor: ask about current buffer" })
+			vim.keymap.set("v", "<leader>cs", ":CursorAgentSelection<CR>", { desc = "Cursor: ask about selection" })
+			vim.keymap.set("n", "<leader>cr", ":CursorAgentResume<CR>", { desc = "Cursor: resume last chat" })
+		end,
+	},
 	{
 		"github/copilot.vim",
 		config = function()

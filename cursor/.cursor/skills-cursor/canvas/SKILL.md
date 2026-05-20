@@ -1,17 +1,6 @@
 ---
 name: canvas
-description: >-
-  A Cursor Canvas is a live React app that the user can open beside the chat.
-  You MUST use a canvas when the agent produces a standalone analytical artifact
-  — quantitative analyses, billing investigations, security audits, architecture
-  reviews, data-heavy content, timelines, charts, tables, interactive
-  explorations, repeatable tools, or any response that benefits from visual
-  layout. Especially prefer a canvas when presenting results from MCP tools
-  (Datadog, Databricks, Linear, Sentry, Slack, etc.) where the data is the
-  deliverable — render it in a rich canvas rather than dumping it into a
-  markdown table or code block. If you catch yourself about to write a markdown
-  table, stop and use a canvas instead. You MUST also read this skill whenever
-  you create, edit, or debug any .canvas.tsx file.
+description: ''
 metadata:
   surfaces:
     - ide
@@ -50,6 +39,14 @@ The trigger is **user intent**, not response shape. Ask: would the user benefit 
 - Import **only** from `cursor/canvas`. No relative imports, no npm packages, no Node built-ins.
 - Default-export the top-level component.
 - Embed all data inline. **No `fetch()`, no network calls.**
+
+**Never render empty states.** A canvas exists to show real content. If a section, chart, table, or component has no data to display, **omit it** — do not render it with placeholder text ("Add header here", "TODO", "Example"), a "No data" message, an empty array, zeroed rows, or an empty chart frame. If the entire canvas would be empty because you don't have the underlying data, do not produce a canvas — tell the user what's missing and ask for it instead.
+
+**Label every plot.** Charts and tables must be self-describing — a reader looking at the canvas alone should know exactly what they're seeing. For every plot include:
+- A title naming the **specific metric** (not "Metrics" — "API error rate by service").
+- **Axis labels with units** on both axes (e.g. "Date", "Latency (ms)").
+- A **legend** when more than one series is shown, with the exact series names from the source data.
+- The **source and time range** in a small caption (e.g. "Source: Datadog · last 7 days"). If a value is a transformation (mean, p95, normalized, smoothed), say so in the label.
 
 **Component discovery:** prefer built-in `cursor/canvas` components over hand-rolled markup. The full public surface (components, hooks, prop types, tokens) is declared in `~/.cursor/skills-cursor/canvas/sdk/index.d.ts` and its sibling `.d.ts` files — read them when you need exact exports, prop shapes, or hook signatures rather than guessing. Referencing an export that does not exist is the most common runtime error.
 
