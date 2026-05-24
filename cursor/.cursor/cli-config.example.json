@@ -1,0 +1,42 @@
+{
+  "permissions": {
+    "allow": [
+      "Shell(ls)",
+      "Shell(grep)",
+      "Shell(head)",
+      "Shell(find)",
+      "Shell(sed)",
+      "Shell(cd)",
+      "Shell(git checkout)",
+      "Shell(git add)",
+      "Shell(git commit)",
+      "Shell(docker ps)"
+    ],
+    "deny": []
+  },
+  "version": 1,
+  "editor": {
+    "vimMode": true,
+    "defaultBehavior": "ide"
+  },
+  "display": {
+    "showLineNumbers": true,
+    "showThinkingBlocks": true,
+    "showStatusIndicators": true
+  },
+  "notifications": true,
+  "rewind": false,
+  "suggestNextPrompt": false,
+  "network": {
+    "useHttp1ForAgent": false
+  },
+  "approvalMode": "unrestricted",
+  "sandbox": {
+    "mode": "disabled",
+    "networkAccess": "user_config_with_defaults"
+  },
+  "attribution": {
+    "attributeCommitsToAgent": true,
+    "attributePRsToAgent": true
+  }
+}
