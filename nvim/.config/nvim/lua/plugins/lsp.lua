@@ -83,18 +83,52 @@ return {
 			includeInlayEnumMemberValueHints = true,
 		}
 
+		local util = require("lspconfig.util")
+
+		local function strict_root(...)
+			local markers = { ... }
+			return function(fname)
+				return util.root_pattern(unpack(markers))(fname)
+			end
+		end
+
+		local function web_project_root(fname)
+			return strict_root(
+				"tsconfig.json",
+				"jsconfig.json",
+				"tailwind.config.js",
+				"tailwind.config.ts",
+				"tailwind.config.mjs",
+				"tailwind.config.cjs"
+			)(fname)
+		end
+
+		local function oxlint_cmd(dispatchers, config)
+			local cmd = "oxlint"
+			if config.root_dir then
+				local local_cmd = config.root_dir .. "/node_modules/.bin/oxlint"
+				if vim.fn.executable(local_cmd) == 1 then
+					cmd = local_cmd
+				end
+			end
+			return vim.lsp.rpc.start({ cmd, "--lsp" }, dispatchers)
+		end
+
+		local oxlint_root_dir = strict_root(
+			".oxlintrc.json",
+			"oxlint.config.ts",
+			"oxlint.config.js",
+			"oxlint.config.mjs"
+		)
+
 		require("mason-lspconfig").setup_handlers({
 			function(server_name)
-				local util = require("lspconfig.util")
 				local server_config = {
 					capabilities = capabilities,
 				}
 
 				if server_name == "lua_ls" then
-					server_config.root_dir = function(fname)
-						return util.root_pattern(".git", ".luarc.json", ".luacheckrc")(fname)
-							or util.path.dirname(fname)
-					end
+					server_config.root_dir = strict_root(".luarc.json", ".luacheckrc", ".git")
 					server_config.settings = {
 						Lua = {
 							runtime = {
@@ -116,9 +150,35 @@ return {
 					}
 				end
 
+				if server_name == "html" then
+					server_config.root_dir = web_project_root
+				end
+
+				if server_name == "cssls" then
+					server_config.root_dir = function(fname)
+						return strict_root(
+							"postcss.config.js",
+							"postcss.config.ts",
+							"postcss.config.mjs",
+							"postcss.config.cjs",
+							".stylelintrc",
+							".stylelintrc.json"
+						)(fname) or web_project_root(fname)
+					end
+				end
+
+				if server_name == "tailwindcss" then
+					server_config.root_dir = strict_root(
+						"tailwind.config.js",
+						"tailwind.config.ts",
+						"tailwind.config.mjs",
+						"tailwind.config.cjs"
+					)
+				end
+
 				if server_name == "elixirls" then
 					server_config.filetypes = { "elixir", "eelixir", "heex", "surface" }
-					server_config.root_dir = util.root_pattern("mix.exs", ".git")
+					server_config.root_dir = strict_root("mix.exs")
 					server_config.settings = {
 						elixirLS = {
 							dialyzerEnabled = true,
@@ -132,7 +192,7 @@ return {
 
 				if server_name == "ts_ls" then
 					server_config.filetypes = { "javascript", "javascriptreact", "typescript", "typescriptreact" }
-					server_config.root_dir = util.root_pattern("tsconfig.json", "package.json", ".git")
+					server_config.root_dir = strict_root("tsconfig.json", "jsconfig.json")
 					server_config.init_options = {
 						hostInfo = "neovim",
 						maxTsServerMemory = 8192,
@@ -151,7 +211,7 @@ return {
 
 				if server_name == "eslint" then
 					server_config.filetypes = { "javascript", "javascriptreact", "typescript", "typescriptreact" }
-					server_config.root_dir = util.root_pattern(
+					server_config.root_dir = strict_root(
 						"eslint.config.js",
 						"eslint.config.mjs",
 						"eslint.config.cjs",
@@ -160,12 +220,12 @@ return {
 						".eslintrc.cjs",
 						".eslintrc.json",
 						".eslintrc.yml",
-						".eslintrc.yaml",
-						"package.json"
+						".eslintrc.yaml"
 					)
 				end
 
 				if server_name == "rust_analyzer" then
+					server_config.root_dir = strict_root("Cargo.toml")
 					server_config.settings = {
 						["rust-analyzer"] = {
 							checkOnSave = { command = "clippy" },
@@ -180,6 +240,14 @@ return {
 				end
 
 				if server_name == "pyright" then
+					server_config.root_dir = strict_root(
+						"pyproject.toml",
+						"pyrightconfig.json",
+						"setup.py",
+						"setup.cfg",
+						"requirements.txt",
+						"Pipfile"
+					)
 					server_config.settings = {
 						python = {
 							analysis = {
@@ -199,13 +267,12 @@ return {
 						"--clang-tidy",
 						"--header-insertion=iwyu",
 					}
-					server_config.root_dir = util.root_pattern(
+					server_config.root_dir = strict_root(
 						"compile_commands.json",
 						"compile_flags.txt",
 						".clangd",
 						"CMakeLists.txt",
-						"Makefile",
-						".git"
+						"Makefile"
 					)
 					server_config.init_options = {
 						clangdFileStatus = true,
@@ -215,6 +282,24 @@ return {
 				require("lspconfig")[server_name].setup(server_config)
 			end,
 		})
+
+		local oxlint_config = {
+			capabilities = capabilities,
+			cmd = oxlint_cmd,
+			root_dir = oxlint_root_dir,
+			init_options = {
+				settings = {
+					typeAware = true,
+				},
+			},
+		}
+
+		if vim.lsp.config then
+			vim.lsp.config("oxlint", oxlint_config)
+			vim.lsp.enable("oxlint")
+		else
+			require("lspconfig").oxlint.setup(oxlint_config)
+		end
 
 		vim.api.nvim_create_autocmd("LspAttach", {
 			group = vim.api.nvim_create_augroup("keymaps_on_lsp_attach", {}),
