@@ -1,5 +1,5 @@
 model = "gpt-5.5"
-model_reasoning_effort = "high"
+model_reasoning_effort = "low"
 tool_output_token_limit = 25000
 web_search = "live"
 
@@ -10,6 +10,8 @@ model_auto_compact_token_limit = 233000
 personality = "pragmatic"
 approvals_reviewer = "user"
 plan_mode_reasoning_effort = "high"
+
+notify = ["/Users/ple/.codex/computer-use/Codex Computer Use.app/Contents/SharedSupport/SkyComputerUseClient.app/Contents/MacOS/SkyComputerUseClient", "turn-ended"]
 
 [projects."/Users/ple/projects/traba/traba-server-node"]
 trust_level = "trusted"
@@ -59,6 +61,12 @@ trust_level = "trusted"
 [projects."/Users/ple/projects/worktree-manager"]
 trust_level = "trusted"
 
+[projects."/Users/ple/Documents/Codex/2026-05-29/hey"]
+trust_level = "trusted"
+
+[projects."/Users/ple/.hermes"]
+trust_level = "trusted"
+
 [notice]
 hide_full_access_warning = true
 
@@ -72,6 +80,23 @@ url = "https://mcp.linear.app/mcp"
 
 [mcp_servers.figma]
 url = "https://mcp.figma.com/mcp"
+
+[mcp_servers.node_repl]
+args = []
+command = "/Applications/Codex.app/Contents/Resources/node_repl"
+startup_timeout_sec = 120
+
+[mcp_servers.node_repl.env]
+NODE_REPL_NATIVE_PIPE_CONNECT_TIMEOUT_MS = "1000"
+NODE_REPL_NODE_MODULE_DIRS = ""
+NODE_REPL_NODE_PATH = "/Applications/Codex.app/Contents/Resources/node"
+NODE_REPL_TRUSTED_CODE_PATHS = "/Users/ple/.codex"
+CODEX_HOME = "/Users/ple/.codex"
+NODE_REPL_TRUSTED_BROWSER_CLIENT_SHA256S = "496c7b3cb95b4bc20cff49b513150606e0da0000c92bf752206bee5a6c248423"
+BROWSER_USE_AVAILABLE_BACKENDS = "chrome,iab"
+BROWSER_USE_MARKETPLACE_NAME = "openai-bundled"
+NODE_REPL_UNTRUSTED_ENV_ALLOWLIST = "BROWSER_USE_MARKETPLACE_NAME"
+CODEX_CLI_PATH = "/Applications/Codex.app/Contents/Resources/codex"
 
 [plugins."github@openai-curated"]
 enabled = true
@@ -88,11 +113,14 @@ enabled = true
 [plugins."browser-use@openai-bundled"]
 enabled = true
 
+[plugins."browser@openai-bundled"]
+enabled = true
+
 [tui.model_availability_nux]
-"gpt-5.5" = 1
+"gpt-5.5" = 3
 
 [marketplaces.openai-bundled]
-last_updated = "2026-05-08T13:35:12Z"
+last_updated = "2026-05-30T03:48:25Z"
 source_type = "local"
 source = "/Users/ple/.codex/.tmp/bundled-marketplaces/openai-bundled"
 
@@ -100,3 +128,6 @@ source = "/Users/ple/.codex/.tmp/bundled-marketplaces/openai-bundled"
 last_updated = "2026-05-08T01:00:38Z"
 source_type = "local"
 source = "/Users/ple/.cache/codex-runtimes/codex-primary-runtime/plugins/openai-primary-runtime"
+
+[features]
+js_repl = false

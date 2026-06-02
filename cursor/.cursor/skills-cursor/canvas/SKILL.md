@@ -1,6 +1,17 @@
 ---
 name: canvas
-description: ''
+description: >-
+  A Cursor Canvas is a live React app that the user can open beside the chat.
+  You MUST use a canvas when the agent produces a standalone analytical artifact
+  — quantitative analyses, billing investigations, security audits, architecture
+  reviews, data-heavy content, timelines, charts, tables, interactive
+  explorations, repeatable tools, or any response that benefits from visual
+  layout. Especially prefer a canvas when presenting results from MCP tools
+  (Datadog, Databricks, Linear, Sentry, Slack, etc.) where the data is the
+  deliverable — render it in a rich canvas rather than dumping it into a
+  markdown table or code block. If you catch yourself about to write a markdown
+  table, stop and use a canvas instead. You MUST also read this skill whenever
+  you create, edit, or debug any .canvas.tsx file.
 metadata:
   surfaces:
     - ide
@@ -83,60 +94,15 @@ Before returning canvas code, verify:
 
 ## Introducing the canvas
 
-When you create a canvas, add a short note in your chat response telling the user you created a canvas they can open beside the chat:
+Whenever you mention a canvas to the user — one you created, updated, or want them to open — **always** include a markdown link to that `.canvas.tsx` file using its full absolute path (for example, `[billing-review](/Users/<user>/.cursor/projects/<workspace>/canvases/billing-review.canvas.tsx)`). Use a short descriptive label as the link text; do not refer to a canvas by name or path alone without the link.
+
+When you create a canvas, add a short note in your chat response telling the user they can open it beside the chat, with that link:
 
 - **First canvas** — if no other `.canvas.tsx` files exist in the workspace's `canvases/` directory, include one sentence explaining what a canvas is.
 - **Unsolicited canvas** — if the user didn't ask for a canvas, include one sentence explaining why you chose it over plain text.
 
-Both can apply at once; one or two sentences total is enough. Skip the intro for subsequent canvases.
+Both can apply at once; one or two sentences total is enough. Skip the intro for subsequent canvases unless you are mentioning that canvas again (still link it).
 
 ## Troubleshooting
 
 If a canvas appears blank or missing, the most common cause is that it was not written under `/Users/<user>/.cursor/projects/<workspace>/canvases/` exactly — re-save it to that path. Do not debug this by trying to create the managed directory manually; focus on correcting the file path instead. Users can click the canvas file path in the response to open it, just like any other file path in Cursor. When present, the canvas server writes a `<name>.canvas.status.json` sidecar after each build with `status`, `diagnostics`, or `error` fields you can read; the file is best-effort and may not exist, so don't block on it.
-
-## Good example
-
-```tsx
-import { Divider, Grid, H1, H2, Stack, Stat, Table, Text } from 'cursor/canvas';
-
-export default function ServiceOverview() {
-  return (
-    <Stack gap={20}>
-      <H1>Service Overview</H1>
-      <Grid columns={3} gap={16}>
-        <Stat value="6" label="Total Services" />
-        <Stat value="5" label="Healthy" tone="success" />
-        <Stat value="1" label="Degraded" tone="warning" />
-      </Grid>
-      <Divider />
-      <H2>Service Status</H2>
-      <Table
-        headers={["Service", "Status", "Uptime", "Latency"]}
-        rows={[
-          ["api-gateway", "Operational", "99.99%", "12ms"],
-          ["auth-service", "Degraded", "99.2%", "340ms"],
-          ["billing", "Operational", "99.8%", "45ms"],
-        ]}
-        rowTone={[undefined, "warning", undefined]}
-      />
-      <Divider />
-      <H2>Recent Changes</H2>
-      <Text>Auth service latency increased after the 14:30 deploy.</Text>
-      <Text tone="secondary" size="small">Last checked: Apr 7, 2026 14:52 UTC</Text>
-    </Stack>
-  );
-}
-```
-
-Stats in a Grid, Table directly under H2, text sections without cards.
-
-## Bad example — do not imitate
-
-```tsx
-// BAD — every section wrapped in Card, no hierarchy, Table unnecessarily boxed
-<Stack gap={12}>
-  <Card><CardHeader>Summary</CardHeader><CardBody><Text>6 services.</Text></CardBody></Card>
-  <Card><CardHeader>Status</CardHeader><CardBody><Table headers={[...]} rows={[...]} /></CardBody></Card>
-  <Card><CardHeader>Changes</CardHeader><CardBody><Text>Latency increased.</Text></CardBody></Card>
-</Stack>
-```
