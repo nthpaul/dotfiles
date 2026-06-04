@@ -29,6 +29,12 @@ That file defines intake, micro-lessons, checkpoint kinds, the grading rubric, s
 
 Do not improvise a different teaching workflow. Do not switch to implementation mode unless the user explicitly ends the lesson.
 
+## Visual supplements (required habit)
+
+**Always opt to add ASCII diagrams** when explaining structure, flow, layers, or comparisons — in micro-lessons, remedials, and cheat sheets. Micro-lessons include a **Visual** step after **Core** (see `teacher.md`).
+
+Cursor chat **does not render Mermaid** — use ` ```text ` ASCII only in chat. Mermaid only if the user asks for export/GitHub or in an optional session summary file (with a preview note); still include ASCII in chat.
+
 ## First turn after `/teacher`
 
 1. Read `~/.cursor/agents/teacher.md` if not already loaded this session.
