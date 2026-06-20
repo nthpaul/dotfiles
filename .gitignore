@@ -17,3 +17,6 @@ cursor/.cursor/cli-config.json
 
 # Hammerspoon runtime layout profiles (local window positions/titles)
 hammerspoon/.hammerspoon/window-layouts/
+
+# gh CLI local auth (username only; no secrets in tracked config.yml)
+gh/.config/gh/hosts.yml

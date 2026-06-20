@@ -29,6 +29,8 @@ Stow creates relative symlinks so the repo stays portable across machines.
 - Terminal/tools: `tmux/`, `ghostty/`, `direnv/`, `yazi/`, `zellij/`
 - macOS: `hammerspoon/`
 - Dev tools: `asdf/`, `graphite/`, `opencode/`, `github-copilot/`, `codex/`
+- Git/GitHub: `git/` (.gitconfig, global gitignore), `gh/` (CLI config; `hosts.yml` stays local)
+- Claude Code: `claude/` (`settings.json`; `skills/` symlinked to `codex/.codex/skills`)
 
 ## Adding new configs
 

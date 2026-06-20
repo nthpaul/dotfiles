@@ -1,0 +1,6 @@
+{
+  "model": "opus[1m]",
+  "effortLevel": "high",
+  "skipDangerousModePermissionPrompt": true,
+  "theme": "dark-ansi"
+}
