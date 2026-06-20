@@ -51,16 +51,16 @@ Managed via `hammerspoon/` with [AutoArrange.spoon](https://github.com/jamesagar
 2. Grant **Accessibility** in System Settings → Privacy & Security → Accessibility.
 3. Reload: Hammerspoon menubar → Reload Config (or restart the app).
 
-Default snap modifier: **Cmd + Ctrl + Alt** (change via menubar **WL** → Configuration).
+Default snap modifier: **Ctrl + Alt** (change via menubar **WL** → Configuration).
 
 | Action | Keys |
 |--------|------|
-| Left / right half | `Cmd+Ctrl+Alt` + `←` / `→` |
-| Maximize / minimize | `Cmd+Ctrl+Alt` + `↑` / `↓` |
-| Corners | `Cmd+Ctrl+Alt` + `U` `I` `J` `K` |
-| Thirds | `Cmd+Ctrl+Alt` + `D` `F` `G` |
-| Center | `Cmd+Ctrl+Alt` + `C` |
-| Save layout | `Cmd+Ctrl+Alt` + `S` |
-| Restore layout | `Cmd+Ctrl+Alt` + `R` or `Backspace` |
+| Left / right half | `Ctrl+Alt` + `←` / `→` |
+| Top / bottom half | `Ctrl+Alt` + `↑` / `↓` |
+| Corners | `Ctrl+Alt` + `U` `I` `J` `K` |
+| Thirds | `Ctrl+Alt` + `D` `F` `G` |
+| Center | `Ctrl+Alt` + `C` |
+| Save layout | `Ctrl+Alt` + `S` |
+| Restore layout | `Ctrl+Alt` + `R` or `Backspace` |
 
-Saved profiles live in `~/.hammerspoon/window-layouts/` (gitignored).
+Saved profiles live in `~/.hammerspoon/window-layouts/` (gitignored). Snapped windows use an **8px** gap from screen edges and between tiles.

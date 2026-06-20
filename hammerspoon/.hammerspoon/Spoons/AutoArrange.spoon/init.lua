@@ -17,6 +17,33 @@ obj.license = "MIT - https://opensource.org/licenses/MIT"
 
 obj.logger = hs.logger.new('AutoArrange', 'info')
 
+obj.gap = 8
+
+function obj.gappedScreenFrame(screen)
+    local max = screen:frame()
+    local g = obj.gap
+    return {
+        x = max.x + g,
+        y = max.y + g,
+        w = max.w - 2 * g,
+        h = max.h - 2 * g,
+    }
+end
+
+function obj.tileFrame(work, col, row, cols, rows, colSpan, rowSpan)
+    local g = obj.gap
+    colSpan = colSpan or 1
+    rowSpan = rowSpan or 1
+    local cellW = (work.w - (cols - 1) * g) / cols
+    local cellH = (work.h - (rows - 1) * g) / rows
+    return {
+        x = work.x + col * (cellW + g),
+        y = work.y + row * (cellH + g),
+        w = colSpan * cellW + (colSpan - 1) * g,
+        h = rowSpan * cellH + (rowSpan - 1) * g,
+    }
+end
+
 -- Configuration
 -- Configuration is now dynamic (see below)
 
@@ -51,13 +78,13 @@ function obj.saveSettings(settings)
     hs.json.write(settings, obj.settingsFile, true, true)
 end
 
--- Get Base Modifiers (default: Cmd+Alt+Ctrl)
+-- Get Base Modifiers (default: Ctrl+Alt)
 function obj.getBaseModifiers()
     local settings = obj.loadSettings()
     if settings.baseModifiers then
         return settings.baseModifiers
     end
-    return {"cmd", "alt", "ctrl"}
+    return {"ctrl", "alt"}
 end
 
 -- UI: Prompt to set base modifiers
@@ -555,7 +582,8 @@ function obj.showHotkeys()
     if keys.restore then msg = msg .. "- Restore: " .. modStr(keys.restore[1]) .. " + " .. keys.restore[2] .. "\n" end
     if keys.snapLeft then msg = msg .. "- Snap Left: " .. modStr(keys.snapLeft[1]) .. " + " .. keys.snapLeft[2] .. "\n" end
     if keys.snapRight then msg = msg .. "- Snap Right: " .. modStr(keys.snapRight[1]) .. " + " .. keys.snapRight[2] .. "\n" end
-    if keys.snapUp then msg = msg .. "- Maximize: " .. modStr(keys.snapUp[1]) .. " + " .. keys.snapUp[2] .. "\n" end
+    if keys.snapUp then msg = msg .. "- Top Half: " .. modStr(keys.snapUp[1]) .. " + " .. keys.snapUp[2] .. "\n" end
+    if keys.snapDown then msg = msg .. "- Bottom Half: " .. modStr(keys.snapDown[1]) .. " + " .. keys.snapDown[2] .. "\n" end
     
     hs.alert.show(msg, 5)
 end
@@ -700,8 +728,8 @@ function obj.bindHotkeys()
     -- Halves
     bind("snapLeft", function() obj.snapWindow("left") end)
     bind("snapRight", function() obj.snapWindow("right") end)
-    bind("snapUp", function() obj.snapWindow("maximize") end)
-    bind("snapDown", function() obj.snapWindow("minimize") end)
+    bind("snapUp", function() obj.snapWindow("top") end)
+    bind("snapDown", function() obj.snapWindow("bottom") end)
     
     -- Corners
     bind("topLeft", function() obj.snapWindow("topLeft") end)
@@ -739,7 +767,7 @@ function obj.snapWindow(direction)
     local winId = win:id()
     local f = win:frame()
     local screen = win:screen()
-    local max = screen:frame()
+    local work = obj.gappedScreenFrame(screen)
     
     -- Cycle detection: if same window + direction within 2 seconds
     local isCycle = (obj.lastSnap.winId == winId and 
@@ -757,12 +785,7 @@ function obj.snapWindow(direction)
     
     -- Halves - with cycle to next/prev screen
     if direction == "left" then
-        local targetFrame = {
-            x = max.x,
-            y = max.y,
-            w = max.w / 2,
-            h = max.h
-        }
+        local targetFrame = obj.tileFrame(work, 0, 0, 2, 1)
         
         if isCycle and isAlreadySnapped(targetFrame) then
             -- Already snapped left, move to prev screen
@@ -775,12 +798,7 @@ function obj.snapWindow(direction)
         end
         
     elseif direction == "right" then
-        local targetFrame = {
-            x = max.x + (max.w / 2),
-            y = max.y,
-            w = max.w / 2,
-            h = max.h
-        }
+        local targetFrame = obj.tileFrame(work, 1, 0, 2, 1)
         
         if isCycle and isAlreadySnapped(targetFrame) then
             -- Already snapped right, move to next screen
@@ -793,73 +811,40 @@ function obj.snapWindow(direction)
         end
         
     elseif direction == "top" then
-        f.x = max.x
-        f.y = max.y
-        f.w = max.w
-        f.h = max.h / 2
+        f = obj.tileFrame(work, 0, 0, 1, 2)
     elseif direction == "bottom" then
-        f.x = max.x
-        f.y = max.y + (max.h / 2)
-        f.w = max.w
-        f.h = max.h / 2
+        f = obj.tileFrame(work, 0, 1, 1, 2)
         
     -- Quarters (Corners)
     elseif direction == "topLeft" then
-        f.x = max.x
-        f.y = max.y
-        f.w = max.w / 2
-        f.h = max.h / 2
+        f = obj.tileFrame(work, 0, 0, 2, 2)
     elseif direction == "topRight" then
-        f.x = max.x + (max.w / 2)
-        f.y = max.y
-        f.w = max.w / 2
-        f.h = max.h / 2
+        f = obj.tileFrame(work, 1, 0, 2, 2)
     elseif direction == "bottomLeft" then
-        f.x = max.x
-        f.y = max.y + (max.h / 2)
-        f.w = max.w / 2
-        f.h = max.h / 2
+        f = obj.tileFrame(work, 0, 1, 2, 2)
     elseif direction == "bottomRight" then
-        f.x = max.x + (max.w / 2)
-        f.y = max.y + (max.h / 2)
-        f.w = max.w / 2
-        f.h = max.h / 2
+        f = obj.tileFrame(work, 1, 1, 2, 2)
         
     -- Thirds
     elseif direction == "leftThird" then
-        f.x = max.x
-        f.y = max.y
-        f.w = max.w / 3
-        f.h = max.h
+        f = obj.tileFrame(work, 0, 0, 3, 1)
     elseif direction == "centerThird" then
-        f.x = max.x + (max.w / 3)
-        f.y = max.y
-        f.w = max.w / 3
-        f.h = max.h
+        f = obj.tileFrame(work, 1, 0, 3, 1)
     elseif direction == "rightThird" then
-        f.x = max.x + (max.w / 3) * 2
-        f.y = max.y
-        f.w = max.w / 3
-        f.h = max.h
+        f = obj.tileFrame(work, 2, 0, 3, 1)
     elseif direction == "leftTwoThirds" then
-        f.x = max.x
-        f.y = max.y
-        f.w = (max.w / 3) * 2
-        f.h = max.h
+        f = obj.tileFrame(work, 0, 0, 3, 1, 2, 1)
     elseif direction == "rightTwoThirds" then
-        f.x = max.x + (max.w / 3)
-        f.y = max.y
-        f.w = (max.w / 3) * 2
-        f.h = max.h
+        f = obj.tileFrame(work, 1, 0, 3, 1, 2, 1)
         
     -- Standard
     elseif direction == "center" then
-        f.w = max.w * 0.7
-        f.h = max.h * 0.7
-        f.x = max.x + (max.w - f.w) / 2
-        f.y = max.y + (max.h - f.h) / 2
+        f.w = work.w * 0.7
+        f.h = work.h * 0.7
+        f.x = work.x + (work.w - f.w) / 2
+        f.y = work.y + (work.h - f.h) / 2
     elseif direction == "maximize" then
-        f = max
+        f = work
     elseif direction == "minimize" then
         win:minimize()
         return
