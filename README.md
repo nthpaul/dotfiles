@@ -42,3 +42,25 @@ Stow creates relative symlinks so the repo stays portable across machines.
 - If stow reports a conflict, remove or move the existing target file, then re-run stow.
 - Use `stow -n -t ~ */` for a dry run.
 - Use `stow -D -t ~ <package>` to remove a package's links.
+
+## Hammerspoon (window snapping + layouts)
+
+Managed via `hammerspoon/` with [AutoArrange.spoon](https://github.com/jamesagarside/hammerspoon-auto-arrange).
+
+1. Install: `brew install --cask hammerspoon`
+2. Grant **Accessibility** in System Settings → Privacy & Security → Accessibility.
+3. Reload: Hammerspoon menubar → Reload Config (or restart the app).
+
+Default snap modifier: **Cmd + Ctrl + Alt** (change via menubar **WL** → Configuration).
+
+| Action | Keys |
+|--------|------|
+| Left / right half | `Cmd+Ctrl+Alt` + `←` / `→` |
+| Maximize / minimize | `Cmd+Ctrl+Alt` + `↑` / `↓` |
+| Corners | `Cmd+Ctrl+Alt` + `U` `I` `J` `K` |
+| Thirds | `Cmd+Ctrl+Alt` + `D` `F` `G` |
+| Center | `Cmd+Ctrl+Alt` + `C` |
+| Save layout | `Cmd+Ctrl+Alt` + `S` |
+| Restore layout | `Cmd+Ctrl+Alt` + `R` or `Backspace` |
+
+Saved profiles live in `~/.hammerspoon/window-layouts/` (gitignored).
