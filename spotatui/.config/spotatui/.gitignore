@@ -9,3 +9,7 @@ spotatui_panic.log
 
 # Streaming credentials and cache
 streaming_cache/
+
+# Local listening history and generated recaps
+history/
+spotatui-recap.html

@@ -12,6 +12,23 @@ return {
 	},
 
 	config = function()
+		local function is_lsp_excluded_fname(fname)
+			return fname ~= nil and fname:match("^octo://") ~= nil
+		end
+
+		local function is_lsp_excluded_buf(bufnr)
+			return is_lsp_excluded_fname(vim.api.nvim_buf_get_name(bufnr))
+		end
+
+		local function guarded_root_dir(root_dir_fn)
+			return function(fname, ...)
+				if is_lsp_excluded_fname(fname) then
+					return nil
+				end
+				return root_dir_fn(fname, ...)
+			end
+		end
+
 		vim.diagnostic.config({
 			virtual_text = { prefix = "●" },
 			signs = true,
@@ -279,6 +296,14 @@ return {
 					}
 				end
 
+				if server_config.root_dir then
+					server_config.root_dir = guarded_root_dir(server_config.root_dir)
+				else
+					server_config.root_dir = guarded_root_dir(function(fname)
+						return util.root_pattern(".git", "package.json", "Cargo.toml", "mix.exs")(fname)
+					end)
+				end
+
 				require("lspconfig")[server_name].setup(server_config)
 			end,
 		})
@@ -286,7 +311,7 @@ return {
 		local oxlint_config = {
 			capabilities = capabilities,
 			cmd = oxlint_cmd,
-			root_dir = oxlint_root_dir,
+			root_dir = guarded_root_dir(oxlint_root_dir),
 			init_options = {
 				settings = {
 					typeAware = true,
@@ -296,7 +321,11 @@ return {
 
 		if vim.lsp.config then
 			vim.lsp.config("oxlint", oxlint_config)
-			vim.lsp.enable("oxlint")
+			vim.lsp.enable("oxlint", {
+				filter = function(bufnr)
+					return not is_lsp_excluded_buf(bufnr)
+				end,
+			})
 		else
 			require("lspconfig").oxlint.setup(oxlint_config)
 		end
@@ -304,6 +333,10 @@ return {
 		vim.api.nvim_create_autocmd("LspAttach", {
 			group = vim.api.nvim_create_augroup("keymaps_on_lsp_attach", {}),
 			callback = function(event)
+				if is_lsp_excluded_buf(event.buf) then
+					return
+				end
+
 				local client = vim.lsp.get_client_by_id(event.data.client_id)
 				local opts = { buffer = event.buf, silent = true }
 

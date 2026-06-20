@@ -69,6 +69,7 @@ CLI tools:
 Apps (configs in this repo expect them):
 
 - Neovim
+- Hammerspoon
 - Ghostty
 - Cursor
 - VS Code

@@ -27,6 +27,7 @@ Stow creates relative symlinks so the repo stays portable across machines.
 - Shell: `zsh/` (.zshrc, .zprofile, .zshenv)
 - Editors: `nvim/`, `zed/`, `cursor/`, `vscode/`
 - Terminal/tools: `tmux/`, `ghostty/`, `direnv/`, `yazi/`, `zellij/`
+- macOS: `hammerspoon/`
 - Dev tools: `asdf/`, `graphite/`, `opencode/`, `github-copilot/`, `codex/`
 
 ## Adding new configs

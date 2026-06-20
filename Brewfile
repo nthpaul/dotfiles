@@ -36,6 +36,7 @@ cask "google-cloud-sdk"
 cask "miniconda"
 
 # Apps
+cask "hammerspoon"
 cask "ghostty"
 cask "cursor"
 cask "visual-studio-code"

@@ -24,26 +24,33 @@ keybindings:
   copy_song_url: c
   copy_album_url: C
   audio_analysis: v
-  basic_view: B
+  lyrics_view: B
+  miniplayer_view: T
+  cover_art_view: G
   add_item_to_queue: z
   show_queue: Q
   open_settings: '0'
   save_settings: alt-s
   listening_party: ctrl-p
+  like_track: F
+  generate_recap: R
 behavior:
   seek_milliseconds: 5000
   volume_increment: 10
   volume_percent: 90
-  tick_rate_milliseconds: 16
+  tick_rate_milliseconds: 250
+  animation_tick_rate_milliseconds: 16
   enable_text_emphasis: true
   show_loading_indicator: true
   enforce_wide_search_bar: false
   enable_global_song_count: false
+  disable_mouse_inputs: false
   enable_discord_rpc: true
   discord_rpc_client_id: null
   enable_announcements: true
   announcement_feed_url: null
   seen_announcement_ids:
+  - 2026-05-19-sonos-help-wanted
   - 2026-02-27-major-refactor-complete
   shuffle_enabled: false
   liked_icon: ♥
@@ -65,7 +72,11 @@ behavior:
   auto_update_delay: '0'
   draw_cover_art: true
   draw_cover_art_forced: false
+  playbar_cover_art_size_percent: 100
+  keepawake_enabled: true
+  sync_token: null
 theme:
+  preset: Default (Cyan)
   active: 255, 199, 153
   banner: 255, 199, 153
   error_border: 255, 128, 128
