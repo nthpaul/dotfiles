@@ -7,13 +7,14 @@
 --   Left/Right half:     <- / ->
 --   Top/Bottom half:     Up / Down
 --   Corners:             U I J K
---   Thirds:              D F G
---   Two-thirds:          E T
+--   Thirds:              , . G
+--   Two-thirds:          5 T
 --   Vertical fourths:    Z X C V
+--   Eighths (4x2):       Q W E R / A S D F
 --   Center:              M
 --   Maximize:            Enter
 --   Save layout:         S
---   Restore layout:      R or Backspace
+--   Restore layout:      Backspace
 --
 -- Profiles: menubar WL icon. Save named layouts per monitor setup.
 -- URLs: hammerspoon://windowlayout?action=restore|save&profile=Name
