@@ -61,8 +61,9 @@ Default snap modifier: **Ctrl + Alt** (change via menubar **WL** → Configurati
 | Top / bottom half | `Ctrl+Alt` + `↑` / `↓` |
 | Corners | `Ctrl+Alt` + `U` `I` `J` `K` |
 | Thirds | `Ctrl+Alt` + `D` `F` `G` |
-| Center | `Ctrl+Alt` + `C` |
+| Vertical fourths | `Ctrl+Alt` + `Z` `X` `C` `V` |
+| Center | `Ctrl+Alt` + `M` |
 | Save layout | `Ctrl+Alt` + `S` |
-| Restore layout | `Ctrl+Alt` + `R` or `Backspace` |
+| Restore layout | `Ctrl+Alt` + `R` or `Ctrl+Alt` + `Backspace` |
 
 Saved profiles live in `~/.hammerspoon/window-layouts/` (gitignored). Snapped windows use an **8px** gap from screen edges and between tiles.

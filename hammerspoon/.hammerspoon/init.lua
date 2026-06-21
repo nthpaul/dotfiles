@@ -9,10 +9,11 @@
 --   Corners:             U I J K
 --   Thirds:              D F G
 --   Two-thirds:          E T
---   Center:              C
+--   Vertical fourths:    Z X C V
+--   Center:              M
 --   Maximize:            Enter
 --   Save layout:         S
---   Restore layout:      Backspace
+--   Restore layout:      R or Backspace
 --
 -- Profiles: menubar WL icon. Save named layouts per monitor setup.
 -- URLs: hammerspoon://windowlayout?action=restore|save&profile=Name
@@ -22,12 +23,16 @@ local autoArrangeStorage = hs.fs.pathToAbsolute("~/.hammerspoon/window-layouts")
 if not hs.fs.attributes(autoArrangeStorage) then
   hs.fs.mkdir(autoArrangeStorage)
 end
-hs.json.write(
-  { baseModifiers = { "ctrl", "alt" } },
-  autoArrangeStorage .. "/settings.json",
-  true,
-  true
-)
+
+local settingsPath = autoArrangeStorage .. "/settings.json"
+if not hs.fs.attributes(settingsPath) then
+  hs.json.write(
+    { baseModifiers = { "ctrl", "alt" } },
+    settingsPath,
+    true,
+    true
+  )
+end
 
 hs.loadSpoon("AutoArrange")
 spoon.AutoArrange:start()

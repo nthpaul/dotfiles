@@ -165,10 +165,16 @@ obj.config = {
         -- Two Thirds
         leftTwoThirds = {base, "E"},
         rightTwoThirds = {base, "T"},
+
+        -- Vertical fourths (full-height columns)
+        verticalFourth1 = {base, "Z"},
+        verticalFourth2 = {base, "X"},
+        verticalFourth3 = {base, "C"},
+        verticalFourth4 = {base, "V"},
         
         -- Extras
         maximize = {base, "Return"},
-        center = {base, "C"},
+        center = {base, "M"},
         restoreLayout = {base, "delete"} -- Backspace
     }
 }
@@ -568,7 +574,7 @@ end
 
 -- Open Config File
 function obj.editConfig()
-    hs.execute("open " .. os.getenv("HOME") .. "/.hammerspoon/window-layout.lua")
+    hs.execute("open " .. hs.fs.pathToAbsolute("~/.hammerspoon/init.lua"))
 end
 
 -- Show Hotkeys Cheat Sheet
@@ -653,6 +659,13 @@ function obj.buildMenu()
     table.insert(menuTable, { title = "-" })
     add("⅔  Left Two Thirds", "leftTwoThirds", function() obj.snapWindow("leftTwoThirds") end)
     add("⅔  Right Two Thirds", "rightTwoThirds", function() obj.snapWindow("rightTwoThirds") end)
+    table.insert(menuTable, { title = "-" })
+
+    -- Section 3b: Vertical fourths
+    add("¼  Left Column", "verticalFourth1", function() obj.snapWindow("verticalFourth1") end)
+    add("¼  2nd Column", "verticalFourth2", function() obj.snapWindow("verticalFourth2") end)
+    add("¼  3rd Column", "verticalFourth3", function() obj.snapWindow("verticalFourth3") end)
+    add("¼  Right Column", "verticalFourth4", function() obj.snapWindow("verticalFourth4") end)
     table.insert(menuTable, { title = "-" })
 
     -- Section 4: Maximize / Restore / Center
@@ -745,6 +758,12 @@ function obj.bindHotkeys()
     -- Two Thirds
     bind("leftTwoThirds", function() obj.snapWindow("leftTwoThirds") end)
     bind("rightTwoThirds", function() obj.snapWindow("rightTwoThirds") end)
+
+    -- Vertical fourths
+    bind("verticalFourth1", function() obj.snapWindow("verticalFourth1") end)
+    bind("verticalFourth2", function() obj.snapWindow("verticalFourth2") end)
+    bind("verticalFourth3", function() obj.snapWindow("verticalFourth3") end)
+    bind("verticalFourth4", function() obj.snapWindow("verticalFourth4") end)
     
     -- Extras
     bind("maximize", function() obj.snapWindow("maximize") end)
@@ -836,6 +855,16 @@ function obj.snapWindow(direction)
         f = obj.tileFrame(work, 0, 0, 3, 1, 2, 1)
     elseif direction == "rightTwoThirds" then
         f = obj.tileFrame(work, 1, 0, 3, 1, 2, 1)
+
+    -- Vertical fourths (4 columns, full height)
+    elseif direction == "verticalFourth1" then
+        f = obj.tileFrame(work, 0, 0, 4, 1)
+    elseif direction == "verticalFourth2" then
+        f = obj.tileFrame(work, 1, 0, 4, 1)
+    elseif direction == "verticalFourth3" then
+        f = obj.tileFrame(work, 2, 0, 4, 1)
+    elseif direction == "verticalFourth4" then
+        f = obj.tileFrame(work, 3, 0, 4, 1)
         
     -- Standard
     elseif direction == "center" then
