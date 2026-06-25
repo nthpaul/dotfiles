@@ -83,12 +83,6 @@ return {
 						gs.toggle_linehl,
 						{ buffer = bufnr, desc = "Toggle line highlight" }
 					)
-					vim.keymap.set(
-						"n",
-						"<leader>gb",
-						gs.toggle_current_line_blame,
-						{ buffer = bufnr, desc = "Toggle git blame" }
-					)
 					vim.keymap.set("n", "<leader>gs", gs.stage_hunk, { buffer = bufnr, desc = "Stage hunk" })
 					vim.keymap.set("n", "<leader>gr", gs.reset_hunk, { buffer = bufnr, desc = "Reset hunk" })
 					vim.keymap.set("n", "<leader>gS", gs.stage_buffer, { buffer = bufnr, desc = "Stage buffer" })
@@ -97,6 +91,10 @@ return {
 					vim.keymap.set("n", "<leader>gp", gs.preview_hunk, { buffer = bufnr, desc = "Preview hunk" })
 					vim.keymap.set("n", "<leader>gd", gs.diffthis, { buffer = bufnr, desc = "Diff this" })
 				end,
+			})
+
+			vim.keymap.set("n", "<leader>gb", require("gitsigns").toggle_current_line_blame, {
+				desc = "Toggle git blame",
 			})
 		end,
 	},

@@ -21,6 +21,7 @@ return {
 					{ "<leader>f", group = "file/find" },
 					{ "<leader>vm", group = "markdown preview" },
 					{ "<leader>g", group = "git" },
+					{ "<leader>gb", desc = "Toggle git blame" },
 					{ "<leader>o", group = "octo" },
 					{ "<leader>gh", group = "hunks" },
 					{ "<leader>q", group = "quit/session" },
