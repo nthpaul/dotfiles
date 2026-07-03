@@ -156,10 +156,15 @@ obj.config = {
         bottomLeft = {base, "J"},
         bottomRight = {base, "K"},
         
-        -- Thirds
-        leftThird = {base, ","},
-        centerThird = {base, "."},
+        -- Vertical thirds (full-height columns)
+        leftThird = {base, "D"},
+        centerThird = {base, "F"},
         rightThird = {base, "G"},
+
+        -- Horizontal thirds (full-width rows)
+        horizontalThird1 = {base, "1"},
+        horizontalThird2 = {base, "2"},
+        horizontalThird3 = {base, "3"},
         
         -- Two Thirds
         leftTwoThirds = {base, "5"},
@@ -170,20 +175,10 @@ obj.config = {
         verticalFourth2 = {base, "X"},
         verticalFourth3 = {base, "C"},
         verticalFourth4 = {base, "V"},
-
-        -- Eighths (4x2 grid: QWER top row, ASDF bottom row)
-        eighthQ = {base, "Q"},
-        eighthW = {base, "W"},
-        eighthE = {base, "E"},
-        eighthR = {base, "R"},
-        eighthA = {base, "A"},
-        eighthS = {base, "S"},
-        eighthD = {base, "D"},
-        eighthF = {base, "F"},
         
         -- Extras
         maximize = {base, "Return"},
-        center = {base, "M"},
+        center = {base, "space"},
         restoreLayout = {base, "delete"} -- Backspace
     }
 }
@@ -666,6 +661,10 @@ function obj.buildMenu()
     add("⅓  Center Third", "centerThird", function() obj.snapWindow("centerThird") end)
     add("⅓  Right Third", "rightThird", function() obj.snapWindow("rightThird") end)
     table.insert(menuTable, { title = "-" })
+    add("⅓  Top Third", "horizontalThird1", function() obj.snapWindow("horizontalThird1") end)
+    add("⅓  Middle Third", "horizontalThird2", function() obj.snapWindow("horizontalThird2") end)
+    add("⅓  Bottom Third", "horizontalThird3", function() obj.snapWindow("horizontalThird3") end)
+    table.insert(menuTable, { title = "-" })
     add("⅔  Left Two Thirds", "leftTwoThirds", function() obj.snapWindow("leftTwoThirds") end)
     add("⅔  Right Two Thirds", "rightTwoThirds", function() obj.snapWindow("rightTwoThirds") end)
     table.insert(menuTable, { title = "-" })
@@ -675,17 +674,6 @@ function obj.buildMenu()
     add("¼  2nd Column", "verticalFourth2", function() obj.snapWindow("verticalFourth2") end)
     add("¼  3rd Column", "verticalFourth3", function() obj.snapWindow("verticalFourth3") end)
     add("¼  Right Column", "verticalFourth4", function() obj.snapWindow("verticalFourth4") end)
-    table.insert(menuTable, { title = "-" })
-
-    -- Section 3c: Eighths (4x2)
-    add("⅛  Top Left", "eighthQ", function() obj.snapWindow("eighthQ") end)
-    add("⅛  Top 2nd", "eighthW", function() obj.snapWindow("eighthW") end)
-    add("⅛  Top 3rd", "eighthE", function() obj.snapWindow("eighthE") end)
-    add("⅛  Top Right", "eighthR", function() obj.snapWindow("eighthR") end)
-    add("⅛  Bottom Left", "eighthA", function() obj.snapWindow("eighthA") end)
-    add("⅛  Bottom 2nd", "eighthS", function() obj.snapWindow("eighthS") end)
-    add("⅛  Bottom 3rd", "eighthD", function() obj.snapWindow("eighthD") end)
-    add("⅛  Bottom Right", "eighthF", function() obj.snapWindow("eighthF") end)
     table.insert(menuTable, { title = "-" })
 
     -- Section 4: Maximize / Restore / Center
@@ -773,6 +761,10 @@ function obj.bindHotkeys()
     bind("leftThird", function() obj.snapWindow("leftThird") end)
     bind("centerThird", function() obj.snapWindow("centerThird") end)
     bind("rightThird", function() obj.snapWindow("rightThird") end)
+
+    bind("horizontalThird1", function() obj.snapWindow("horizontalThird1") end)
+    bind("horizontalThird2", function() obj.snapWindow("horizontalThird2") end)
+    bind("horizontalThird3", function() obj.snapWindow("horizontalThird3") end)
     
     -- Two Thirds
     bind("leftTwoThirds", function() obj.snapWindow("leftTwoThirds") end)
@@ -783,16 +775,6 @@ function obj.bindHotkeys()
     bind("verticalFourth2", function() obj.snapWindow("verticalFourth2") end)
     bind("verticalFourth3", function() obj.snapWindow("verticalFourth3") end)
     bind("verticalFourth4", function() obj.snapWindow("verticalFourth4") end)
-
-    -- Eighths
-    bind("eighthQ", function() obj.snapWindow("eighthQ") end)
-    bind("eighthW", function() obj.snapWindow("eighthW") end)
-    bind("eighthE", function() obj.snapWindow("eighthE") end)
-    bind("eighthR", function() obj.snapWindow("eighthR") end)
-    bind("eighthA", function() obj.snapWindow("eighthA") end)
-    bind("eighthS", function() obj.snapWindow("eighthS") end)
-    bind("eighthD", function() obj.snapWindow("eighthD") end)
-    bind("eighthF", function() obj.snapWindow("eighthF") end)
     
     -- Extras
     bind("maximize", function() obj.snapWindow("maximize") end)
@@ -880,6 +862,13 @@ function obj.snapWindow(direction)
         f = obj.tileFrame(work, 1, 0, 3, 1)
     elseif direction == "rightThird" then
         f = obj.tileFrame(work, 2, 0, 3, 1)
+
+    elseif direction == "horizontalThird1" then
+        f = obj.tileFrame(work, 0, 0, 1, 3)
+    elseif direction == "horizontalThird2" then
+        f = obj.tileFrame(work, 0, 1, 1, 3)
+    elseif direction == "horizontalThird3" then
+        f = obj.tileFrame(work, 0, 2, 1, 3)
     elseif direction == "leftTwoThirds" then
         f = obj.tileFrame(work, 0, 0, 3, 1, 2, 1)
     elseif direction == "rightTwoThirds" then
@@ -894,29 +883,9 @@ function obj.snapWindow(direction)
         f = obj.tileFrame(work, 2, 0, 4, 1)
     elseif direction == "verticalFourth4" then
         f = obj.tileFrame(work, 3, 0, 4, 1)
-
-    -- Eighths (4 columns x 2 rows)
-    elseif direction == "eighthQ" then
-        f = obj.tileFrame(work, 0, 0, 4, 2)
-    elseif direction == "eighthW" then
-        f = obj.tileFrame(work, 1, 0, 4, 2)
-    elseif direction == "eighthE" then
-        f = obj.tileFrame(work, 2, 0, 4, 2)
-    elseif direction == "eighthR" then
-        f = obj.tileFrame(work, 3, 0, 4, 2)
-    elseif direction == "eighthA" then
-        f = obj.tileFrame(work, 0, 1, 4, 2)
-    elseif direction == "eighthS" then
-        f = obj.tileFrame(work, 1, 1, 4, 2)
-    elseif direction == "eighthD" then
-        f = obj.tileFrame(work, 2, 1, 4, 2)
-    elseif direction == "eighthF" then
-        f = obj.tileFrame(work, 3, 1, 4, 2)
         
     -- Standard
     elseif direction == "center" then
-        f.w = work.w * 0.7
-        f.h = work.h * 0.7
         f.x = work.x + (work.w - f.w) / 2
         f.y = work.y + (work.h - f.h) / 2
     elseif direction == "maximize" then

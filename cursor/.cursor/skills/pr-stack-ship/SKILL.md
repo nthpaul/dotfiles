@@ -46,3 +46,9 @@ gt submit --stack --force
 ## Quality gates
 
 Run targeted lint, typecheck, format checks, and tests **before** you commit when the change warrants it (follow repo scripts and team norms). This skill only covers **restack + stack submit**, not validation.
+
+Run `pnpm format` (the-matrix) before first `gt submit` if pre-push `format:check` fails.
+
+## After submit
+
+Merge with **`graph-stack-merge-order`** then **`graph-stack-merge-safe`** — not raw `gh pr merge --delete-branch` on the bottom PR alone (orphans child PRs). Recovery: **`graph-stack-merge-recover`**.

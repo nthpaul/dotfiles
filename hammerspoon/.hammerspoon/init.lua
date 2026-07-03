@@ -7,11 +7,11 @@
 --   Left/Right half:     <- / ->
 --   Top/Bottom half:     Up / Down
 --   Corners:             U I J K
---   Thirds:              , . G
+--   Vertical thirds:       D F G
+--   Horizontal thirds:   1 2 3
 --   Two-thirds:          5 T
 --   Vertical fourths:    Z X C V
---   Eighths (4x2):       Q W E R / A S D F
---   Center:              M
+--   Center (no resize):  Space
 --   Maximize:            Enter
 --   Save layout:         S
 --   Restore layout:      Backspace
