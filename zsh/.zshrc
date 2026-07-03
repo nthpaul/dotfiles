@@ -135,3 +135,14 @@ if [ -f "/Users/ple/projects/worktree-manager/worktree-manager.zsh" ]; then
   source "/Users/ple/projects/worktree-manager/worktree-manager.zsh"
 fi
 export PATH=$PATH:$HOME/.maestro/bin
+
+# >>> grok installer >>>
+export PATH="$HOME/.grok/bin:$PATH"
+fpath=(~/.grok/completions/zsh $fpath)
+autoload -Uz compinit && compinit -C
+# <<< grok installer <<<
+
+# Use Cursor CLI for `agent` (grok installer shadows this command in PATH)
+agent() {
+  command cursor-agent "$@"
+}
