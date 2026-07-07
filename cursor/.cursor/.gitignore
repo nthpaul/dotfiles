@@ -30,14 +30,6 @@ projects/*/*
 # User's personal skills
 !skills/
 !skills/**
-# User's custom agents
-!agents/
-!agents/**
-# Teacher session state (directory only; JSON stays local)
-!teacher/
-!teacher/sessions/
-teacher/sessions/*
-!teacher/sessions/.gitkeep
 # User's personal slash commands
 !commands/
 !commands/**

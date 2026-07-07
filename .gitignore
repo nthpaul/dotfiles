@@ -20,3 +20,6 @@ hammerspoon/.hammerspoon/window-layouts/
 
 # gh CLI local auth (username only; no secrets in tracked config.yml)
 gh/.config/gh/hosts.yml
+
+# Local Traba dev infra audit + ops deck (paths, ports, internal Slack captures)
+dev-machine/

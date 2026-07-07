@@ -110,17 +110,17 @@ enabled = true
 [plugins."presentations@openai-primary-runtime"]
 enabled = true
 
-[plugins."browser-use@openai-bundled"]
+[plugins."browser@openai-bundled"]
 enabled = true
 
-[plugins."browser@openai-bundled"]
+[plugins."browser-use@openai-bundled"]
 enabled = true
 
 [tui.model_availability_nux]
 "gpt-5.5" = 3
 
 [marketplaces.openai-bundled]
-last_updated = "2026-05-30T03:48:25Z"
+last_updated = "2026-06-08T15:28:21Z"
 source_type = "local"
 source = "/Users/ple/.codex/.tmp/bundled-marketplaces/openai-bundled"
 
