@@ -146,3 +146,6 @@ autoload -Uz compinit && compinit -C
 agent() {
   command cursor-agent "$@"
 }
+
+# Added by cua-driver-rs installer — see https://github.com/trycua/cua
+export PATH="/Users/ple/.local/bin:$PATH"

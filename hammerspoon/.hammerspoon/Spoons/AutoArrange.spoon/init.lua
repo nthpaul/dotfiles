@@ -162,13 +162,14 @@ obj.config = {
         rightThird = {base, "G"},
 
         -- Horizontal thirds (full-width rows)
-        horizontalThird1 = {base, "1"},
+        horizontalThird1 = {base, "M"},
         horizontalThird2 = {base, "2"},
         horizontalThird3 = {base, "3"},
         
         -- Two Thirds
         leftTwoThirds = {base, "5"},
-        rightTwoThirds = {base, "T"},
+        rightTwoThirds = {base, "Y"},
+        bottomTwoThirds = {base, "L"},
 
         -- Vertical fourths (full-height columns)
         verticalFourth1 = {base, "Z"},
@@ -667,6 +668,7 @@ function obj.buildMenu()
     table.insert(menuTable, { title = "-" })
     add("⅔  Left Two Thirds", "leftTwoThirds", function() obj.snapWindow("leftTwoThirds") end)
     add("⅔  Right Two Thirds", "rightTwoThirds", function() obj.snapWindow("rightTwoThirds") end)
+    add("⅔  Bottom Two Thirds", "bottomTwoThirds", function() obj.snapWindow("bottomTwoThirds") end)
     table.insert(menuTable, { title = "-" })
 
     -- Section 3b: Vertical fourths
@@ -769,6 +771,7 @@ function obj.bindHotkeys()
     -- Two Thirds
     bind("leftTwoThirds", function() obj.snapWindow("leftTwoThirds") end)
     bind("rightTwoThirds", function() obj.snapWindow("rightTwoThirds") end)
+    bind("bottomTwoThirds", function() obj.snapWindow("bottomTwoThirds") end)
 
     -- Vertical fourths
     bind("verticalFourth1", function() obj.snapWindow("verticalFourth1") end)
@@ -873,6 +876,8 @@ function obj.snapWindow(direction)
         f = obj.tileFrame(work, 0, 0, 3, 1, 2, 1)
     elseif direction == "rightTwoThirds" then
         f = obj.tileFrame(work, 1, 0, 3, 1, 2, 1)
+    elseif direction == "bottomTwoThirds" then
+        f = obj.tileFrame(work, 0, 1, 1, 3, 1, 2)
 
     -- Vertical fourths (4 columns, full height)
     elseif direction == "verticalFourth1" then
