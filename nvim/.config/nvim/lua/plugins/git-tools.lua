@@ -38,7 +38,7 @@ return {
 					delay = 100,
 					ignore_whitespace = false,
 					virt_text_priority = 100,
-					use_focus = true,
+					use_focus = false,
 				},
 				current_line_blame_formatter = "<author>, <author_time:%R> - <summary>",
 				sign_priority = 6,
@@ -95,6 +95,36 @@ return {
 
 			vim.keymap.set("n", "<leader>gb", require("gitsigns").toggle_current_line_blame, {
 				desc = "Toggle git blame",
+			})
+
+			-- gitsigns debounces current_line_blame updates with a single global
+			-- timer (not per-bufnr). After gd/telescope, a later WinResized can
+			-- cancel the BufEnter update for the destination buffer, so blame
+			-- never redraws even though the toggle stays on. Re-fire after the
+			-- debounce window once the window has settled on the new buffer.
+			vim.api.nvim_create_autocmd("BufWinEnter", {
+				group = vim.api.nvim_create_augroup("user.gitsigns_blame_follow", { clear = true }),
+				callback = function(args)
+					local gs_config = require("gitsigns.config").config
+					if not gs_config.current_line_blame then
+						return
+					end
+
+					local bufnr = args.buf
+					local delay = (gs_config.current_line_blame_opts.delay or 100) + 50
+					vim.defer_fn(function()
+						if not gs_config.current_line_blame then
+							return
+						end
+						if not vim.api.nvim_buf_is_valid(bufnr) then
+							return
+						end
+						if vim.api.nvim_get_current_buf() ~= bufnr then
+							return
+						end
+						require("gitsigns.current_line_blame").update(bufnr)
+					end, delay)
+				end,
 			})
 		end,
 	},

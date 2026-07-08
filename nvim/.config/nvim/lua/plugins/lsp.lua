@@ -20,12 +20,27 @@ return {
 			return is_lsp_excluded_fname(vim.api.nvim_buf_get_name(bufnr))
 		end
 
+		-- Supports both lspconfig (fname [, bufnr]) and Neovim 0.11+
+		-- vim.lsp.config (bufnr, on_dir) root_dir signatures.
 		local function guarded_root_dir(root_dir_fn)
-			return function(fname, ...)
+			return function(fname_or_bufnr, on_dir)
+				local fname = type(fname_or_bufnr) == "number"
+						and vim.api.nvim_buf_get_name(fname_or_bufnr)
+					or fname_or_bufnr
+
 				if is_lsp_excluded_fname(fname) then
+					if type(on_dir) == "function" then
+						on_dir(nil)
+					end
 					return nil
 				end
-				return root_dir_fn(fname, ...)
+
+				local root = root_dir_fn(fname)
+				if type(on_dir) == "function" then
+					on_dir(root)
+					return
+				end
+				return root
 			end
 		end
 
