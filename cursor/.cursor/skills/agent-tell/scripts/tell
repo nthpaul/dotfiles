@@ -1,0 +1,1052 @@
+#!/usr/bin/env python3
+"""Scientist-named Cursor agent panes: claim, message, auto-deliver."""
+
+from __future__ import annotations
+
+import argparse
+import fcntl
+import json
+import os
+import re
+import signal
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+SKILL_DIR = Path(__file__).resolve().parent.parent
+NAMES_PATH = SKILL_DIR / "names.txt"
+ROSTER_DIR = Path.home() / ".cursor" / "scientists"
+ROSTER_PATH = ROSTER_DIR / "roster.json"
+HUSH_PATH = ROSTER_DIR / "hush.json"
+LOCK_DIR = ROSTER_DIR / "locks"
+INBOX_DIR = ROSTER_DIR / "inbox"
+PID_PATH = ROSTER_DIR / "telld.pid"
+LOG_PATH = ROSTER_DIR / "telld.log"
+PANE_OPTION = "@scientist"
+
+SEND_PRE_ENTER_S = 0.08
+SEND_LOCK_HOLD_S = 0.35
+READY_POLL_S = 0.2
+# Daemon may wait a long time — research turns are slow.
+DELIVER_READY_WAIT_S = 600.0
+DELIVER_BUSY_WAIT_S = 30.0
+DAEMON_POLL_S = 0.35
+# Drop repeated status-like mail from the same sender→target within this window.
+# Short enough that a later real status can land; long enough to kill ack storms.
+COALESCE_STATUS_S = 180.0
+
+# Strong status signals (ceremony / idle-ack). Real research payloads should use
+# [ask] or be long enough / evidence-shaped to avoid false positives.
+_STATUS_PATTERNS = [
+    re.compile(r"^\[status\]", re.I | re.M),
+    re.compile(r"^(ack|acked|copy|noted)\b", re.I | re.M),
+    re.compile(
+        r"\b(standing by|standing down|lab idle|\bidle\b|no ping)\b",
+        re.I,
+    ),
+    re.compile(
+        r"\b(no contact|no cursor(?:/forum)? contact|until paul greenlights)\b",
+        re.I,
+    ),
+    re.compile(
+        r"\b(dossier (?:complete|frozen)|full freeze|team (?:complete|unanimous)|"
+        r"board complete|stamps?:?\s*(?:ack|locked|complete)|unanimous)\b",
+        re.I,
+    ),
+    re.compile(r"\b(do not (?:ack|restate)|hard stop\.|silence until)\b", re.I),
+]
+
+
+def die(message: str, code: int = 1) -> None:
+    print(f"tell: {message}", file=sys.stderr)
+    raise SystemExit(code)
+
+
+def log(message: str) -> None:
+    ROSTER_DIR.mkdir(parents=True, exist_ok=True)
+    line = f"{time.strftime('%Y-%m-%dT%H:%M:%S')} {message}\n"
+    with LOG_PATH.open("a", encoding="utf-8") as fh:
+        fh.write(line)
+
+
+def run(
+    args: list[str],
+    *,
+    check: bool = True,
+    capture: bool = False,
+) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        args,
+        check=check,
+        text=True,
+        capture_output=capture,
+    )
+
+
+def ensure_tmux() -> None:
+    result = subprocess.run(
+        ["tmux", "-V"],
+        check=False,
+        text=True,
+        capture_output=True,
+    )
+    if result.returncode != 0:
+        die("tmux is required but not found")
+
+
+def load_names() -> list[str]:
+    if not NAMES_PATH.is_file():
+        die(f"names file missing: {NAMES_PATH}")
+    names = [
+        line.strip().lower()
+        for line in NAMES_PATH.read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.strip().startswith("#")
+    ]
+    if not names:
+        die(f"no scientist names in {NAMES_PATH}")
+    return names
+
+
+def load_roster() -> dict[str, str]:
+    if not ROSTER_PATH.is_file():
+        return {}
+    try:
+        data = json.loads(ROSTER_PATH.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        die(f"invalid roster JSON ({ROSTER_PATH}): {exc}")
+    if not isinstance(data, dict):
+        die(f"roster must be a JSON object: {ROSTER_PATH}")
+    return {str(k).lower(): str(v) for k, v in data.items()}
+
+
+def save_roster(roster: dict[str, str]) -> None:
+    ROSTER_DIR.mkdir(parents=True, exist_ok=True)
+    ROSTER_PATH.write_text(
+        json.dumps(roster, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+
+def default_hush() -> dict:
+    return {"global": False, "names": {}}
+
+
+def load_hush() -> dict:
+    if not HUSH_PATH.is_file():
+        return default_hush()
+    try:
+        data = json.loads(HUSH_PATH.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return default_hush()
+    if not isinstance(data, dict):
+        return default_hush()
+    names = data.get("names") or {}
+    if not isinstance(names, dict):
+        names = {}
+    return {
+        "global": bool(data.get("global")),
+        "names": {str(k).lower(): bool(v) for k, v in names.items()},
+    }
+
+
+def save_hush(hush: dict) -> None:
+    ROSTER_DIR.mkdir(parents=True, exist_ok=True)
+    HUSH_PATH.write_text(
+        json.dumps(
+            {
+                "global": bool(hush.get("global")),
+                "names": {
+                    str(k).lower(): bool(v)
+                    for k, v in (hush.get("names") or {}).items()
+                    if v
+                },
+            },
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+
+def is_hushed(name: str) -> bool:
+    hush = load_hush()
+    if hush.get("global"):
+        return True
+    return bool((hush.get("names") or {}).get(name.lower()))
+
+
+def hush_summary() -> str:
+    hush = load_hush()
+    if hush.get("global"):
+        return "ALL"
+    active = sorted(n for n, on in (hush.get("names") or {}).items() if on)
+    if not active:
+        return "off"
+    return ",".join(active)
+
+
+def pane_exists(pane_id: str) -> bool:
+    result = run(
+        ["tmux", "list-panes", "-a", "-F", "#{pane_id}"],
+        check=False,
+        capture=True,
+    )
+    if result.returncode != 0:
+        return False
+    return pane_id in result.stdout.splitlines()
+
+
+def current_pane_id() -> str:
+    pane = os.environ.get("TMUX_PANE")
+    if pane:
+        return pane
+    result = run(
+        ["tmux", "display-message", "-p", "#{pane_id}"],
+        check=False,
+        capture=True,
+    )
+    if result.returncode != 0 or not result.stdout.strip():
+        die("not inside a tmux pane (TMUX_PANE unset)")
+    return result.stdout.strip()
+
+
+def get_pane_scientist(pane_id: str) -> str | None:
+    result = run(
+        ["tmux", "show-options", "-p", "-t", pane_id, "-v", PANE_OPTION],
+        check=False,
+        capture=True,
+    )
+    if result.returncode != 0:
+        return None
+    value = result.stdout.strip().lower()
+    return value or None
+
+
+def set_pane_scientist(pane_id: str, name: str) -> None:
+    run(["tmux", "set-option", "-p", "-t", pane_id, PANE_OPTION, name])
+
+
+def clear_pane_scientist(pane_id: str) -> None:
+    run(
+        ["tmux", "set-option", "-p", "-u", "-t", pane_id, PANE_OPTION],
+        check=False,
+    )
+
+
+def scan_panes_for_scientists() -> dict[str, str]:
+    result = run(
+        ["tmux", "list-panes", "-a", "-F", "#{pane_id}"],
+        check=False,
+        capture=True,
+    )
+    if result.returncode != 0:
+        die("failed to list tmux panes")
+    found: dict[str, str] = {}
+    for pane_id in result.stdout.splitlines():
+        name = get_pane_scientist(pane_id)
+        if name:
+            found[name] = pane_id
+    return found
+
+
+def reconcile_roster(names: list[str]) -> dict[str, str]:
+    roster = load_roster()
+    live = scan_panes_for_scientists()
+    merged: dict[str, str] = {}
+    for name in names:
+        pane_id = live.get(name) or roster.get(name)
+        if pane_id and pane_exists(pane_id):
+            current = get_pane_scientist(pane_id)
+            if current != name:
+                set_pane_scientist(pane_id, name)
+            merged[name] = pane_id
+        elif name in live:
+            merged[name] = live[name]
+    for name, pane_id in live.items():
+        if name not in merged:
+            merged[name] = pane_id
+    if merged != roster:
+        save_roster(merged)
+    return merged
+
+
+def next_free_name(names: list[str], roster: dict[str, str]) -> str:
+    claimed = set(roster)
+    for name in names:
+        if name not in claimed:
+            return name
+    die("all scientist names are claimed; free one with tell unclaim or kill a pane")
+
+
+def inbox_dir_for(name: str) -> Path:
+    return INBOX_DIR / name.lower()
+
+
+def pending_files(name: str) -> list[Path]:
+    directory = inbox_dir_for(name)
+    if not directory.is_dir():
+        return []
+    return sorted(p for p in directory.glob("*.txt") if p.is_file())
+
+
+def pending_count(name: str) -> int:
+    return len(pending_files(name))
+
+
+def normalize_kind(kind: str | None) -> str:
+    k = (kind or "work").strip().lower()
+    if k in {"status", "stat", "s"}:
+        return "status"
+    if k in {"ask", "work", "w", "a"}:
+        return "work"
+    return "work"
+
+
+def is_status_like(body: str, *, kind: str | None = None) -> bool:
+    """True for ceremony/idle-ack mail that must not spawn replies."""
+    if normalize_kind(kind) == "status":
+        return True
+    text = body.strip()
+    if not text:
+        return True
+    low = text.lower()
+    if low.startswith("[ask]") or "[ask]" in low[:80]:
+        return False
+    # Long evidence dumps are work even if they mention "stamp" once.
+    if len(text) > 700 and ("evidence" in low or "root cause" in low or "```" in text):
+        return False
+    if low.startswith("root cause") and len(text) > 200:
+        return False
+    hits = sum(1 for pat in _STATUS_PATTERNS if pat.search(text))
+    if hits >= 1 and len(text) < 600:
+        # Single "no contact" buried in a real patch note with densify tables → work
+        if hits == 1 and ("paddingx" in low or "budget" in low or "acceptance" in low):
+            if len(text) > 280:
+                return False
+        return True
+    return False
+
+
+def write_inbox_message(
+    target: str,
+    sender: str | None,
+    body: str,
+    *,
+    kind: str = "work",
+) -> Path:
+    target_dir = inbox_dir_for(target)
+    target_dir.mkdir(parents=True, exist_ok=True)
+    ts = time.strftime("%Y%m%dT%H%M%S")
+    suffix = f"{time.time_ns() % 1_000_000:06d}"
+    from_part = sender or "unknown"
+    kind = normalize_kind(kind)
+    body = body.rstrip()
+    if kind == "status" and not body.lower().lstrip().startswith("[status]"):
+        body = f"[status]\n{body}"
+    if kind == "work" and body.lower().lstrip().startswith("[ask]"):
+        kind = "work"
+    path = target_dir / f"{ts}-{suffix}-{from_part}.txt"
+    path.write_text(
+        f"from: {from_part}\nto: {target}\nkind: {kind}\n\n{body}\n",
+        encoding="utf-8",
+    )
+    return path
+
+
+def parse_inbox_file(path: Path) -> tuple[str, str, str]:
+    """Return (sender, body, kind)."""
+    text = path.read_text(encoding="utf-8")
+    sender = "unknown"
+    kind = "work"
+    body = text
+    if text.startswith("from:") or text.startswith("kind:"):
+        lines = text.splitlines()
+        headers_done = 0
+        for i, line in enumerate(lines):
+            if line.startswith("from:"):
+                sender = line.split(":", 1)[1].strip() or "unknown"
+                headers_done = i + 1
+            elif line.startswith("to:"):
+                headers_done = i + 1
+            elif line.startswith("kind:"):
+                kind = normalize_kind(line.split(":", 1)[1])
+                headers_done = i + 1
+            elif line.strip() == "":
+                body = "\n".join(lines[i + 1 :])
+                break
+        else:
+            body = "\n".join(lines[headers_done:])
+    body = body.strip("\n")
+    if is_status_like(body, kind=kind):
+        kind = "status"
+    return sender.lower(), body, kind
+
+
+def archive_file(path: Path) -> Path:
+    archive_dir = path.parent / "archive"
+    archive_dir.mkdir(parents=True, exist_ok=True)
+    dest = archive_dir / path.name
+    if dest.exists():
+        dest = archive_dir / f"{path.stem}-{time.time_ns()}{path.suffix}"
+    path.rename(dest)
+    return dest
+
+
+def _archive_mtime_and_meta(path: Path) -> tuple[float, str, str] | None:
+    """mtime, sender-from-filename-or-headers, kind."""
+    try:
+        mtime = path.stat().st_mtime
+        sender, body, kind = parse_inbox_file(path)
+        if is_status_like(body, kind=kind):
+            kind = "status"
+        return mtime, sender, kind
+    except OSError:
+        return None
+
+
+def recent_status_from_sender(target: str, sender: str) -> bool:
+    """True if we recently archived a status message from sender→target."""
+    archive_dir = inbox_dir_for(target) / "archive"
+    if not archive_dir.is_dir():
+        return False
+    cutoff = time.time() - COALESCE_STATUS_S
+    newest_status = 0.0
+    for path in archive_dir.glob(f"*-{sender}.txt"):
+        meta = _archive_mtime_and_meta(path)
+        if not meta:
+            continue
+        mtime, _snd, kind = meta
+        if kind == "status" and mtime >= cutoff:
+            newest_status = max(newest_status, mtime)
+    # Also scan a few newest archives (filename sender can differ)
+    recent = sorted(archive_dir.glob("*.txt"), key=lambda p: p.stat().st_mtime, reverse=True)[
+        :40
+    ]
+    for path in recent:
+        meta = _archive_mtime_and_meta(path)
+        if not meta:
+            continue
+        mtime, snd, kind = meta
+        if snd == sender and kind == "status" and mtime >= cutoff:
+            return True
+    return newest_status >= cutoff
+
+
+def pane_title(pane_id: str) -> str:
+    result = run(
+        ["tmux", "display-message", "-t", pane_id, "-p", "#{pane_title}"],
+        check=False,
+        capture=True,
+    )
+    if result.returncode != 0:
+        return ""
+    return result.stdout.strip()
+
+
+def pane_looks_ready(pane_id: str) -> bool:
+    title = pane_title(pane_id)
+    if not title:
+        return True
+    lowered = title.lower()
+    if "working" in lowered or "⏳" in title:
+        return False
+    if "ready" in lowered or "✅" in title:
+        return True
+    return True
+
+
+def wait_until_ready(pane_id: str, timeout_s: float) -> bool:
+    deadline = time.monotonic() + timeout_s
+    while time.monotonic() < deadline:
+        if not pane_exists(pane_id):
+            return False
+        if pane_looks_ready(pane_id):
+            return True
+        time.sleep(READY_POLL_S)
+    return False
+
+
+def wait_until_busy(pane_id: str, timeout_s: float) -> bool:
+    deadline = time.monotonic() + timeout_s
+    while time.monotonic() < deadline:
+        if not pane_exists(pane_id):
+            return False
+        if not pane_looks_ready(pane_id):
+            return True
+        time.sleep(READY_POLL_S)
+    return False
+
+
+def pane_lock_path(pane_id: str) -> Path:
+    return LOCK_DIR / f"pane-{pane_id.lstrip('%')}.lock"
+
+
+def ensure_insert_mode(pane_id: str) -> None:
+    run(["tmux", "send-keys", "-t", pane_id, "i"], check=False)
+    time.sleep(0.12)
+
+
+def clear_composer(pane_id: str) -> None:
+    run(["tmux", "send-keys", "-t", pane_id, "C-u"], check=False)
+    time.sleep(0.05)
+
+
+def inject_user_turn(pane_id: str, message: str, *, full_turn: bool) -> bool:
+    """Type a user message into a pane. If full_turn, wait Ready→Working→Ready."""
+    LOCK_DIR.mkdir(parents=True, exist_ok=True)
+    lock_path = pane_lock_path(pane_id)
+    with lock_path.open("a+", encoding="utf-8") as lock_file:
+        fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+        try:
+            wait_s = DELIVER_READY_WAIT_S if full_turn else 20.0
+            if not wait_until_ready(pane_id, wait_s):
+                return False
+            ensure_insert_mode(pane_id)
+            clear_composer(pane_id)
+            run(["tmux", "send-keys", "-t", pane_id, "-l", "--", message])
+            time.sleep(SEND_PRE_ENTER_S)
+            run(["tmux", "send-keys", "-t", pane_id, "Enter"])
+            accepted = wait_until_busy(pane_id, DELIVER_BUSY_WAIT_S if full_turn else 5.0)
+            if not accepted:
+                time.sleep(SEND_LOCK_HOLD_S)
+            if full_turn and accepted:
+                if not wait_until_ready(pane_id, DELIVER_READY_WAIT_S):
+                    log(f"inject: pane {pane_id} did not return Ready after deliver")
+            return True
+        finally:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+
+
+def format_delivery(sender: str, body: str) -> str:
+    return f"[from {sender}]\n{body.strip()}"
+
+
+def deliver_one(name: str, pane_id: str) -> bool:
+    files = pending_files(name)
+    if not files:
+        return False
+    path = files[0]
+    try:
+        sender, body, kind = parse_inbox_file(path)
+    except OSError as exc:
+        log(f"deliver: cannot read {path}: {exc}")
+        return False
+    if not body.strip():
+        archive_file(path)
+        log(f"deliver: archived empty {path.name}")
+        return True
+
+    status = is_status_like(body, kind=kind)
+
+    # Hush: drop status without waking the pane; work still delivers.
+    if status and is_hushed(name):
+        archive_file(path)
+        log(f"deliver: hush-drop status {name} <- {sender} ({path.name})")
+        return True
+
+    # Coalesce: repeated status from same sender within window → drop.
+    if status and recent_status_from_sender(name, sender):
+        archive_file(path)
+        log(f"deliver: coalesce-drop status {name} <- {sender} ({path.name})")
+        return True
+
+    message = format_delivery(sender, body)
+    log(f"deliver: {name} <- {sender} kind={kind} ({path.name}) -> {pane_id}")
+    LOCK_DIR.mkdir(parents=True, exist_ok=True)
+    lock_path = pane_lock_path(pane_id)
+    with lock_path.open("a+", encoding="utf-8") as lock_file:
+        fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+        try:
+            if not wait_until_ready(pane_id, DELIVER_READY_WAIT_S):
+                log(f"deliver: deferred {path.name} (pane {pane_id} not ready)")
+                return False
+            ensure_insert_mode(pane_id)
+            clear_composer(pane_id)
+            run(["tmux", "send-keys", "-t", pane_id, "-l", "--", message])
+            time.sleep(SEND_PRE_ENTER_S)
+            run(["tmux", "send-keys", "-t", pane_id, "Enter"])
+            if not wait_until_busy(pane_id, DELIVER_BUSY_WAIT_S):
+                time.sleep(SEND_LOCK_HOLD_S)
+            archive_file(path)
+            log(f"deliver: archived {path.name}")
+            return True
+        finally:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+
+
+def sender_scientist() -> str | None:
+    pane = os.environ.get("TMUX_PANE")
+    if not pane:
+        result = subprocess.run(
+            ["tmux", "display-message", "-p", "#{pane_id}"],
+            check=False,
+            text=True,
+            capture_output=True,
+        )
+        if result.returncode != 0 or not result.stdout.strip():
+            return None
+        pane = result.stdout.strip()
+    return get_pane_scientist(pane)
+
+
+def resolve_target(names: list[str], name: str) -> str:
+    name = name.lower()
+    if name not in set(names):
+        die(f"unknown scientist '{name}'. known: {', '.join(names)}")
+    roster = reconcile_roster(names)
+    pane_id = roster.get(name) or scan_panes_for_scientists().get(name)
+    if not pane_id:
+        die(f"{name} is not claimed; run `tell claim {name}` in that pane")
+    if not pane_exists(pane_id):
+        die(f"{name} pane {pane_id} is dead; re-claim in a live pane")
+    return pane_id
+
+
+# --- daemon ------------------------------------------------------------
+
+
+def read_pid() -> int | None:
+    if not PID_PATH.is_file():
+        return None
+    try:
+        return int(PID_PATH.read_text(encoding="utf-8").strip())
+    except ValueError:
+        return None
+
+
+def pid_alive(pid: int) -> bool:
+    try:
+        os.kill(pid, 0)
+    except OSError:
+        return False
+    return True
+
+
+def daemon_running() -> int | None:
+    pid = read_pid()
+    if pid and pid_alive(pid):
+        return pid
+    if PID_PATH.is_file():
+        PID_PATH.unlink(missing_ok=True)
+    return None
+
+
+def daemon_loop() -> None:
+    ROSTER_DIR.mkdir(parents=True, exist_ok=True)
+    PID_PATH.write_text(f"{os.getpid()}\n", encoding="utf-8")
+    log(f"telld: started pid={os.getpid()}")
+
+    def _shutdown(signum: int, _frame: object) -> None:
+        log(f"telld: signal {signum}, stopping")
+        PID_PATH.unlink(missing_ok=True)
+        raise SystemExit(0)
+
+    signal.signal(signal.SIGTERM, _shutdown)
+    signal.signal(signal.SIGINT, _shutdown)
+
+    names = load_names()
+    while True:
+        try:
+            ensure_tmux()
+            roster = reconcile_roster(names)
+            # Round-robin scientists so one busy chat cannot starve others forever.
+            for name in names:
+                pane_id = roster.get(name)
+                if not pane_id or not pane_exists(pane_id):
+                    continue
+                if not pending_files(name):
+                    continue
+                # Status hush/coalesce drops do not need Ready — drain them anytime.
+                path = pending_files(name)[0]
+                try:
+                    _sender, body, kind = parse_inbox_file(path)
+                except OSError:
+                    continue
+                status = is_status_like(body, kind=kind)
+                if status and (is_hushed(name) or recent_status_from_sender(name, _sender)):
+                    deliver_one(name, pane_id)
+                    continue
+                if not pane_looks_ready(pane_id):
+                    continue
+                deliver_one(name, pane_id)
+        except SystemExit:
+            raise
+        except Exception as exc:  # noqa: BLE001 — daemon must stay up
+            log(f"telld: loop error: {exc}")
+        time.sleep(DAEMON_POLL_S)
+
+
+def start_daemon() -> int:
+    existing = daemon_running()
+    if existing:
+        print(f"telld already running (pid {existing})")
+        return 0
+    script = str(Path(__file__).resolve())
+    ROSTER_DIR.mkdir(parents=True, exist_ok=True)
+    log_fh = LOG_PATH.open("a", encoding="utf-8")
+    proc = subprocess.Popen(
+        [sys.executable, script, "daemon", "run"],
+        stdin=subprocess.DEVNULL,
+        stdout=log_fh,
+        stderr=log_fh,
+        start_new_session=True,
+        close_fds=True,
+    )
+    for _ in range(20):
+        time.sleep(0.05)
+        if daemon_running():
+            break
+    print(f"telld started (pid {proc.pid})")
+    log(f"telld: spawned pid={proc.pid}")
+    return 0
+
+
+def stop_daemon() -> int:
+    pid = daemon_running()
+    if not pid:
+        print("telld not running")
+        PID_PATH.unlink(missing_ok=True)
+        return 0
+    os.kill(pid, signal.SIGTERM)
+    for _ in range(40):
+        if not pid_alive(pid):
+            break
+        time.sleep(0.05)
+    PID_PATH.unlink(missing_ok=True)
+    print(f"telld stopped (was pid {pid})")
+    return 0
+
+
+def ensure_daemon() -> None:
+    if daemon_running():
+        return
+    start_daemon()
+
+
+# --- commands ----------------------------------------------------------
+
+
+def cmd_list(names: list[str]) -> int:
+    roster = reconcile_roster(names)
+    width = max(len(n) for n in names)
+    pid = daemon_running()
+    print(f"telld  {'running pid ' + str(pid) if pid else 'STOPPED'}")
+    print(f"hush   {hush_summary()}")
+    print(f"log    {LOG_PATH}")
+    print("---")
+    for name in names:
+        pane_id = roster.get(name)
+        pending = pending_count(name)
+        pend = f"  pending={pending}" if pending else ""
+        hush_mark = "  HUSH" if is_hushed(name) else ""
+        if pane_id and pane_exists(pane_id):
+            title = pane_title(pane_id)
+            ready = "ready" if pane_looks_ready(pane_id) else "busy"
+            status = f"live  {pane_id}  {ready}{pend}{hush_mark}"
+            if title:
+                status += f"  ({title[:40]})"
+        elif pane_id:
+            status = f"stale {pane_id}{pend}{hush_mark}"
+        else:
+            status = f"free{pend}{hush_mark}"
+        print(f"{name:<{width}}  {status}")
+    return 0
+
+
+def cmd_claim(names: list[str], requested: str | None) -> int:
+    pane_id = current_pane_id()
+    roster = reconcile_roster(names)
+    name_set = set(names)
+
+    if requested:
+        name = requested.lower()
+        if name not in name_set:
+            die(f"unknown scientist '{name}'. known: {', '.join(names)}")
+        existing = roster.get(name)
+        if existing and existing != pane_id and pane_exists(existing):
+            die(f"{name} is already claimed by {existing}")
+    else:
+        current = get_pane_scientist(pane_id)
+        if current and current in name_set:
+            name = current
+        else:
+            for claimed_name, claimed_pane in list(roster.items()):
+                if claimed_pane == pane_id:
+                    del roster[claimed_name]
+            name = next_free_name(names, roster)
+
+    for claimed_name, claimed_pane in list(roster.items()):
+        if claimed_pane == pane_id and claimed_name != name:
+            del roster[claimed_name]
+            clear_pane_scientist(pane_id)
+
+    set_pane_scientist(pane_id, name)
+    roster[name] = pane_id
+    save_roster(roster)
+    ensure_daemon()
+    print(f"claimed {name} -> {pane_id}")
+    return 0
+
+
+def cmd_unclaim(names: list[str], requested: str | None) -> int:
+    roster = reconcile_roster(names)
+    pane_id = current_pane_id()
+
+    if requested:
+        name = requested.lower()
+        if name not in roster:
+            die(f"{name} is not claimed")
+        target = roster[name]
+        clear_pane_scientist(target)
+        del roster[name]
+        save_roster(roster)
+        print(f"unclaimed {name} ({target})")
+        return 0
+
+    current = get_pane_scientist(pane_id)
+    removed = False
+    for claimed_name, claimed_pane in list(roster.items()):
+        if claimed_pane == pane_id or claimed_name == current:
+            clear_pane_scientist(claimed_pane)
+            del roster[claimed_name]
+            print(f"unclaimed {claimed_name} ({claimed_pane})")
+            removed = True
+    if not removed:
+        die("current pane has no scientist claim")
+    save_roster(roster)
+    return 0
+
+
+def cmd_inbox(names: list[str], requested: str | None) -> int:
+    """Manual drain (debug). Prefer telld auto-delivery."""
+    if requested:
+        name = requested.lower()
+        if name not in set(names):
+            die(f"unknown scientist '{name}'. known: {', '.join(names)}")
+    else:
+        name = sender_scientist()
+        if not name:
+            die("not claimed; pass a name: tell inbox faraday")
+
+    files = pending_files(name)
+    if not files:
+        print(f"tell: inbox empty for {name}")
+        return 0
+    for path in files:
+        text = path.read_text(encoding="utf-8")
+        print(f"----- {path.name} -----")
+        print(text.rstrip())
+        print()
+        archive_file(path)
+    print(f"tell: drained {len(files)} message(s) for {name}")
+    return 0
+
+
+def cmd_hush(names: list[str], rest: list[str]) -> int:
+    """Silence status traffic. Usage: hush [all|NAME|clear|off|status]."""
+    action = (rest[0] if rest else "all").lower()
+    hush = load_hush()
+    name_set = set(names)
+
+    if action in {"clear", "off", "none", "reset", "unhush"}:
+        save_hush(default_hush())
+        log("hush: cleared")
+        print("hush cleared (status delivers again; coalesce still active)")
+        return 0
+    if action in {"status", "show", "st"}:
+        print(f"hush {hush_summary()}")
+        print(f"file {HUSH_PATH}")
+        return 0
+    if action in {"all", "*"}:
+        save_hush({"global": True, "names": {}})
+        log("hush: global ON")
+        print("hush ALL — status-like mail archived without inject; work still delivers")
+        return 0
+    if action in name_set:
+        hush["global"] = False
+        names_map = dict(hush.get("names") or {})
+        names_map[action] = True
+        hush["names"] = names_map
+        save_hush(hush)
+        log(f"hush: {action} ON")
+        print(f"hush {action} — status drops for that pane; work still delivers")
+        return 0
+    die(
+        "usage: tell hush [all|NAME|clear|status]  "
+        f"(known names: {', '.join(names)})"
+    )
+
+
+def parse_send_flags(rest: list[str]) -> tuple[str, list[str], bool]:
+    """Extract --status / --ask from rest; return (kind, words, ask_flag)."""
+    kind = "work"
+    ask_flag = False
+    out: list[str] = []
+    i = 0
+    while i < len(rest):
+        tok = rest[i]
+        if tok in {"--status", "-s"}:
+            kind = "status"
+            ask_flag = False
+            i += 1
+            continue
+        if tok in {"--ask", "-a"}:
+            kind = "work"
+            ask_flag = True
+            i += 1
+            continue
+        if tok == "--work":
+            kind = "work"
+            i += 1
+            continue
+        if tok.startswith("--"):
+            die(f"unknown send flag: {tok} (try --ask or --status)")
+        out.append(tok)
+        i += 1
+    return kind, out, ask_flag
+
+
+def cmd_send(names: list[str], target_name: str, message_parts: list[str]) -> int:
+    target = target_name.lower()
+    resolve_target(names, target)  # validate claimed + live
+    kind, message_parts, ask_flag = parse_send_flags(message_parts)
+    if not message_parts:
+        die("message required (or pass '-' to read stdin); flags: --ask | --status")
+    if len(message_parts) == 1 and message_parts[0] == "-":
+        message = sys.stdin.read()
+    else:
+        message = " ".join(message_parts)
+    message = message.strip("\n")
+    if not message.strip():
+        die("message is empty")
+
+    if ask_flag and not message.lstrip().lower().startswith("[ask]"):
+        message = f"[ask] {message}"
+
+    sender = sender_scientist()
+    path = write_inbox_message(target, sender, message, kind=kind)
+    ensure_daemon()
+    who = sender or "unknown"
+    kind_note = f" kind={kind}" if kind == "status" else ""
+    hush_note = ""
+    if kind == "status" and is_hushed(target):
+        hush_note = " (hush: will drop without inject)"
+    print(
+        f"queued for {target} via {path.name} from {who}{kind_note} "
+        f"(telld will deliver){hush_note}"
+    )
+    return 0
+
+
+def cmd_daemon(rest: list[str]) -> int:
+    action = (rest[0] if rest else "status").lower()
+    if action == "run":
+        ensure_tmux()
+        daemon_loop()
+        return 0
+    if action in {"start", "up"}:
+        ensure_tmux()
+        return start_daemon()
+    if action in {"stop", "down"}:
+        return stop_daemon()
+    if action in {"status", "st"}:
+        pid = daemon_running()
+        if pid:
+            print(f"telld running pid {pid}")
+            print(f"hush {hush_summary()}")
+            print(f"log {LOG_PATH}")
+            return 0
+        print("telld not running")
+        return 1
+    if action == "restart":
+        stop_daemon()
+        ensure_tmux()
+        return start_daemon()
+    die(f"unknown daemon action '{action}' (start|stop|status|restart|run)")
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="tell",
+        description=(
+            "Message scientist-named Cursor agent panes. "
+            "Bodies queue to an inbox; telld auto-injects them as user turns. "
+            "Use --ask / --status; tell hush stops status ping-pong."
+        ),
+    )
+    parser.add_argument(
+        "target",
+        help=(
+            "scientist name, or: claim|list|unclaim|inbox|daemon|status|"
+            "hush|unhush"
+        ),
+    )
+    parser.add_argument(
+        "rest",
+        nargs=argparse.REMAINDER,
+        help="message words, --ask/--status, or args for subcommands",
+    )
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    argv = list(argv) if argv is not None else sys.argv[1:]
+    prog = Path(sys.argv[0]).name
+    if prog == "telld" and (
+        not argv or argv[0] not in {"run", "start", "stop", "status", "restart"}
+    ):
+        if not argv:
+            argv = ["daemon", "status"]
+        elif argv[0] != "daemon":
+            argv = ["daemon", *argv]
+
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    target = args.target.lower()
+    rest = list(args.rest)
+    if rest and rest[0] == "--":
+        rest = rest[1:]
+
+    if target in {"-h", "--help", "help"}:
+        parser.print_help()
+        return 0
+
+    if target == "daemon":
+        return cmd_daemon(rest)
+    if target == "status":
+        ensure_tmux()
+        return cmd_list(load_names())
+
+    ensure_tmux()
+    names = load_names()
+
+    if target == "list":
+        return cmd_list(names)
+    if target == "claim":
+        requested = rest[0] if rest else None
+        if requested and requested.startswith("-"):
+            die(f"unexpected argument: {requested}")
+        return cmd_claim(names, requested)
+    if target == "unclaim":
+        return cmd_unclaim(names, rest[0] if rest else None)
+    if target == "inbox":
+        return cmd_inbox(names, rest[0] if rest else None)
+    if target == "hush":
+        return cmd_hush(names, rest)
+    if target == "unhush":
+        return cmd_hush(names, ["clear", *rest])
+
+    # Allow: tell --status curie "msg" / tell --ask curie "msg"
+    if target in {"--status", "-s", "--ask", "-a", "--work"}:
+        kind = "status" if target in {"--status", "-s"} else "work"
+        if not rest:
+            die(f"usage: tell {target} <name> <message>")
+        return cmd_send(names, rest[0], [target, *rest[1:]])
+
+    return cmd_send(names, target, rest)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

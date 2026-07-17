@@ -1,0 +1,16 @@
+newton
+curie
+darwin
+faraday
+maxwell
+einstein
+turing
+hopper
+noether
+lovelace
+pasteur
+galileo
+bohr
+feynman
+ramanujan
+mendeleev

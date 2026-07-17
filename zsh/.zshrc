@@ -147,5 +147,8 @@ agent() {
   command cursor-agent "$@"
 }
 
+# Scientist-named agent pane messaging (`tell claim` / `tell curie "..."`)
+export PATH="$HOME/.cursor/skills/agent-tell/scripts:$PATH"
+
 # Added by cua-driver-rs installer — see https://github.com/trycua/cua
 export PATH="/Users/ple/.local/bin:$PATH"

@@ -25,7 +25,7 @@ Stow creates relative symlinks so the repo stays portable across machines.
 ## Packages (high level)
 
 - Shell: `zsh/` (.zshrc, .zprofile, .zshenv)
-- Editors: `nvim/`, `zed/`, `cursor/`, `vscode/`
+- Editors: `nvim/`, `zed/`, `cursor/` (includes [agent-tell](cursor/.cursor/skills/agent-tell/) lab for tmux Cursor agents), `vscode/`
 - Terminal/tools: `tmux/`, `ghostty/`, `direnv/`, `yazi/`, `zellij/`
 - macOS: `hammerspoon/`
 - Dev tools: `asdf/`, `graphite/`, `opencode/`, `github-copilot/`, `codex/`
@@ -64,6 +64,7 @@ Default snap modifier: **Ctrl + Alt** (change via menubar **WL** → Configurati
 | Horizontal thirds | `Ctrl+Alt` + `M` `2` `3` |
 | Two-thirds | `Ctrl+Alt` + `5` (left) `Y` (right) `L` (bottom) |
 | Vertical fourths | `Ctrl+Alt` + `Z` `X` `C` `V` |
+| Right three-fourths | `Ctrl+Alt` + `B` |
 | Center (keep size) | `Ctrl+Alt` + `Space` |
 | Save layout | `Ctrl+Alt` + `S` |
 | Restore layout | `Ctrl+Alt` + `Backspace` |
