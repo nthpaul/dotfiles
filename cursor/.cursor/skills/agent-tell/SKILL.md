@@ -70,12 +70,37 @@ Returns immediately after queueing. telld delivers.
 
 **If the message has no ask → do not `tell` back.** Work in your pane or stay quiet.
 
+### Board protocol (multi-pane discussion)
+
+Default for any multi-scientist discussion, critique board, or market/decision stamp:
+**one coordinator**. Quorum voting is deferred — more moving parts than we need right now.
+
+```
+Human names topic + coordinator (or coordinator self-claims)
+  → Coordinator asks each peer once (bounded ask)
+  → Peers reply with substance (one payload each)
+  → Coordinator synthesizes, declares FREEZE once
+  → Coordinator alone writes the final report to the human
+  → Peers: silence (status only if truly new evidence)
+```
+
+| Role | Does | Does not |
+|------|------|----------|
+| **Coordinator** | Issues bounded asks; owns freeze; owns final report to human | Relay peer↔peer ping-pong; restate freeze |
+| **Peer** | One substantive reply per ask; optional one final evidence payload at freeze | Stamp the stamp; ack freeze; ask other peers to re-ack |
+| **Human** | Names topic / coordinator; requests final report | — |
+
+**Cap:** snapshot → ≤1 dig ask per peer → ≤1 wedge resolve → freeze → report. If ceremony starts, coordinator `tell hush` and writes the report.
+
+**Quorum (not default):** only if the human explicitly asks for a vote. Even then, coordinator tallies and reports — peers do not re-stamp.
+
 ### Freeze / stamp ceremony
 
-1. One coordinator (or the human) may declare freeze **once**.
-2. Peers may send **one** final evidence payload (ROOT CAUSE, REPRO table, FIX).
-3. After freeze is acknowledged by the coordinator/human: **silence**.
+1. **Only the coordinator** (or the human) may declare freeze — **once**.
+2. Peers may send **one** final evidence payload (ROOT CAUSE, REPRO table, FIX / decision cut).
+3. After freeze: **silence**. Coordinator writes the final report; peers do not ack.
 4. Do **not** stamp the stamp. Do **not** ack idle. Do **not** restate the writeup.
+5. Peer-to-peer "three-way ready to stamp?" loops are banned — that is the coordinator's job.
 
 ### Hush
 
@@ -112,6 +137,7 @@ tail -f ~/.cursor/scientists/telld.log
 3. Keep messages short and actionable. Prefer `--ask` / `--status`.
 4. `tell claim` at session start if unset.
 5. **No ping-pong.** No idle-ack orbits. *Sic itur ad astra.*
+6. **Boards use one coordinator** — that pane freezes once and alone reports to the human.
 
 ## Paths
 
