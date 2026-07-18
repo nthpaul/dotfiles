@@ -1,0 +1,14 @@
+---
+description: Use plain language with the user and in anything posted externally
+alwaysApply: true
+---
+
+# Plain language
+
+When talking to this user, and when drafting or posting anything for them (PR reviews, GitHub comments, Slack, Linear):
+
+- Prefer short, everyday words. Explain like a teammate at a whiteboard, not a design doc.
+- Avoid stacked jargon and review-bot phrasing unless the user asked for that register.
+- One idea per sentence when possible. Cut filler.
+- Code symbols and file names are fine when needed — wrap the plain meaning around them.
+- If a draft sounds like Codex/Bugbot, rewrite it in plain English before showing or posting.
