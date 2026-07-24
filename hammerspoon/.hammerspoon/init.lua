@@ -8,9 +8,10 @@
 --   Top/Bottom half:     Up / Down
 --   Corners:             U I J K
 --   Vertical thirds:       D F G
---   Horizontal thirds:   M 2 3
---   Two-thirds:          5 Y L
+--   Horizontal third:    M (top)
+--   Two-thirds:          Y (right) L (bottom)
 --   Vertical fourths:    Z X C V
+--   Right three-fourths: B
 --   Center (no resize):  Space
 --   Maximize:            Enter
 --   Save layout:         S

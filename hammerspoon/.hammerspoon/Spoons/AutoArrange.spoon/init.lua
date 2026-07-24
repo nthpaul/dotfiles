@@ -163,11 +163,8 @@ obj.config = {
 
         -- Horizontal thirds (full-width rows)
         horizontalThird1 = {base, "M"},
-        horizontalThird2 = {base, "2"},
-        horizontalThird3 = {base, "3"},
         
         -- Two Thirds
-        leftTwoThirds = {base, "5"},
         rightTwoThirds = {base, "Y"},
         bottomTwoThirds = {base, "L"},
 
@@ -176,6 +173,7 @@ obj.config = {
         verticalFourth2 = {base, "X"},
         verticalFourth3 = {base, "C"},
         verticalFourth4 = {base, "V"},
+        rightThreeFourths = {base, "B"},
         
         -- Extras
         maximize = {base, "Return"},
@@ -676,6 +674,7 @@ function obj.buildMenu()
     add("¼  2nd Column", "verticalFourth2", function() obj.snapWindow("verticalFourth2") end)
     add("¼  3rd Column", "verticalFourth3", function() obj.snapWindow("verticalFourth3") end)
     add("¼  Right Column", "verticalFourth4", function() obj.snapWindow("verticalFourth4") end)
+    add("¾  Right Three Fourths", "rightThreeFourths", function() obj.snapWindow("rightThreeFourths") end)
     table.insert(menuTable, { title = "-" })
 
     -- Section 4: Maximize / Restore / Center
@@ -778,6 +777,7 @@ function obj.bindHotkeys()
     bind("verticalFourth2", function() obj.snapWindow("verticalFourth2") end)
     bind("verticalFourth3", function() obj.snapWindow("verticalFourth3") end)
     bind("verticalFourth4", function() obj.snapWindow("verticalFourth4") end)
+    bind("rightThreeFourths", function() obj.snapWindow("rightThreeFourths") end)
     
     -- Extras
     bind("maximize", function() obj.snapWindow("maximize") end)
@@ -888,6 +888,8 @@ function obj.snapWindow(direction)
         f = obj.tileFrame(work, 2, 0, 4, 1)
     elseif direction == "verticalFourth4" then
         f = obj.tileFrame(work, 3, 0, 4, 1)
+    elseif direction == "rightThreeFourths" then
+        f = obj.tileFrame(work, 1, 0, 4, 1, 3, 1)
         
     -- Standard
     elseif direction == "center" then
