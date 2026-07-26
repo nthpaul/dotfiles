@@ -61,10 +61,11 @@ Default snap modifier: **Ctrl + Alt** (change via menubar **WL** → Configurati
 | Top / bottom half | `Ctrl+Alt` + `↑` / `↓` |
 | Corners | `Ctrl+Alt` + `U` `I` `J` `K` |
 | Vertical thirds | `Ctrl+Alt` + `D` `F` `G` |
-| Horizontal third (top) | `Ctrl+Alt` + `M` |
+| Horizontal thirds | `Ctrl+Alt` + `M` (top) `N` (bottom) |
 | Two-thirds | `Ctrl+Alt` + `Y` (right) `L` (bottom) |
 | Vertical fourths | `Ctrl+Alt` + `Z` `X` `C` `V` |
 | Right three-fourths | `Ctrl+Alt` + `B` |
+| 2×3 top / middle | `Ctrl+Alt` + `Q` `W` (top) `E` `R` (middle) |
 | Center (keep size) | `Ctrl+Alt` + `Space` |
 | Save layout | `Ctrl+Alt` + `S` |
 | Restore layout | `Ctrl+Alt` + `Backspace` |
