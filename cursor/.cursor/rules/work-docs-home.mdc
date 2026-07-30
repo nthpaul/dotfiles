@@ -1,0 +1,30 @@
+---
+description: Write durable docs/reports/scratch artifacts to ~/projects/work-docs
+alwaysApply: true
+---
+
+# Work docs home
+
+Durable documentation, reports, experiment writeups, eval result dumps, and agent memos go under **`~/projects/work-docs`** (repo `nthpaul/work-docs`) — not `/tmp`, not repo `tmp/`, not Desktop/Downloads.
+
+## Where to put things
+
+| Kind | Directory |
+|---|---|
+| Experiment writeups / one-off analyses | `experiments/<slug>/` |
+| Analytics / attribution notes | `analytics/<slug>/` |
+| Domain deep-dives (ops memory, cert evals, …) | top-level topic folder, e.g. `neutron-ops-actions-memory/` |
+| Raw `/tmp` rescues, logs, tool I/O worth keeping | `scratch/<slug>/` with a short `README.md` |
+| Multi-ticket plans | `plans/<slug>/` |
+
+Use a dated or ticket-scoped slug (`neutron-ops-actions-skills-ab`, `tmp-noise-2026-07`). Include a `README.md` that states source, date, and what is/isn't curated.
+
+## Do / Don't
+
+- **Do** write new docs straight into `work-docs` while working.
+- **Do** commit + push `work-docs` when the user asks to save or ship docs (same git hygiene as other repos).
+- **Don't** leave the only copy in `/tmp`, worktree `tmp/`, or chat-only.
+- **Don't** dump secrets (tokens, Infisical exports, raw auth headers). Redact or skip.
+- **Don't** put product source code or PR patches here — code stays in the product repo.
+
+Ephemeral compile/test logs that nobody will re-read can stay in `/tmp`. If you might need it next week, put it in `work-docs`.
