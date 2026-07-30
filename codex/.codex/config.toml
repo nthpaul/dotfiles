@@ -161,7 +161,7 @@ source_type = "local"
 source = "/Users/ple/.codex/.tmp/bundled-marketplaces/openai-bundled"
 
 [marketplaces.openai-primary-runtime]
-last_updated = "2026-07-24T08:58:04Z"
+last_updated = "2026-07-27T22:43:57Z"
 source_type = "local"
 source = "/Users/ple/.cache/codex-runtimes/codex-primary-runtime/plugins/openai-primary-runtime"
 
@@ -171,6 +171,21 @@ js_repl = false
 [desktop]
 followUpQueueMode = "queue"
 dock-icon-preference = "app-default"
+appearanceLightCodeThemeId = "proof"
+
+[desktop.appearanceLightChromeTheme]
+accent = "#3d755d"
+contrast = 45
+ink = "#2f312d"
+opaqueWindows = false
+surface = "#f5f3ed"
+
+[desktop.appearanceLightChromeTheme.fonts]
+
+[desktop.appearanceLightChromeTheme.semanticColors]
+diffAdded = "#3d755d"
+diffRemoved = "#ba2623"
+skill = "#5f6ac2"
 
 [shell_environment_policy.set]
 BROWSER_USE_AVAILABLE_BACKENDS = "chrome,iab"

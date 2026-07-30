@@ -176,11 +176,11 @@ obj.config = {
         verticalFourth4 = {base, "V"},
         rightThreeFourths = {base, "B"},
 
-        -- 2x3 grid: top + middle rows
-        grid2x3TopLeft = {base, "Q"},
-        grid2x3TopRight = {base, "W"},
-        grid2x3MidLeft = {base, "E"},
-        grid2x3MidRight = {base, "R"},
+        -- 2x3 grid: middle + bottom rows
+        grid2x3MidLeft = {base, "Q"},
+        grid2x3MidRight = {base, "W"},
+        grid2x3BottomLeft = {base, "E"},
+        grid2x3BottomRight = {base, "R"},
         
         -- Extras
         maximize = {base, "Return"},
@@ -685,10 +685,10 @@ function obj.buildMenu()
     table.insert(menuTable, { title = "-" })
 
     -- Section 3c: 2x3 grid (top + middle)
-    add("▦  Top Left", "grid2x3TopLeft", function() obj.snapWindow("grid2x3TopLeft") end)
-    add("▦  Top Right", "grid2x3TopRight", function() obj.snapWindow("grid2x3TopRight") end)
     add("▦  Middle Left", "grid2x3MidLeft", function() obj.snapWindow("grid2x3MidLeft") end)
     add("▦  Middle Right", "grid2x3MidRight", function() obj.snapWindow("grid2x3MidRight") end)
+    add("▦  Bottom Left", "grid2x3BottomLeft", function() obj.snapWindow("grid2x3BottomLeft") end)
+    add("▦  Bottom Right", "grid2x3BottomRight", function() obj.snapWindow("grid2x3BottomRight") end)
     table.insert(menuTable, { title = "-" })
 
     -- Section 4: Maximize / Restore / Center
@@ -794,10 +794,10 @@ function obj.bindHotkeys()
     bind("rightThreeFourths", function() obj.snapWindow("rightThreeFourths") end)
 
     -- 2x3 grid (top + middle)
-    bind("grid2x3TopLeft", function() obj.snapWindow("grid2x3TopLeft") end)
-    bind("grid2x3TopRight", function() obj.snapWindow("grid2x3TopRight") end)
     bind("grid2x3MidLeft", function() obj.snapWindow("grid2x3MidLeft") end)
     bind("grid2x3MidRight", function() obj.snapWindow("grid2x3MidRight") end)
+    bind("grid2x3BottomLeft", function() obj.snapWindow("grid2x3BottomLeft") end)
+    bind("grid2x3BottomRight", function() obj.snapWindow("grid2x3BottomRight") end)
     
     -- Extras
     bind("maximize", function() obj.snapWindow("maximize") end)
@@ -911,15 +911,15 @@ function obj.snapWindow(direction)
     elseif direction == "rightThreeFourths" then
         f = obj.tileFrame(work, 1, 0, 4, 1, 3, 1)
 
-    -- 2x3 grid (half × third)
-    elseif direction == "grid2x3TopLeft" then
-        f = obj.tileFrame(work, 0, 0, 2, 3)
-    elseif direction == "grid2x3TopRight" then
-        f = obj.tileFrame(work, 1, 0, 2, 3)
+    -- 2x3 grid (half × third): mid + bottom rows
     elseif direction == "grid2x3MidLeft" then
         f = obj.tileFrame(work, 0, 1, 2, 3)
     elseif direction == "grid2x3MidRight" then
         f = obj.tileFrame(work, 1, 1, 2, 3)
+    elseif direction == "grid2x3BottomLeft" then
+        f = obj.tileFrame(work, 0, 2, 2, 3)
+    elseif direction == "grid2x3BottomRight" then
+        f = obj.tileFrame(work, 1, 2, 2, 3)
         
     -- Standard
     elseif direction == "center" then

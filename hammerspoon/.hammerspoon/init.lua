@@ -12,7 +12,7 @@
 --   Two-thirds:          Y (right) L (bottom)
 --   Vertical fourths:    Z X C V
 --   Right three-fourths: B
---   2x3 top/mid:         Q W (top) E R (mid)
+--   2x3 mid/bottom:      Q W (mid) E R (bottom)
 --   Center (no resize):  Space
 --   Maximize:            Enter
 --   Save layout:         S
