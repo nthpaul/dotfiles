@@ -166,6 +166,7 @@ obj.config = {
         horizontalThird3 = {base, "N"},
         
         -- Two Thirds
+        leftTwoThirds = {base, "T"},
         rightTwoThirds = {base, "Y"},
         bottomTwoThirds = {base, "L"},
 
