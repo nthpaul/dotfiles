@@ -1,0 +1,21 @@
+---
+description: Never occupy Cursor MCP OAuth port 8787
+alwaysApply: true
+---
+
+# OAuth port 8787
+
+Cursor desktop/CLI MCP OAuth uses a **fixed** callback: `http://localhost:8787/callback`. Only one listener can own it.
+
+## Do not
+
+- Bind, listen, or proxy on port **8787**
+- Start tools that default to 8787 (e.g. `wrangler dev`) without forcing another port
+- Kill whatever is on 8787 without identifying it first — especially not the current `cursor-agent` / this session
+
+## If OAuth fails with "8787 already in use"
+
+1. `lsof -nP -iTCP:8787 -sTCP:LISTEN`
+2. Tell the user what owns it (PID + command)
+3. Only kill a process if it is clearly a **stale other** login/agent or unrelated server — never the live session doing the work
+4. Prefer asking the user to stop the other Cursor CLI login / free the port themselves when unsure
