@@ -43,3 +43,6 @@ projects/*/*
 !rules/
 !rules/**
 # <<< CURSOR MANAGED BLOCK <<<
+
+# Re-ignore installed plugin cache (un-ignored by the managed block above)
+plugins/cache/

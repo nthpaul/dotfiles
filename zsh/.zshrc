@@ -2,7 +2,6 @@
 alias vim='nvim'
 alias claude='claude --dangerously-skip-permissions'
 alias lzg='lazygit'
-alias claude='claude --dangerously-skip-permissions'
 
 alias ls='gls -lahps --author --group-directories-first --color=auto'
 # export PATH="/Users/ple/.local/bin:$PATH"
@@ -22,6 +21,10 @@ export SAVEHIST=10000
 export HISTFILE=~/.zhist
 setopt INC_APPEND_HISTORY
 setopt EXTENDED_HISTORY
+setopt SHARE_HISTORY
+setopt HIST_IGNORE_DUPS
+setopt HIST_IGNORE_SPACE
+setopt HIST_EXPIRE_DUPS_FIRST
 
 if command -v brew >/dev/null 2>&1; then
   OPENSSL_PREFIX="$(brew --prefix openssl@3 2>/dev/null || brew --prefix openssl@1.1 2>/dev/null)"

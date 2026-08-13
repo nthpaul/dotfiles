@@ -1,5 +1,6 @@
 -- vim.g.netrw_bufsettings = "noma nomod nu nowrap ro nobl" -- add relative line numbers to netrw
 vim.opt.swapfile = false -- Get rid of annoying swapfiles
+vim.opt.undofile = true
 
 vim.opt.winborder = "rounded"
 vim.opt.relativenumber = true
@@ -13,6 +14,8 @@ vim.opt.expandtab = true
 vim.opt.autoindent = true
 vim.opt.smartindent = true
 vim.opt.wrap = true
+vim.opt.splitbelow = true
+vim.opt.splitright = true
 
 vim.opt.clipboard:append("unnamedplus")
 
@@ -31,3 +34,11 @@ vim.g.editorconfig = true
 
 -- read all changes (incl. external) in realtime
 vim.opt.autoread = true
+
+vim.api.nvim_create_autocmd("TextYankPost", {
+	desc = "Highlight yanked text",
+	group = vim.api.nvim_create_augroup("YankHighlight", { clear = true }),
+	callback = function()
+		vim.highlight.on_yank()
+	end,
+})

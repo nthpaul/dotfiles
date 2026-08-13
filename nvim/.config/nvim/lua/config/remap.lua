@@ -32,7 +32,10 @@ vim.keymap.set({ "n", "v" }, "<leader>d", [["_d]], { desc = "delete chunks witho
 vim.keymap.set("n", "x", [["_x]], { desc = "delete single char without saving to register" })
 
 -- exit insert mode with ctrl-c
-vim.keymap.set("i", "C-c", "<Esc>", { desc = "exit insert mode" })
+vim.keymap.set("i", "<C-c>", "<Esc>", { desc = "exit insert mode" })
+
+-- clear search highlight
+vim.keymap.set("n", "<Esc>", "<cmd>nohlsearch<CR>", { desc = "Clear search highlight" })
 
 -- word replacement
 vim.keymap.set(

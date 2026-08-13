@@ -15,6 +15,9 @@ spotatui/.config/spotatui/streaming_cache/
 # Cursor CLI local cache (contains authInfo)
 cursor/.cursor/cli-config.json
 
+# Cursor installed plugin cache (re-downloaded by Cursor; huge + noisy)
+cursor/.cursor/plugins/cache/
+
 # Hammerspoon runtime layout profiles (local window positions/titles)
 hammerspoon/.hammerspoon/window-layouts/
 
