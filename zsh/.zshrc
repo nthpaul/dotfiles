@@ -133,10 +133,6 @@ export PATH=$PATH:$ANDROID_HOME/platform-tools
 # # OpenClaw Completion
 # source <(openclaw completion --shell zsh)
 
-# worktree-manager
-if [ -f "/Users/ple/projects/worktree-manager/worktree-manager.zsh" ]; then
-  source "/Users/ple/projects/worktree-manager/worktree-manager.zsh"
-fi
 export PATH=$PATH:$HOME/.maestro/bin
 
 # >>> grok installer >>>
