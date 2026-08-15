@@ -14,6 +14,7 @@ vim.opt.expandtab = true
 vim.opt.autoindent = true
 vim.opt.smartindent = true
 vim.opt.wrap = true
+vim.opt.linebreak = true -- wrap at word boundaries, not mid-word
 vim.opt.splitbelow = true
 vim.opt.splitright = true
 
