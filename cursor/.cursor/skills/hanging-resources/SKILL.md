@@ -82,6 +82,7 @@ Expected / not hanging by default:
 Lead with the CLI verdict (`clean` or `N hanging item(s)`).
 
 Then a table (or tight bullets) of findings only. Group by category. Skip empty categories.
+Each item includes listen ports (`ports 3000, 8787` or `ports none`). Process rows include child listeners. Docker uses published ports. Worktrees include listeners whose cwd is in that tree.
 
 End with: ask which items to kill/remove. Do not act until they say so.
 

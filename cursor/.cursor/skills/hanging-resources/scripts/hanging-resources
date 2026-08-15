@@ -62,6 +62,112 @@ rss_mb() {
   awk -v kb="$1" 'BEGIN { printf "%.0f", kb/1024 }'
 }
 
+# pid -> space-separated listen port numbers (TCP LISTEN)
+declare -A LISTEN_PORTS=()
+declare -A LISTEN_PID_CWD=()
+LISTEN_PORTS_LOADED=0
+LISTEN_CWDS_LOADED=0
+
+load_listen_ports() {
+  (( LISTEN_PORTS_LOADED == 1 )) && return 0
+  LISTEN_PORTS_LOADED=1
+  local pid="" name port cur
+  while IFS= read -r line; do
+    case "$line" in
+      p*)
+        pid="${line#p}"
+        ;;
+      n*)
+        [[ -z "$pid" ]] && continue
+        name="${line#n}"
+        name="${name%% *}"
+        port="${name##*:}"
+        port="${port%]}"
+        [[ "$port" =~ ^[0-9]+$ ]] || continue
+        cur="${LISTEN_PORTS[$pid]:-}"
+        if [[ " $cur " != *" $port "* ]]; then
+          LISTEN_PORTS[$pid]="${cur:+$cur }$port"
+        fi
+        ;;
+    esac
+  done < <(lsof -nP -iTCP -sTCP:LISTEN -F pn 2>/dev/null || true)
+}
+
+load_listen_cwds() {
+  load_listen_ports
+  (( LISTEN_CWDS_LOADED == 1 )) && return 0
+  LISTEN_CWDS_LOADED=1
+  local pids=("${!LISTEN_PORTS[@]}")
+  [[ ${#pids[@]} -eq 0 ]] && return 0
+  local csv pid=""
+  csv=$(IFS=,; echo "${pids[*]}")
+  while IFS= read -r line; do
+    case "$line" in
+      p*) pid="${line#p}" ;;
+      n*) [[ -n "$pid" ]] && LISTEN_PID_CWD[$pid]="${line#n}" ;;
+    esac
+  done < <(lsof -a -d cwd -p "$csv" -F pn 2>/dev/null || true)
+}
+
+collect_descendants() {
+  local pid="$1" child
+  printf '%s\n' "$pid"
+  while IFS= read -r child; do
+    [[ -z "$child" ]] && continue
+    collect_descendants "$child"
+  done < <(pgrep -P "$pid" 2>/dev/null || true)
+}
+
+join_ports() {
+  if [[ $# -eq 0 ]]; then
+    echo "none"
+    return 0
+  fi
+  printf '%s\n' "$@" | sort -n | awk '{ printf "%s%s", sep, $0; sep=", " } END { print "" }'
+}
+
+ports_for_pid_tree() {
+  load_listen_ports
+  local pid="$1" p port
+  local -A seen=()
+  local ports=()
+  while IFS= read -r p; do
+    [[ -z "$p" ]] && continue
+    for port in ${LISTEN_PORTS[$p]:-}; do
+      [[ -n "${seen[$port]+x}" ]] && continue
+      seen[$port]=1
+      ports+=("$port")
+    done
+  done < <(collect_descendants "$pid")
+  join_ports "${ports[@]+"${ports[@]}"}"
+}
+
+ports_for_worktree() {
+  load_listen_cwds
+  local wt="$1" pid cwd port
+  local -A seen=()
+  local ports=()
+  for pid in "${!LISTEN_PORTS[@]}"; do
+    cwd="${LISTEN_PID_CWD[$pid]:-}"
+    [[ "$cwd" == "$wt" || "$cwd" == "$wt"/* ]] || continue
+    for port in ${LISTEN_PORTS[$pid]}; do
+      [[ -n "${seen[$port]+x}" ]] && continue
+      seen[$port]=1
+      ports+=("$port")
+    done
+  done
+  join_ports "${ports[@]+"${ports[@]}"}"
+}
+
+docker_ports_label() {
+  local ports="$1"
+  if [[ -z "$ports" ]]; then
+    echo "ports none"
+    return 0
+  fi
+  echo "ports $ports"
+}
+
 want() {
   [[ -z "$ONLY" || "$ONLY" == "$1" ]]
 }
@@ -160,13 +266,13 @@ list_docker_rows() {
   if ! docker info >/dev/null 2>&1; then
     return 0
   fi
-  docker ps -a --format '{{.ID}}\t{{.Status}}\t{{.Names}}\t{{.Image}}' 2>/dev/null || true
+  docker ps -a --format '{{.ID}}\t{{.Status}}\t{{.Names}}\t{{.Image}}\t{{.Ports}}' 2>/dev/null || true
 }
 
 list_docker_ids() {
   local exited_only="${1:-0}"
   local id status
-  while IFS=$'\t' read -r id status _ _; do
+  while IFS=$'\t' read -r id status _ _ _; do
     [[ -z "$id" ]] && continue
     if [[ "$exited_only" == "1" && "$status" != Exited* && "$status" != Created* && "$status" != Dead* ]]; then
       continue
@@ -234,6 +340,10 @@ cmd_scan() {
   done
 
   ensure_self_pids
+  load_listen_ports
+  if want worktrees; then
+    load_listen_cwds
+  fi
   local findings=0 found pid etime cpu rss mb cwd cmd label wd path branch repo row id status names image
   emit() {
     findings=$((findings + 1))
@@ -259,7 +369,7 @@ cmd_scan() {
       (( cpu_int > 1 )) && continue
       cwd=$(lsof -a -d cwd -p "$pid" 2>/dev/null | awk 'NR==2 {print $NF}')
       mb=$(rss_mb "$rss")
-      emit "- pid $pid · age $etime · cpu ${cpu}% · ~${mb}MB · cwd ${cwd:-?}"
+      emit "- pid $pid · age $etime · cpu ${cpu}% · ~${mb}MB · ports $(ports_for_pid_tree "$pid") · cwd ${cwd:-?}"
       found=1
     done < <(ps -ax -o pid=,ppid=,etime=,%cpu=,rss=,command= \
       | awk '/\/cursor-agent( |$)/ && $0 !~ /worker-server/ && $0 !~ /awk/ {print}')
@@ -276,7 +386,7 @@ cmd_scan() {
       cpu=$(awk '{print $3}' <<<"$line")
       rss=$(awk '{print $4}' <<<"$line")
       mb=$(rss_mb "$rss")
-      emit "- pid $pid · age $etime · cpu ${cpu}% · ~${mb}MB · hermes_cli.main gateway restart"
+      emit "- pid $pid · age $etime · cpu ${cpu}% · ~${mb}MB · ports $(ports_for_pid_tree "$pid") · hermes_cli.main gateway restart"
       found=1
     done < <(ps -ax -o pid=,etime=,%cpu=,rss=,command= \
       | awk '/hermes_cli\.main gateway restart/ && $0 !~ /awk/ {print}')
@@ -305,7 +415,7 @@ cmd_scan() {
         wd=$(sed -n 's/.*--working-dir \([^ ]*\).*/\1/p' <<<"$cmd")
       fi
       mb=$(rss_mb "$rss")
-      emit "- pid $pid · age $etime · cpu ${cpu}% · ~${mb}MB · $label${wd:+ · $wd}"
+      emit "- pid $pid · age $etime · cpu ${cpu}% · ~${mb}MB · ports $(ports_for_pid_tree "$pid") · $label${wd:+ · $wd}"
       found=1
     done < <(ps -ax -o pid=,etime=,%cpu=,rss=,command= \
       | awk '/codex sandbox|cua_node\/bin\/node_repl/ && $0 !~ /awk/ {print}')
@@ -325,7 +435,7 @@ cmd_scan() {
         [[ -n "${seen[$path]+x}" ]] && continue
         seen[$path]=1
         branch=$(sed -n 's/.*\[\([^]]*\)\].*/\1/p' <<<"$wt_line")
-        emit "- $path${branch:+ · [$branch]} · from $(basename "$repo")"
+        emit "- $path${branch:+ · [$branch]} · ports $(ports_for_worktree "$path") · from $(basename "$repo")"
         found=1
       done < <(git -C "$repo" worktree list 2>/dev/null || true)
     done
@@ -333,7 +443,7 @@ cmd_scan() {
       while IFS= read -r path; do
         [[ -z "$path" ]] && continue
         [[ -n "${seen[$path]+x}" ]] && continue
-        emit "- $path · (dir present, not in git worktree list)"
+        emit "- $path · ports $(ports_for_worktree "$path") · (dir present, not in git worktree list)"
         found=1
       done < <(find "$WORKTREES_ROOT" -mindepth 2 -maxdepth 2 -type d 2>/dev/null || true)
     fi
@@ -346,9 +456,10 @@ cmd_scan() {
       echo "(daemon not running)"
     else
       found=0
-      while IFS=$'\t' read -r id status names image; do
+      local ports
+      while IFS=$'\t' read -r id status names image ports; do
         [[ -z "$id" ]] && continue
-        emit "- $id  $status  $names  $image"
+        emit "- $id  $status  $names  $image  $(docker_ports_label "$ports")"
         found=1
       done < <(list_docker_rows)
       (( found == 0 )) && echo "(none)"
@@ -485,8 +596,8 @@ remove_worktree() {
 
 resolve_docker() {
   local spec="$1"
-  local id status names image
-  while IFS=$'\t' read -r id status names image; do
+  local id status names image ports
+  while IFS=$'\t' read -r id status names image ports; do
     [[ -z "$id" ]] && continue
     if [[ "$id" == "$spec"* || "$names" == "$spec" ]]; then
       printf '%s\t%s\t%s\n' "$id" "$status" "$names"
@@ -682,8 +793,8 @@ cmd_complete() {
       done < <(list_worktree_paths)
       ;;
     docker)
-      local id status names image
-      while IFS=$'\t' read -r id status names image; do
+      local id status names image ports
+      while IFS=$'\t' read -r id status names image ports; do
         [[ -z "$id" ]] && continue
         printf '%s\n' "$names"
         printf '%s\n' "$id"
