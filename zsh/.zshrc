@@ -141,6 +141,12 @@ fpath=(~/.grok/completions/zsh $fpath)
 autoload -Uz compinit && compinit -C
 # <<< grok installer <<<
 
+# hanging-resources tab completion (after compinit so it sticks)
+if [[ -f "$HOME/.cursor/skills/hanging-resources/completions/_hanging-resources" ]]; then
+  source "$HOME/.cursor/skills/hanging-resources/completions/_hanging-resources"
+  compdef _hanging-resources hanging-resources
+fi
+
 # Use Cursor CLI for `agent` (grok installer shadows this command in PATH)
 agent() {
   command cursor-agent "$@"
@@ -151,3 +157,10 @@ export PATH="$HOME/.cursor/skills/agent-tell/scripts:$PATH"
 
 # Added by cua-driver-rs installer — see https://github.com/trycua/cua
 export PATH="/Users/ple/.local/bin:$PATH"
+
+# >>> cursor-google-mcp-oauth >>>
+# Auto-export Infisical Google OAuth client for Cursor MCP (${env:MCP_GOOGLE_OAUTH_*})
+if command -v infisical >/dev/null 2>&1; then
+  eval "$(infisical export --projectId=bf8b9a80-9fd7-48f6-985e-c199b94781d3 --env=local --format=dotenv 2>/dev/null | command rg '^MCP_GOOGLE_OAUTH_' | sed 's/^/export /')"
+fi
+# <<< cursor-google-mcp-oauth <<<

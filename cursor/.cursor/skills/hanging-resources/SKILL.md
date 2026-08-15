@@ -5,7 +5,7 @@ description: >-
   stuck Hermes gateway restarts, idle Codex sandboxes, leftover git worktrees
   under ~/.traba/worktrees, and Docker leftovers. Use when the user asks about
   hanging resources, hanging items, leftover agents/worktrees, or wants a
-  cleanup inventory.
+  cleanup inventory. Prefer the hanging-resources CLI — do not re-scan by hand.
 ---
 
 # Hanging resources
@@ -13,33 +13,58 @@ description: >-
 Scan the machine for leftover agent/dev resources and **list** them.
 Do **not** kill or remove anything unless the user explicitly asks.
 
-## Quick start
+## Command
 
-Run the scanner:
-
-```bash
-"$HOME/.cursor/skills/hanging-resources/scripts/scan.sh"
-```
-
-Optional flags:
+Deterministic CLI (no model). On PATH as `hanging-resources`:
 
 ```bash
-# Only one category
-"$HOME/.cursor/skills/hanging-resources/scripts/scan.sh" --only agents
-"$HOME/.cursor/skills/hanging-resources/scripts/scan.sh" --only worktrees
-"$HOME/.cursor/skills/hanging-resources/scripts/scan.sh" --only hermes
-"$HOME/.cursor/skills/hanging-resources/scripts/scan.sh" --only codex
-"$HOME/.cursor/skills/hanging-resources/scripts/scan.sh" --only docker
-
-# Treat cursor-agent idle after N minutes (default 30)
-"$HOME/.cursor/skills/hanging-resources/scripts/scan.sh" --agent-idle-min 60
+hanging-resources
+hanging-resources --only agents
+hanging-resources --only worktrees
+hanging-resources --only hermes
+hanging-resources --only codex
+hanging-resources --only docker
+hanging-resources --agent-idle-min 60
 ```
+
+Tab completion (zsh): type `hanging-resources` then Tab. Needs a new terminal, or `exec zsh`.
+
+If the command is missing, the script is:
+
+```bash
+"$HOME/.cursor/skills/hanging-resources/scripts/hanging-resources"
+```
+
+(`scripts/scan.sh` is a thin wrapper around `hanging-resources scan`.)
+
+Cleanup (only when the user names targets, or `--all` for that type):
+
+```bash
+hanging-resources clean agents 30526
+hanging-resources clean agents --all --dry-run
+hanging-resources clean agents --all --kill-9
+
+hanging-resources clean hermes --all
+hanging-resources clean codex 1234
+
+hanging-resources clean worktrees ple-eng-23589-adjust-empty-break-clear
+hanging-resources clean worktrees traba/ple-eng-23593-ops-failure-kind-stamp
+hanging-resources clean worktrees --all --dry-run
+
+hanging-resources clean docker kafka
+hanging-resources clean docker cc37134712fe
+hanging-resources clean docker --all --dry-run
+hanging-resources clean docker postgres_local --force
+```
+
+`--all` for docker skips running containers unless you also pass `--force`.
+`--dry-run` prints the plan and does nothing.
 
 ## What counts as hanging
 
 | Category | Signal |
 |----------|--------|
-| **Idle cursor-agent** | `cursor-agent` process older than idle threshold, ~0% CPU. Exclude the current agent (this chat) when obvious. |
+| **Idle cursor-agent** | `cursor-agent` process older than idle threshold, ~0% CPU. The CLI skips its own parent chain. |
 | **Stuck Hermes gateway** | `hermes_cli.main gateway restart` still running (any age). |
 | **Idle Codex sandbox** | `codex sandbox` / related `node_repl` older than ~1h with ~0% CPU. Ignore the Codex app itself. |
 | **Leftover worktrees** | Entries under `$TRABA_WORKTREES_ROOT` (default `~/.traba/worktrees`) registered via `git worktree list` on known repos (`traba`, `the-matrix` if present). Main checkouts are not hanging. |
@@ -54,30 +79,21 @@ Expected / not hanging by default:
 
 ## Report format
 
-Lead with a one-line verdict (`clean` or `N hanging items`).
+Lead with the CLI verdict (`clean` or `N hanging item(s)`).
 
-Then a table (or tight bullets) of findings only:
-
-```markdown
-| Category | Age | Detail | Suggested cleanup |
-|----------|-----|--------|-------------------|
-| Idle cursor-agent | 10h | pid 76723 · cwd praxis · ~608MB | kill pid |
-| Leftover worktree | — | ~/.traba/worktrees/traba/ple-eng-… | git worktree remove --force |
-```
-
-Group by category. Skip empty categories.
+Then a table (or tight bullets) of findings only. Group by category. Skip empty categories.
 
 End with: ask which items to kill/remove. Do not act until they say so.
 
 ## Cleanup (only when asked)
 
-- **cursor-agent / hermes / codex sandbox:** `kill <pid>` (escalate to `kill -9` only if still alive after a few seconds).
-- **Worktrees:** from the repo root:
-  `git worktree remove --force <path>` then `git worktree prune`.
-  Large `node_modules` trees are slow — say so; do not use `lsof +D` (too slow).
-- Prefer removing only the paths/pids the user named. If they say “all”, remove every finding from the last scan.
+- **cursor-agent / hermes / codex sandbox:** `hanging-resources clean agents|hermes|codex <pid>` (add `--kill-9` if TERM is not enough).
+- **Worktrees:** `hanging-resources clean worktrees <path|repo/slug|slug>`. Large `node_modules` trees are slow — say so; do not use `lsof +D` (too slow).
+- **Docker:** `hanging-resources clean docker <id|name>`. Running containers need `--force`.
+- Prefer removing only the paths/pids the user named. If they say “all”, `hanging-resources clean <type> --all` (show `--dry-run` first if they might not want the whole set).
 
 ## Notes
 
 - Worktree layout matches [worktree-home](../worktree-home/SKILL.md): `$TRABA_WORKTREES_ROOT/<repo-slug>/<branch-slug>/`.
 - Keep the report plain and short. No jargon pile-up.
+- Install: `ln -sf "$HOME/.cursor/skills/hanging-resources/scripts/hanging-resources" "$HOME/.local/bin/hanging-resources"`

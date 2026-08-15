@@ -1,0 +1,84 @@
+#compdef hanging-resources
+
+_hr_ids() {
+  local kind="$1"
+  local -a items
+  items=(${(f)"$(command hanging-resources complete "$kind" 2>/dev/null)"})
+  (( ${#items} )) || return 1
+  _describe -t "$kind" "$kind" items
+}
+
+_hanging-resources() {
+  local cmd type
+  cmd=${words[2]}
+
+  if (( CURRENT == 2 )); then
+    _alternative \
+      'commands:command:((scan\:list\ leftovers clean\:remove\ by\ type kill\:kill\ pids worktree-remove\:remove\ worktrees))' \
+      'flags:flag:((--only --agent-idle-min --help -h))'
+    return
+  fi
+
+  case $cmd in
+    --only)
+      _values 'type' agents worktrees hermes codex docker
+      return
+      ;;
+    --agent-idle-min)
+      _message 'minutes'
+      return
+      ;;
+    -h|--help)
+      return
+      ;;
+    scan)
+      if [[ ${words[CURRENT-1]} == --only ]]; then
+        _values 'type' agents worktrees hermes codex docker
+        return
+      fi
+      _values 'flag' --only --agent-idle-min --help
+      return
+      ;;
+    clean)
+      type=${words[3]}
+      if (( CURRENT == 3 )); then
+        _values 'type' agents hermes codex worktrees docker
+        return
+      fi
+      if [[ ${words[CURRENT-1]} == --only ]]; then
+        _values 'type' agents worktrees hermes codex docker
+        return
+      fi
+      case $type in
+        agents|hermes|codex)
+          _alternative \
+            'flags:flag:((--all --dry-run --kill-9))' \
+            "pids:pid:_hr_ids ${type}"
+          ;;
+        worktrees)
+          _alternative \
+            'flags:flag:((--all --dry-run))' \
+            'trees:worktree:_hr_ids worktrees'
+          ;;
+        docker)
+          _alternative \
+            'flags:flag:((--all --dry-run --force))' \
+            'containers:container:_hr_ids docker'
+          ;;
+        *)
+          _values 'flag' --all --dry-run --kill-9 --force
+          ;;
+      esac
+      ;;
+    kill)
+      _alternative \
+        'flags:flag:((--kill-9 --dry-run))' \
+        'pids:pid:_hr_ids kill'
+      ;;
+    worktree-remove)
+      _hr_ids worktrees
+      ;;
+  esac
+}
+
+# Do not invoke here — zshrc sources this file and runs compdef.
