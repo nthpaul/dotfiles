@@ -319,7 +319,16 @@ return {
 					end)
 				end
 
-				require("lspconfig")[server_name].setup(server_config)
+				if vim.lsp.config then
+					vim.lsp.config(server_name, server_config)
+					vim.lsp.enable(server_name, {
+						filter = function(bufnr)
+							return not is_lsp_excluded_buf(bufnr)
+						end,
+					})
+				else
+					require("lspconfig")[server_name].setup(server_config)
+				end
 			end,
 		})
 
