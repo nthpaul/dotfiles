@@ -2,59 +2,65 @@
   "version": 1,
   "skills": {
     "create-hook": {
-      "lastSyncedAt": 1786814243591
+      "lastSyncedAt": 1786817431214
     },
     "create-rule": {
-      "lastSyncedAt": 1786814243591
+      "lastSyncedAt": 1786817431214
     },
     "create-skill": {
-      "lastSyncedAt": 1786814243591
+      "lastSyncedAt": 1786817431214
     },
     "create-subagent": {
-      "lastSyncedAt": 1786814243591
+      "lastSyncedAt": 1786817431214
     },
     "migrate-to-skills": {
-      "lastSyncedAt": 1786814243591
+      "lastSyncedAt": 1786817431214
     },
     "shell": {
-      "lastSyncedAt": 1786814243591
+      "lastSyncedAt": 1786817431214
     },
     "statusline": {
-      "lastSyncedAt": 1786814243591
+      "lastSyncedAt": 1786817431214
     },
     "update-cli-config": {
-      "lastSyncedAt": 1786814243591
+      "lastSyncedAt": 1786817431214
     },
     "update-cursor-settings": {
-      "lastSyncedAt": 1786814243591
+      "lastSyncedAt": 1786817431214
     },
     "canvas": {
-      "lastSyncedAt": 1786814243591
+      "lastSyncedAt": 1786817431214
     },
     "split-to-prs": {
-      "lastSyncedAt": 1786814243591
+      "lastSyncedAt": 1786817431214
     },
     "sdk": {
-      "lastSyncedAt": 1786814243591
+      "lastSyncedAt": 1786817431214
     },
     "loop": {
-      "lastSyncedAt": 1786814243591
+      "lastSyncedAt": 1786817431214
     },
     "review": {
-      "lastSyncedAt": 1786814243591
+      "lastSyncedAt": 1786817431214
     },
     "review-bugbot": {
-      "lastSyncedAt": 1786814243591
+      "lastSyncedAt": 1786817431214
     },
     "review-security": {
-      "lastSyncedAt": 1786814243591
+      "lastSyncedAt": 1786817431214
     },
     "rename-chat": {
-      "lastSyncedAt": 1786814243591
+      "lastSyncedAt": 1786817431214
     },
-    "babysit": {
-      "lastSyncedAt": 1786814243591
+    "autopilot": {
+      "lastSyncedAt": 1786817431214
+    },
+    "automate": {
+      "lastSyncedAt": 1786817431214
+    },
+    "onboard": {
+      "lastSyncedAt": 1786817431214
     }
   },
-  "lastInventoryAt": 1786730687462
+  "lastInventoryAt": 1786817431214
 }
