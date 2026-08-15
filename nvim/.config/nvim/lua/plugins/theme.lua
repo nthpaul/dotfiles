@@ -118,4 +118,100 @@ return {
 			vim.g.alduin_Shout_Fire_Breath = 1
 		end,
 	},
+	{
+		"oskarnurm/koda.nvim",
+		lazy = false,
+		priority = 1000,
+	},
+	{
+		"andreypopp/vim-colors-plain",
+		lazy = false,
+		priority = 1000,
+	},
+	{
+		"catppuccin/nvim",
+		name = "catppuccin",
+		lazy = false,
+		priority = 1000,
+		config = function()
+			require("catppuccin").setup({
+				transparent_background = true,
+			})
+		end,
+	},
+	{
+		"rebelot/kanagawa.nvim",
+		lazy = false,
+		priority = 1000,
+		config = function()
+			require("kanagawa").setup({
+				transparent = true,
+			})
+		end,
+	},
+	{
+		"shaunsingh/nord.nvim",
+		lazy = false,
+		priority = 1000,
+	},
+	{
+		"navarasu/onedark.nvim",
+		lazy = false,
+		priority = 1000,
+		config = function()
+			require("onedark").setup({
+				style = "dark",
+				transparent = true,
+			})
+		end,
+	},
+	{
+		"sainnhe/everforest",
+		lazy = false,
+		priority = 1000,
+		config = function()
+			vim.g.everforest_transparent_background = 1
+		end,
+	},
+	{
+		"sainnhe/sonokai",
+		lazy = false,
+		priority = 1000,
+		config = function()
+			vim.g.sonokai_transparent_background = 1
+		end,
+	},
+	{
+		"sainnhe/edge",
+		lazy = false,
+		priority = 1000,
+		config = function()
+			vim.g.edge_transparent_background = 1
+		end,
+	},
+	{
+		"marko-cerovac/material.nvim",
+		lazy = false,
+		priority = 1000,
+	},
+	{
+		"Mofiqul/dracula.nvim",
+		lazy = false,
+		priority = 1000,
+		config = function()
+			require("dracula").setup({
+				transparent_bg = true,
+			})
+		end,
+	},
+	{
+		"nyoom-engineering/oxocarbon.nvim",
+		lazy = false,
+		priority = 1000,
+	},
+	{
+		"RRethy/base16-nvim",
+		lazy = false,
+		priority = 1000,
+	},
 }
