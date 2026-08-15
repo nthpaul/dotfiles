@@ -38,7 +38,9 @@ return {
 					previewer = true,
 					persist = {
 						enabled = true,
-						path = vim.fn.stdpath("config") .. "/lua/plugins/theme.lua",
+						-- Plugin overwrites this file with `vim.cmd("colorscheme …")`.
+						-- Keep it under state so tracked plugin specs stay clean.
+						path = vim.fn.stdpath("state") .. "/telescope-theme.lua",
 					},
 				},
 			},

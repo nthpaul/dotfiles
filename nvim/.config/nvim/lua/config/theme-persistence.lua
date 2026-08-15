@@ -2,22 +2,43 @@
 local M = {}
 local theme_prefs = { dark = "carbonfox", light = "dayfox" }
 
--- Load saved preferences on startup
-local function load_preferences()
-	local ok, saved = pcall(function()
-		return dofile(vim.fn.stdpath("config") .. "/theme-prefs.lua")
-	end)
-	if ok and saved then
-		theme_prefs = saved
-	end
+local function state_prefs_path()
+	return vim.fn.stdpath("state") .. "/theme-prefs.lua"
 end
 
--- Save only on VimLeavePre
+local function legacy_config_prefs_path()
+	return vim.fn.stdpath("config") .. "/theme-prefs.lua"
+end
+
+local function read_prefs(path)
+	local ok, saved = pcall(dofile, path)
+	if ok and type(saved) == "table" then
+		return saved
+	end
+	return nil
+end
+
 local function save_preferences()
-	local file = io.open(vim.fn.stdpath("config") .. "/theme-prefs.lua", "w")
+	local path = state_prefs_path()
+	vim.fn.mkdir(vim.fn.fnamemodify(path, ":h"), "p")
+	local file = io.open(path, "w")
 	if file then
 		file:write("return " .. vim.inspect(theme_prefs))
 		file:close()
+	end
+end
+
+-- Load saved preferences on startup
+local function load_preferences()
+	local saved = read_prefs(state_prefs_path())
+	if saved then
+		theme_prefs = saved
+		return
+	end
+	saved = read_prefs(legacy_config_prefs_path())
+	if saved then
+		theme_prefs = saved
+		save_preferences()
 	end
 end
 
