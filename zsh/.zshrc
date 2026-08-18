@@ -135,11 +135,6 @@ export PATH=$PATH:$ANDROID_HOME/platform-tools
 
 export PATH=$PATH:$HOME/.maestro/bin
 
-# >>> grok installer >>>
-export PATH="$HOME/.grok/bin:$PATH"
-fpath=(~/.grok/completions/zsh $fpath)
-autoload -Uz compinit && compinit -C
-# <<< grok installer <<<
 
 # hanging-resources tab completion (after compinit so it sticks)
 if [[ -f "$HOME/.cursor/skills/hanging-resources/completions/_hanging-resources" ]]; then
@@ -164,3 +159,9 @@ if command -v infisical >/dev/null 2>&1; then
   eval "$(infisical export --projectId=bf8b9a80-9fd7-48f6-985e-c199b94781d3 --env=local --format=dotenv 2>/dev/null | command rg '^MCP_GOOGLE_OAUTH_' | sed 's/^/export /')"
 fi
 # <<< cursor-google-mcp-oauth <<<
+
+# >>> grok installer >>>
+export PATH="$HOME/.grok/bin:$PATH"
+fpath=(~/.grok/completions/zsh $fpath)
+autoload -Uz compinit && compinit -C
+# <<< grok installer <<<
