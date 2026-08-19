@@ -142,6 +142,8 @@ if [[ -f "$HOME/.cursor/skills/hanging-resources/completions/_hanging-resources"
   compdef _hanging-resources hanging-resources
 fi
 
+export PATH="$HOME/.cursor/skills/orch/scripts:$PATH"
+
 # Use Cursor CLI for `agent` (grok installer shadows this command in PATH)
 agent() {
   command cursor-agent "$@"
@@ -165,5 +167,12 @@ export PATH="$HOME/.grok/bin:$PATH"
 fpath=(~/.grok/completions/zsh $fpath)
 autoload -Uz compinit && compinit -C
 # <<< grok installer <<<
+
+# orch tab completion (after grok's compinit so it sticks)
+fpath=("$HOME/.cursor/skills/orch/completions" $fpath)
+if [[ -f "$HOME/.cursor/skills/orch/completions/_orch" ]]; then
+  source "$HOME/.cursor/skills/orch/completions/_orch"
+  compdef _orch orch
+fi
 
 export PATH="$HOME/.relay/bin:$PATH"

@@ -1,0 +1,1293 @@
+#!/usr/bin/env python3
+"""Team-scoped worker orchestrator. Cursor steers; Grok (or Cursor) does the work."""
+
+from __future__ import annotations
+
+import argparse
+import fcntl
+import json
+import os
+import re
+import secrets
+import shutil
+import signal
+import subprocess
+import sys
+import time
+from contextlib import contextmanager
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Iterator, NoReturn
+
+TEAM_RE = re.compile(r"^[a-z][a-z0-9-]{0,31}$")
+WORKER_ID_RE = re.compile(r"^w[0-9a-f]{7,8}$")
+PANE_OPTION = "@scientist"
+TMUX_SESSION = "orch"
+TELL_NAMES_PATH = Path.home() / ".cursor" / "skills" / "agent-tell" / "names.txt"
+ROSTER_PATH = Path.home() / ".cursor" / "scientists" / "roster.json"
+GROK_TELL_MSG = "Grok tell is not v1; use --mode headless"
+PUBLIC_COMMANDS = [
+    "teams",
+    "claim",
+    "release",
+    "spawn",
+    "list",
+    "status",
+    "logs",
+    "result",
+    "kill",
+    "tell",
+    "complete",
+    "help",
+]
+MODES = ("headless", "tell")
+KINDS = ("grok", "cursor")
+
+CHEAT_SHEET = """\
+Usage:
+  orch                         this cheat sheet
+  orch help [command]          one command, with examples
+
+  orch teams
+  orch claim   --team T
+  orch release --team T
+
+  orch spawn --team T [--mode headless|tell] grok|cursor JOB...
+             [--cwd DIR] [--name NAME] [--id ID] [--steal]
+  orch list   --team T | --all
+  orch status --team T ID
+  orch logs   --team T ID [-f]
+  orch result --team T ID
+  orch kill   --team T ID | --team T --all
+  orch tell   --team T ID --ask|--status "..."
+
+  orch complete commands|teams|modes|kinds
+  orch complete workers --team T
+
+Teams keep workers apart. Spawn starts one. Kill drops it.
+Headless writes jobs/<id>/result.json. Tell uses a tmux pane + scientist name.
+Grok tell is not v1 — use --mode headless.
+
+Examples:
+  orch spawn --team fleet-ops grok fix the login flake
+  orch list --team fleet-ops
+  orch kill --team fleet-ops w1a2b3c4
+  orch tell --team fleet-ops w1a2b3c4 --ask "also check the test"
+
+State: $ORCH_HOME (default ~/.orch)
+"""
+
+HELP: dict[str, str] = {
+    "help": """\
+help — this cheat sheet, or one command
+
+  orch
+  orch -h | --help
+  orch help
+  orch help COMMAND
+
+Examples:
+  orch help spawn
+  orch help kill
+""",
+    "teams": """\
+teams — list team folders (empty is fine)
+
+  orch teams
+
+Examples:
+  orch teams
+""",
+    "claim": """\
+claim — lock a team so another orch stays off it
+
+  orch claim --team T
+
+Steals the lock if the old pid is dead. Refuses if another pid is live.
+The lock pid is the caller (parent process), or $ORCH_PID.
+
+Examples:
+  orch claim --team fleet-ops
+""",
+    "release": """\
+release — drop the team lock
+
+  orch release --team T
+
+Must be our lock, or a stale (dead) pid.
+
+Examples:
+  orch release --team fleet-ops
+""",
+    "spawn": """\
+spawn — start a worker on a team
+
+  orch spawn --team T [--mode headless|tell] grok|cursor JOB...
+             [--cwd DIR] [--name NAME] [--id ID] [--steal]
+
+Default mode is headless. Grok tell is not v1.
+--steal takes the team lock even if another orch pid is live.
+Headless detaches and returns at once. Result lands in jobs/<id>/result.json.
+
+Examples:
+  orch spawn --team fleet-ops grok fix the login flake
+  orch spawn --team fleet-ops --mode tell cursor draft the slack reply
+  orch spawn --team rbac --cwd ~/src --steal grok add the gate
+""",
+    "list": """\
+list — workers on one team, or every team
+
+  orch list --team T
+  orch list --all
+
+--team is required unless you pass --all.
+
+Examples:
+  orch list --team fleet-ops
+  orch list --all
+""",
+    "status": """\
+status — one worker
+
+  orch status --team T ID
+
+Examples:
+  orch status --team fleet-ops w1a2b3c4
+""",
+    "logs": """\
+logs — stdout from a job (-f follows)
+
+  orch logs --team T ID
+  orch logs --team T ID -f
+
+Examples:
+  orch logs --team fleet-ops w1a2b3c4
+  orch logs --team fleet-ops w1a2b3c4 -f
+""",
+    "result": """\
+result — print jobs/<id>/result.json
+
+  orch result --team T ID
+
+Examples:
+  orch result --team fleet-ops w1a2b3c4
+""",
+    "kill": """\
+kill — drop a worker (or every worker on the team)
+
+  orch kill --team T ID
+  orch kill --team T --all
+
+Tell workers: unclaim the scientist, kill the tmux window, then SIGTERM.
+Does not delete git worktrees. --team is required.
+
+Examples:
+  orch kill --team fleet-ops w1a2b3c4
+  orch kill --team fleet-ops --all
+""",
+    "tell": """\
+tell — steer a tell-mode worker (same team only)
+
+  orch tell --team T ID --ask "..."
+  orch tell --team T ID --status "..."
+
+Worker must be mode=tell and have a scientist name.
+Runs: tell NAME --ask|--status "..."
+
+Examples:
+  orch tell --team fleet-ops w1a2b3c4 --ask "paste the failing test"
+  orch tell --team fleet-ops w1a2b3c4 --status "standing by"
+""",
+    "complete": """\
+complete — one value per line (for zsh)
+
+  orch complete commands
+  orch complete teams
+  orch complete workers --team T
+  orch complete modes
+  orch complete kinds
+
+Examples:
+  orch complete teams
+  orch complete workers --team fleet-ops
+""",
+}
+
+
+def die(message: str, code: int = 1) -> NoReturn:
+    print(f"orch: {message}", file=sys.stderr)
+    raise SystemExit(code)
+
+
+def iso_now() -> str:
+    return (
+        datetime.now(timezone.utc)
+        .replace(microsecond=0)
+        .isoformat()
+        .replace("+00:00", "Z")
+    )
+
+
+def orch_home() -> Path:
+    raw = os.environ.get("ORCH_HOME")
+    if raw:
+        return Path(raw)
+    return Path.home() / ".orch"
+
+
+def script_path() -> Path:
+    return Path(__file__).resolve()
+
+
+def teams_root() -> Path:
+    return orch_home() / "teams"
+
+
+def team_dir(team: str) -> Path:
+    return teams_root() / team
+
+
+def orch_json_path(team: str) -> Path:
+    return team_dir(team) / "orch.json"
+
+
+def workers_path(team: str) -> Path:
+    return team_dir(team) / "workers.json"
+
+
+def job_dir(team: str, worker_id: str) -> Path:
+    return team_dir(team) / "jobs" / worker_id
+
+
+def roster_path() -> Path:
+    raw = os.environ.get("ORCH_ROSTER")
+    if raw:
+        return Path(raw)
+    return ROSTER_PATH
+
+
+def names_path() -> Path:
+    raw = os.environ.get("ORCH_NAMES")
+    if raw:
+        return Path(raw)
+    return TELL_NAMES_PATH
+
+
+def claimer_pid() -> int:
+    raw = os.environ.get("ORCH_PID")
+    if raw:
+        return int(raw)
+    return os.getppid()
+
+
+def pid_alive(pid: int) -> bool:
+    if pid <= 0:
+        return False
+    try:
+        os.kill(pid, 0)
+    except OSError:
+        return False
+    return True
+
+
+def validate_team(team: str) -> str:
+    if not TEAM_RE.fullmatch(team):
+        die(f"bad team name '{team}' (use [a-z][a-z0-9-]{{0,31}})", 2)
+    return team
+
+
+def validate_worker_id(worker_id: str) -> str:
+    if not WORKER_ID_RE.fullmatch(worker_id):
+        die(f"bad worker id '{worker_id}' (use w + 8 hex, e.g. w1a2b3c4)", 2)
+    return worker_id
+
+
+def print_commands() -> None:
+    print("Commands:", file=sys.stderr)
+    print("  " + "  ".join(PUBLIC_COMMANDS), file=sys.stderr)
+
+
+class OrchParser(argparse.ArgumentParser):
+    def error(self, message: str) -> None:
+        cmd = self.prog.split()[-1] if self.prog.startswith("orch ") else ""
+        print(f"orch: {message}", file=sys.stderr)
+        if cmd and cmd in HELP:
+            print(f"try: orch help {cmd}", file=sys.stderr)
+        raise SystemExit(2)
+
+
+def read_json(path: Path) -> Any:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def write_json(path: Path, data: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+
+
+def read_lock(team: str) -> dict[str, Any] | None:
+    path = orch_json_path(team)
+    if not path.is_file():
+        return None
+    try:
+        data = read_json(path)
+    except json.JSONDecodeError as exc:
+        die(f"invalid orch.json ({path}): {exc}")
+    if not isinstance(data, dict):
+        die(f"orch.json must be an object: {path}")
+    return data
+
+
+def write_lock(team: str, pid: int) -> None:
+    write_json(
+        orch_json_path(team),
+        {"pid": pid, "claimed_at": iso_now()},
+    )
+
+
+def drop_lock(team: str) -> None:
+    path = orch_json_path(team)
+    path.unlink(missing_ok=True)
+
+
+def lock_holder_live(lock: dict[str, Any]) -> bool:
+    try:
+        pid = int(lock["pid"])
+    except (KeyError, TypeError, ValueError):
+        return False
+    return pid_alive(pid)
+
+
+def is_our_lock(lock: dict[str, Any]) -> bool:
+    try:
+        return int(lock["pid"]) == claimer_pid()
+    except (KeyError, TypeError, ValueError):
+        return False
+
+
+def ensure_claim(team: str, *, steal: bool = False) -> None:
+    lock = read_lock(team)
+    if lock is None:
+        write_lock(team, claimer_pid())
+        return
+    if is_our_lock(lock):
+        return
+    if lock_holder_live(lock):
+        pid = lock.get("pid")
+        if steal:
+            write_lock(team, claimer_pid())
+            return
+        die(f"team {team} is claimed by pid {pid} (pass --steal to take it)")
+    write_lock(team, claimer_pid())
+
+
+@contextmanager
+def workers_lock(team: str) -> Iterator[list[dict[str, Any]]]:
+    path = workers_path(team)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if not path.exists():
+        path.write_text("[]\n", encoding="utf-8")
+    with path.open("r+", encoding="utf-8") as fh:
+        fcntl.flock(fh.fileno(), fcntl.LOCK_EX)
+        try:
+            raw = fh.read()
+            try:
+                data = json.loads(raw) if raw.strip() else []
+            except json.JSONDecodeError as exc:
+                die(f"invalid workers.json ({path}): {exc}")
+            if not isinstance(data, list):
+                die(f"workers.json must be an array: {path}")
+            workers = [row for row in data if isinstance(row, dict)]
+            yield workers
+            fh.seek(0)
+            fh.truncate()
+            fh.write(json.dumps(workers, indent=2) + "\n")
+        finally:
+            fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
+
+
+def load_workers(team: str) -> list[dict[str, Any]]:
+    path = workers_path(team)
+    if not path.is_file():
+        return []
+    try:
+        data = read_json(path)
+    except json.JSONDecodeError as exc:
+        die(f"invalid workers.json ({path}): {exc}")
+    if not isinstance(data, list):
+        die(f"workers.json must be an array: {path}")
+    return [row for row in data if isinstance(row, dict)]
+
+
+def find_worker(workers: list[dict[str, Any]], worker_id: str) -> dict[str, Any] | None:
+    for row in workers:
+        if row.get("id") == worker_id:
+            return row
+    return None
+
+
+def list_teams() -> list[str]:
+    root = teams_root()
+    if not root.is_dir():
+        return []
+    names = [p.name for p in root.iterdir() if p.is_dir() and TEAM_RE.fullmatch(p.name)]
+    return sorted(names)
+
+
+def used_ids(team: str) -> set[str]:
+    ids = {str(w.get("id")) for w in load_workers(team) if w.get("id")}
+    jobs = team_dir(team) / "jobs"
+    if jobs.is_dir():
+        for path in jobs.iterdir():
+            if path.is_dir():
+                ids.add(path.name)
+    return ids
+
+
+def new_worker_id(team: str) -> str:
+    existing = used_ids(team)
+    for _ in range(32):
+        worker_id = "w" + secrets.token_hex(4)
+        if worker_id not in existing:
+            return worker_id
+    die("could not allocate a worker id")
+
+
+def load_scientist_names() -> list[str]:
+    path = names_path()
+    if not path.is_file():
+        return [
+            "newton",
+            "curie",
+            "darwin",
+            "faraday",
+            "maxwell",
+            "einstein",
+            "turing",
+            "hopper",
+        ]
+    return [
+        line.strip().lower()
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.strip().startswith("#")
+    ]
+
+
+def load_roster() -> dict[str, str]:
+    path = roster_path()
+    if not path.is_file():
+        return {}
+    try:
+        data = read_json(path)
+    except json.JSONDecodeError as exc:
+        die(f"invalid roster JSON ({path}): {exc}")
+    if not isinstance(data, dict):
+        die(f"roster must be a JSON object: {path}")
+    return {str(k).lower(): str(v) for k, v in data.items()}
+
+
+def save_roster(roster: dict[str, str]) -> None:
+    path = roster_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(roster, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+
+def run(
+    args: list[str],
+    *,
+    check: bool = True,
+    capture: bool = False,
+    env: dict[str, str] | None = None,
+) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        args,
+        check=check,
+        text=True,
+        capture_output=capture,
+        env=env,
+    )
+
+
+def prompt_prefix(team: str, worker_id: str, result_path: Path) -> str:
+    home = orch_home()
+    return (
+        f"ORCH_TEAM={team} ORCH_JOB_ID={worker_id} "
+        f"ORCH_HOME={home} ORCH_RESULT={result_path}\n"
+        "When finished, you may write a one-line summary to $ORCH_RESULT; "
+        "the wrapper also writes exit status.\n\n"
+    )
+
+
+def worker_env(team: str, worker_id: str, result_path: Path) -> dict[str, str]:
+    env = os.environ.copy()
+    env["ORCH_TEAM"] = team
+    env["ORCH_JOB_ID"] = worker_id
+    env["ORCH_HOME"] = str(orch_home())
+    env["ORCH_RESULT"] = str(result_path)
+    return env
+
+
+def resolve_bin(name: str) -> str:
+    path = shutil.which(name)
+    if not path:
+        die(f"{name} not found on PATH")
+    return path
+
+
+def grok_cmd(prompt: str, cwd: str) -> list[str]:
+    return [
+        resolve_bin("grok"),
+        "-p",
+        prompt,
+        "--cwd",
+        cwd,
+        "--always-approve",
+        "--output-format",
+        "plain",
+    ]
+
+
+def cursor_headless_cmd(prompt: str, cwd: str) -> list[str]:
+    return [
+        resolve_bin("cursor-agent"),
+        "-p",
+        "--force",
+        "--trust",
+        "--workspace",
+        cwd,
+        prompt,
+    ]
+
+
+def start_headless_wrapper(team: str, worker_id: str) -> int:
+    env = os.environ.copy()
+    env["ORCH_HOME"] = str(orch_home())
+    proc = subprocess.Popen(
+        [
+            sys.executable,
+            str(script_path()),
+            "__wrap",
+            "--team",
+            team,
+            "--id",
+            worker_id,
+        ],
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True,
+        close_fds=True,
+        env=env,
+    )
+    return proc.pid
+
+
+def write_result(
+    result_path: Path,
+    *,
+    exit_code: int,
+    stdout_text: str,
+) -> None:
+    write_json(
+        result_path,
+        {
+            "ok": exit_code == 0,
+            "exit_code": exit_code,
+            "finished_at": iso_now(),
+            "summary": stdout_text[:2000],
+        },
+    )
+
+
+def cmd_wrap(args: argparse.Namespace) -> int:
+    team = validate_team(args.team)
+    worker_id = validate_worker_id(args.id)
+    request_path = job_dir(team, worker_id) / "request.json"
+    if not request_path.is_file():
+        die(f"missing request.json for {team}/{worker_id}")
+    request = read_json(request_path)
+    kind = str(request.get("kind") or "")
+    cwd = str(request.get("cwd") or os.getcwd())
+    job = str(request.get("job") or "")
+    result_path = job_dir(team, worker_id) / "result.json"
+    stdout_path = job_dir(team, worker_id) / "stdout.log"
+    stderr_path = job_dir(team, worker_id) / "stderr.log"
+    prompt = prompt_prefix(team, worker_id, result_path) + job
+    if kind == "grok":
+        cmd = grok_cmd(prompt, cwd)
+    elif kind == "cursor":
+        cmd = cursor_headless_cmd(prompt, cwd)
+    else:
+        die(f"unknown kind in request.json: {kind}")
+
+    env = worker_env(team, worker_id, result_path)
+    stdout_path.parent.mkdir(parents=True, exist_ok=True)
+    with stdout_path.open("w", encoding="utf-8") as out_f, stderr_path.open(
+        "w", encoding="utf-8"
+    ) as err_f:
+        try:
+            child = subprocess.Popen(
+                cmd,
+                stdout=out_f,
+                stderr=err_f,
+                cwd=cwd,
+                env=env,
+            )
+        except OSError as exc:
+            err_f.write(f"{exc}\n")
+            exit_code = 127
+        else:
+
+            def _fwd(signum: int, _frame: object) -> None:
+                if child.poll() is None:
+                    child.send_signal(signum)
+
+            signal.signal(signal.SIGTERM, _fwd)
+            signal.signal(signal.SIGINT, _fwd)
+            exit_code = child.wait()
+
+    try:
+        stdout_text = stdout_path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        stdout_text = ""
+    write_result(result_path, exit_code=exit_code, stdout_text=stdout_text)
+    return 0
+
+
+def ensure_tmux_session() -> None:
+    probe = run(["tmux", "has-session", "-t", TMUX_SESSION], check=False, capture=True)
+    if probe.returncode == 0:
+        return
+    run(["tmux", "new-session", "-d", "-s", TMUX_SESSION, "-n", "_boot"])
+
+
+def tmux_new_window(
+    *,
+    team: str,
+    worker_id: str,
+    cwd: str,
+    result_path: Path,
+    job: str,
+) -> tuple[str, int]:
+    window = f"{team}-{worker_id}"
+    env_args = [
+        "env",
+        f"ORCH_TEAM={team}",
+        f"ORCH_JOB_ID={worker_id}",
+        f"ORCH_HOME={orch_home()}",
+        f"ORCH_RESULT={result_path}",
+        resolve_bin("cursor-agent"),
+        "--force",
+        "--trust",
+        "--workspace",
+        cwd,
+        prompt_prefix(team, worker_id, result_path) + job,
+    ]
+    created = run(
+        [
+            "tmux",
+            "new-window",
+            "-t",
+            TMUX_SESSION,
+            "-n",
+            window,
+            "-c",
+            cwd,
+            "-P",
+            "-F",
+            "#{pane_id} #{pane_pid}",
+            "--",
+            *env_args,
+        ],
+        capture=True,
+    )
+    parts = created.stdout.strip().split()
+    if len(parts) < 2:
+        die(f"tmux new-window did not return pane/pid: {created.stdout!r}")
+    pane = parts[0]
+    try:
+        pane_pid = int(parts[1])
+    except ValueError:
+        die(f"tmux new-window pid was not an int: {created.stdout!r}")
+    return pane, pane_pid
+
+
+def next_free_scientist(requested: str | None) -> str:
+    names = load_scientist_names()
+    if not names:
+        die("no scientist names available")
+    roster = load_roster()
+    if requested:
+        name = requested.lower()
+        if name not in set(names):
+            die(f"unknown scientist '{name}'. known: {', '.join(names)}")
+        existing = roster.get(name)
+        if existing:
+            die(f"{name} is already claimed by {existing}")
+        return name
+    claimed = set(roster)
+    for name in names:
+        if name not in claimed:
+            return name
+    die("all scientist names are claimed; kill a tell worker or tell unclaim")
+
+
+def claim_scientist(name: str, pane: str) -> None:
+    run(["tmux", "set-option", "-p", "-t", pane, PANE_OPTION, name])
+    roster = load_roster()
+    roster[name] = pane
+    save_roster(roster)
+
+
+def unclaim_scientist(name: str | None, pane: str | None) -> None:
+    if pane:
+        run(
+            ["tmux", "set-option", "-p", "-u", "-t", pane, PANE_OPTION],
+            check=False,
+        )
+    if not name:
+        return
+    roster = load_roster()
+    if name in roster:
+        del roster[name]
+        save_roster(roster)
+
+
+def ensure_telld() -> None:
+    run(["tell", "daemon", "start"], check=False)
+
+
+def send_tell(name: str, kind: str, message: str) -> None:
+    flag = "--ask" if kind == "ask" else "--status"
+    run(["tell", name, flag, message])
+
+
+def terminate_pid(pid: int) -> None:
+    if not pid_alive(pid):
+        return
+    try:
+        os.kill(pid, signal.SIGTERM)
+    except OSError:
+        return
+    try:
+        os.killpg(pid, signal.SIGTERM)
+    except OSError:
+        pass
+
+
+def reap_empty_orch_session() -> None:
+    listed = run(
+        ["tmux", "list-windows", "-t", TMUX_SESSION, "-F", "#{window_name}"],
+        check=False,
+        capture=True,
+    )
+    if listed.returncode != 0:
+        return
+    names = [name for name in listed.stdout.splitlines() if name]
+    if not names or names == ["_boot"]:
+        run(["tmux", "kill-session", "-t", TMUX_SESSION], check=False)
+
+
+def kill_tell_runtime(worker: dict[str, Any]) -> None:
+    name = worker.get("name")
+    pane = worker.get("pane")
+    session = worker.get("session")
+    window = worker.get("window")
+    unclaim_scientist(str(name) if name else None, str(pane) if pane else None)
+    if session and window:
+        run(
+            ["tmux", "kill-window", "-t", f"{session}:{window}"],
+            check=False,
+        )
+    elif pane:
+        run(["tmux", "kill-pane", "-t", str(pane)], check=False)
+    pid = worker.get("pid")
+    if isinstance(pid, int):
+        terminate_pid(pid)
+    reap_empty_orch_session()
+
+
+def record_worker(team: str, worker: dict[str, Any]) -> None:
+    with workers_lock(team) as workers:
+        if find_worker(workers, str(worker["id"])):
+            die(f"worker {worker['id']} already exists on {team}")
+        workers.append(worker)
+
+
+def remove_worker(team: str, worker_id: str) -> dict[str, Any] | None:
+    removed: dict[str, Any] | None = None
+    with workers_lock(team) as workers:
+        kept: list[dict[str, Any]] = []
+        for row in workers:
+            if row.get("id") == worker_id and removed is None:
+                removed = row
+            else:
+                kept.append(row)
+        workers[:] = kept
+    return removed
+
+
+def write_request(
+    team: str,
+    worker_id: str,
+    *,
+    kind: str,
+    mode: str,
+    cwd: str,
+    job: str,
+    started_at: str,
+) -> Path:
+    directory = job_dir(team, worker_id)
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / "stdout.log").touch()
+    (directory / "stderr.log").touch()
+    path = directory / "request.json"
+    write_json(
+        path,
+        {
+            "team": team,
+            "id": worker_id,
+            "kind": kind,
+            "mode": mode,
+            "cwd": cwd,
+            "job": job,
+            "started_at": started_at,
+        },
+    )
+    return path
+
+
+def format_worker_line(team: str, worker: dict[str, Any], *, show_team: bool) -> str:
+    worker_id = worker.get("id", "?")
+    kind = worker.get("kind", "?")
+    mode = worker.get("mode", "?")
+    pid = worker.get("pid", "?")
+    name = worker.get("name") or "-"
+    job = str(worker.get("job") or "").replace("\n", " ")
+    if len(job) > 60:
+        job = job[:57] + "..."
+    prefix = f"{team}  " if show_team else ""
+    return f"{prefix}{worker_id}  {kind}  {mode}  pid={pid}  {name}  {job}"
+
+
+def cmd_teams(_args: argparse.Namespace) -> int:
+    for name in list_teams():
+        print(name)
+    return 0
+
+
+def cmd_claim(args: argparse.Namespace) -> int:
+    team = validate_team(args.team)
+    lock = read_lock(team)
+    if lock and lock_holder_live(lock) and not is_our_lock(lock):
+        die(f"team {team} is claimed by pid {lock.get('pid')}")
+    write_lock(team, claimer_pid())
+    print(f"claimed {team} pid={claimer_pid()}")
+    return 0
+
+
+def cmd_release(args: argparse.Namespace) -> int:
+    team = validate_team(args.team)
+    lock = read_lock(team)
+    if lock is None:
+        print(f"{team} is not claimed")
+        return 0
+    if lock_holder_live(lock) and not is_our_lock(lock):
+        die(f"team {team} is claimed by pid {lock.get('pid')}")
+    drop_lock(team)
+    print(f"released {team}")
+    return 0
+
+
+def cmd_spawn(args: argparse.Namespace) -> int:
+    team = validate_team(args.team)
+    kind = args.kind
+    mode = args.mode
+    if mode == "tell" and kind == "grok":
+        print(GROK_TELL_MSG, file=sys.stderr)
+        return 2
+    job = " ".join(args.job).strip()
+    if not job:
+        die("job text is required", 2)
+    cwd = str(Path(args.cwd or os.getcwd()).resolve())
+    if not Path(cwd).is_dir():
+        die(f"cwd does not exist: {cwd}")
+    if args.id:
+        worker_id = validate_worker_id(args.id)
+        if worker_id in used_ids(team):
+            die(f"worker id {worker_id} already used on {team}")
+    else:
+        worker_id = new_worker_id(team)
+
+    ensure_claim(team, steal=bool(args.steal))
+    started_at = iso_now()
+    write_request(
+        team,
+        worker_id,
+        kind=kind,
+        mode=mode,
+        cwd=cwd,
+        job=job,
+        started_at=started_at,
+    )
+    result_path = job_dir(team, worker_id) / "result.json"
+    name: str | None = None
+    pane: str | None = None
+    session: str | None = None
+    window: str | None = None
+    pid: int
+
+    if mode == "headless":
+        pid = start_headless_wrapper(team, worker_id)
+    else:
+        ensure_tmux_session()
+        pane, pid = tmux_new_window(
+            team=team,
+            worker_id=worker_id,
+            cwd=cwd,
+            result_path=result_path,
+            job=job,
+        )
+        session = TMUX_SESSION
+        window = f"{team}-{worker_id}"
+        name = next_free_scientist(args.name)
+        claim_scientist(name, pane)
+        ensure_telld()
+
+    record_worker(
+        team,
+        {
+            "id": worker_id,
+            "kind": kind,
+            "mode": mode,
+            "pid": pid,
+            "pane": pane,
+            "session": session,
+            "window": window,
+            "name": name,
+            "cwd": cwd,
+            "job": job,
+            "started_at": started_at,
+        },
+    )
+    print(f"{worker_id}  {kind}  {mode}  pid={pid}")
+    return 0
+
+
+def cmd_list(args: argparse.Namespace) -> int:
+    if args.all:
+        for team in list_teams():
+            for worker in load_workers(team):
+                print(format_worker_line(team, worker, show_team=True))
+        return 0
+    if not args.team:
+        die("list needs --team T or --all", 2)
+    team = validate_team(args.team)
+    for worker in load_workers(team):
+        print(format_worker_line(team, worker, show_team=False))
+    return 0
+
+
+def cmd_status(args: argparse.Namespace) -> int:
+    team = validate_team(args.team)
+    worker_id = validate_worker_id(args.id)
+    worker = find_worker(load_workers(team), worker_id)
+    if worker is None:
+        die(f"no worker {worker_id} on {team}")
+    pid = worker.get("pid")
+    alive = isinstance(pid, int) and pid_alive(pid)
+    result_path = job_dir(team, worker_id) / "result.json"
+    print(f"id: {worker.get('id')}")
+    print(f"team: {team}")
+    print(f"kind: {worker.get('kind')}")
+    print(f"mode: {worker.get('mode')}")
+    print(f"pid: {pid} ({'live' if alive else 'dead'})")
+    print(f"pane: {worker.get('pane') or '-'}")
+    print(f"session: {worker.get('session') or '-'}")
+    print(f"window: {worker.get('window') or '-'}")
+    print(f"name: {worker.get('name') or '-'}")
+    print(f"cwd: {worker.get('cwd')}")
+    print(f"started_at: {worker.get('started_at')}")
+    print(f"job: {worker.get('job')}")
+    if result_path.is_file():
+        print(f"result: {result_path}")
+    else:
+        print("result: (none yet)")
+    return 0
+
+
+def follow_log(path: Path) -> int:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.touch(exist_ok=True)
+    with path.open("r", encoding="utf-8", errors="replace") as fh:
+        while True:
+            chunk = fh.read()
+            if chunk:
+                sys.stdout.write(chunk)
+                sys.stdout.flush()
+            else:
+                time.sleep(0.3)
+
+
+def cmd_logs(args: argparse.Namespace) -> int:
+    team = validate_team(args.team)
+    worker_id = validate_worker_id(args.id)
+    path = job_dir(team, worker_id) / "stdout.log"
+    if args.follow:
+        try:
+            return follow_log(path)
+        except KeyboardInterrupt:
+            return 0
+    if not path.is_file():
+        die(f"no logs for {worker_id} on {team}")
+    sys.stdout.write(path.read_text(encoding="utf-8", errors="replace"))
+    return 0
+
+
+def cmd_result(args: argparse.Namespace) -> int:
+    team = validate_team(args.team)
+    worker_id = validate_worker_id(args.id)
+    path = job_dir(team, worker_id) / "result.json"
+    if not path.is_file():
+        die(f"no result yet for {worker_id} on {team}")
+    sys.stdout.write(path.read_text(encoding="utf-8"))
+    return 0
+
+
+def cmd_kill(args: argparse.Namespace) -> int:
+    team = validate_team(args.team)
+    if args.all and args.id:
+        die("kill: use an id or --all, not both", 2)
+    if not args.all and not args.id:
+        die("kill needs an id or --all", 2)
+    ensure_claim(team)
+    if args.all:
+        workers = load_workers(team)
+        for worker in list(workers):
+            kill_one(team, str(worker.get("id") or ""))
+        print(f"killed {len(workers)} worker(s) on {team}")
+        return 0
+    worker_id = validate_worker_id(args.id)
+    kill_one(team, worker_id)
+    print(f"killed {worker_id}")
+    return 0
+
+
+def kill_one(team: str, worker_id: str) -> None:
+    worker = remove_worker(team, worker_id)
+    if worker is None:
+        die(f"no worker {worker_id} on {team}")
+    if worker.get("mode") == "tell":
+        kill_tell_runtime(worker)
+    else:
+        pid = worker.get("pid")
+        if isinstance(pid, int):
+            terminate_pid(pid)
+
+
+def cmd_tell(args: argparse.Namespace) -> int:
+    team = validate_team(args.team)
+    worker_id = validate_worker_id(args.id)
+    ensure_claim(team)
+    worker = find_worker(load_workers(team), worker_id)
+    if worker is None:
+        die(f"no worker {worker_id} on {team}")
+    if worker.get("mode") != "tell":
+        die(f"{worker_id} is not tell mode")
+    name = worker.get("name")
+    if not name:
+        die(f"{worker_id} has no scientist name")
+    if args.ask is not None:
+        send_tell(str(name), "ask", args.ask)
+    else:
+        send_tell(str(name), "status", args.status)
+    print(f"told {name} ({worker_id})")
+    return 0
+
+
+def cmd_complete(args: argparse.Namespace) -> int:
+    what = args.what
+    if what == "commands":
+        for name in PUBLIC_COMMANDS:
+            print(name)
+        return 0
+    if what == "teams":
+        for name in list_teams():
+            print(name)
+        return 0
+    if what == "workers":
+        if not args.team:
+            die("complete workers needs --team", 2)
+        team = validate_team(args.team)
+        for worker in load_workers(team):
+            print(worker.get("id"))
+        return 0
+    if what == "modes":
+        for mode in MODES:
+            print(mode)
+        return 0
+    if what == "kinds":
+        for kind in KINDS:
+            print(kind)
+        return 0
+    die("complete: commands|teams|workers|modes|kinds", 2)
+
+
+def add_team_flag(parser: OrchParser, *, required: bool) -> None:
+    parser.add_argument("--team", required=required, help="team name")
+
+
+def parser_for(command: str) -> OrchParser:
+    if command == "teams":
+        return OrchParser(prog="orch teams", description="List teams.")
+    if command == "claim":
+        p = OrchParser(prog="orch claim", description="Lock a team.")
+        add_team_flag(p, required=True)
+        return p
+    if command == "release":
+        p = OrchParser(prog="orch release", description="Unlock a team.")
+        add_team_flag(p, required=True)
+        return p
+    if command == "spawn":
+        p = OrchParser(
+            prog="orch spawn",
+            description="Start a worker on a team.",
+        )
+        add_team_flag(p, required=True)
+        p.add_argument(
+            "--mode",
+            choices=MODES,
+            default="headless",
+            help="headless (default) or tell",
+        )
+        p.add_argument("--cwd", help="working directory")
+        p.add_argument("--name", help="scientist name (tell mode)")
+        p.add_argument("--id", help="worker id (w + 8 hex)")
+        p.add_argument(
+            "--steal",
+            action="store_true",
+            help="take the team lock from a live orch",
+        )
+        p.add_argument("kind", choices=KINDS, help="grok or cursor")
+        p.add_argument("job", nargs="+", help="job prompt")
+        return p
+    if command == "list":
+        p = OrchParser(prog="orch list", description="List workers.")
+        add_team_flag(p, required=False)
+        p.add_argument("--all", action="store_true", help="every team")
+        return p
+    if command == "status":
+        p = OrchParser(prog="orch status", description="Show one worker.")
+        add_team_flag(p, required=True)
+        p.add_argument("id", help="worker id")
+        return p
+    if command == "logs":
+        p = OrchParser(prog="orch logs", description="Print job stdout.")
+        add_team_flag(p, required=True)
+        p.add_argument("id", help="worker id")
+        p.add_argument("-f", "--follow", action="store_true", help="follow")
+        return p
+    if command == "result":
+        p = OrchParser(prog="orch result", description="Print result.json.")
+        add_team_flag(p, required=True)
+        p.add_argument("id", help="worker id")
+        return p
+    if command == "kill":
+        p = OrchParser(prog="orch kill", description="Stop a worker.")
+        add_team_flag(p, required=True)
+        p.add_argument("--all", action="store_true", help="every worker on the team")
+        p.add_argument("id", nargs="?", help="worker id")
+        return p
+    if command == "tell":
+        p = OrchParser(prog="orch tell", description="Message a tell-mode worker.")
+        add_team_flag(p, required=True)
+        p.add_argument("id", help="worker id")
+        group = p.add_mutually_exclusive_group(required=True)
+        group.add_argument("--ask", help="work message")
+        group.add_argument("--status", help="status message")
+        return p
+    if command == "complete":
+        p = OrchParser(prog="orch complete", description="Completion values.")
+        p.add_argument(
+            "what",
+            choices=("commands", "teams", "workers", "modes", "kinds"),
+        )
+        add_team_flag(p, required=False)
+        return p
+    if command == "__wrap":
+        p = OrchParser(prog="orch __wrap", description="Internal headless wrapper.")
+        add_team_flag(p, required=True)
+        p.add_argument("--id", required=True, help="worker id")
+        return p
+    return OrchParser(prog=f"orch {command}")
+
+
+COMMANDS = {
+    "teams": cmd_teams,
+    "claim": cmd_claim,
+    "release": cmd_release,
+    "spawn": cmd_spawn,
+    "list": cmd_list,
+    "status": cmd_status,
+    "logs": cmd_logs,
+    "result": cmd_result,
+    "kill": cmd_kill,
+    "tell": cmd_tell,
+    "complete": cmd_complete,
+    "__wrap": cmd_wrap,
+}
+
+
+def main(argv: list[str] | None = None) -> int:
+    argv = list(sys.argv[1:] if argv is None else argv)
+    if not argv or argv[0] in {"-h", "--help"}:
+        print(CHEAT_SHEET, end="" if CHEAT_SHEET.endswith("\n") else "\n")
+        return 0
+    if argv[0] == "help":
+        if len(argv) == 1:
+            print(CHEAT_SHEET, end="" if CHEAT_SHEET.endswith("\n") else "\n")
+            return 0
+        name = argv[1]
+        if name not in HELP:
+            print(f"Unknown command: {name}", file=sys.stderr)
+            print_commands()
+            return 2
+        print(HELP[name], end="" if HELP[name].endswith("\n") else "\n")
+        return 0
+
+    name = argv[0]
+    if name not in COMMANDS:
+        print(f"Unknown command: {name}", file=sys.stderr)
+        print_commands()
+        return 2
+
+    rest = argv[1:]
+    if "-h" in rest or "--help" in rest:
+        help_name = "spawn" if name == "__wrap" else name
+        text = HELP.get(help_name, CHEAT_SHEET)
+        print(text, end="" if text.endswith("\n") else "\n")
+        return 0
+
+    parser = parser_for(name)
+    try:
+        args = parser.parse_args(rest)
+    except SystemExit as exc:
+        code = exc.code
+        if code is None:
+            return 0
+        return int(code)
+
+    try:
+        return COMMANDS[name](args)
+    except SystemExit as exc:
+        code = exc.code
+        if code is None:
+            return 0
+        return int(code)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
