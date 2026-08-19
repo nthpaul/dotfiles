@@ -31,6 +31,7 @@ Stow creates relative symlinks so the repo stays portable across machines.
 - Dev tools: `asdf/`, `graphite/`, `opencode/`, `github-copilot/`, `codex/`
 - Git/GitHub: `git/` (.gitconfig, global gitignore), `gh/` (CLI config; `hosts.yml` stays local)
 - Claude Code: `claude/` (`settings.json`; `skills/` symlinked to `codex/.codex/skills`)
+- Grok: `grok/` (`config.toml`, `skills/`; auth, sessions, MCP credentials, and caches stay local)
 
 ## Adding new configs
 

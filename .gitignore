@@ -24,5 +24,48 @@ hammerspoon/.hammerspoon/window-layouts/
 # gh CLI local auth (username only; no secrets in tracked config.yml)
 gh/.config/gh/hosts.yml
 
+# Grok CLI local auth, sessions, caches, binaries (package is allowlisted)
+grok/.grok/auth.json
+grok/.grok/mcp_credentials.json
+grok/.grok/agent_id
+grok/.grok/last-copy.txt
+grok/.grok/trusted_folders.toml
+grok/.grok/active_sessions.json
+grok/.grok/models_cache.json
+grok/.grok/worktrees.db
+grok/.grok/sessions/
+grok/.grok/logs/
+grok/.grok/memtrace/
+grok/.grok/downloads/
+grok/.grok/bin/
+grok/.grok/vendor/
+grok/.grok/marketplace-cache/
+grok/.grok/relocations/
+grok/.grok/bundled/
+grok/.grok/docs/
+grok/.grok/*.lock
+grok/.grok/*.db
+grok/.grok/*.sqlite
+grok/.grok/CHANGELOG.md
+grok/.grok/CHANGELOG.json
+grok/.grok/README.md
+grok/.grok/version.json
+grok/.grok/slash-mru.json
+grok/.grok/tip_cursor.json
+grok/.grok/managed_config.toml
+grok/.grok/requirements.toml
+grok/.grok/pager.toml
+grok/.grok/lsp.json
+grok/.grok/settings.json
+grok/.grok/.metadata_version
+grok/.grok/hooks/
+grok/.grok/plugins/
+grok/.grok/agents/
+grok/.grok/commands/
+grok/.grok/workflows/
+grok/.grok/memory/
+grok/.grok/skills/.port-manifest.json
+grok/.grok/skills/.port-partitions.json
+
 # Local Traba dev infra audit + ops deck (paths, ports, internal Slack captures)
 dev-machine/

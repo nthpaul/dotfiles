@@ -52,6 +52,9 @@ behavior:
   seen_announcement_ids:
   - 2026-05-19-sonos-help-wanted
   - 2026-02-27-major-refactor-complete
+  - 2026-08-06-discord-community
+  - 2026-07-04-multi-source-playback
+  - 2026-06-12-lua-scripting
   shuffle_enabled: false
   liked_icon: ♥
   shuffle_icon: 🔀
@@ -76,7 +79,7 @@ behavior:
   keepawake_enabled: true
   sync_token: null
 theme:
-  preset: Default (Cyan)
+  preset: Vesper
   active: 255, 199, 153
   banner: 255, 199, 153
   error_border: 255, 128, 128
@@ -93,3 +96,4 @@ theme:
   background: 16, 16, 16
   header: 255, 255, 255
   highlighted_lyrics: 153, 255, 228
+plugin_commands: null
