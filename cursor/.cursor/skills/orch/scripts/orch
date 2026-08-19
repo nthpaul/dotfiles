@@ -521,6 +521,8 @@ def prompt_prefix(team: str, worker_id: str, result_path: Path) -> str:
         f"ORCH_HOME={home} ORCH_RESULT={result_path}\n"
         "When finished, you may write a one-line summary to $ORCH_RESULT; "
         "the wrapper also writes exit status.\n\n"
+        "Apply /poteto-mode. Read that skill in full, including its Principles "
+        "index, before doing the job.\n\n"
     )
 
 

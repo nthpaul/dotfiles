@@ -10,11 +10,11 @@ Script: `scripts/orch` (also `~/.local/bin/orch`)
 
 | Skill | What it does |
 |---|---|
-| **orch** | You are the orch. Pick team + default mode, then only spawn/list/tell/kill. |
+| **orch** | You are the orch. Apply /poteto-mode. Pick team + default mode, then only spawn/list/tell/kill. |
 | **orch-headless** | Same, default `--mode headless` for the session. |
 | **orch-tell** | Same, default `--mode tell` (live grok and cursor panes). |
 
-Say `/orch`, `/orch-headless`, or `/orch-tell` — or “you’re the orch”. The pane stamps `orch team=… default-mode=…` once and does not implement.
+Say `/orch`, `/orch-headless`, or `/orch-tell` — or “you’re the orch”. The pane also applies `/poteto-mode`. It stamps `orch team=… default-mode=…` once and does not implement. Spawned workers apply `/poteto-mode` too.
 
 ## Install
 

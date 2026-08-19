@@ -85,6 +85,15 @@ class OrchTest(unittest.TestCase):
         path = self.home / "teams" / team / "jobs" / worker_id / "request.json"
         return json.loads(path.read_text(encoding="utf-8"))
 
+    def test_prompt_prefix_applies_poteto_mode(self) -> None:
+        text = orch.prompt_prefix(
+            "demo", "w1a2b3c4", self.home / "result.json"
+        )
+        self.assertIn("ORCH_TEAM=demo", text)
+        self.assertIn("ORCH_JOB_ID=w1a2b3c4", text)
+        self.assertIn("/poteto-mode", text)
+        self.assertIn("Principles", text)
+
     def test_help_is_cheat_sheet(self) -> None:
         for argv in ([], ["-h"], ["--help"], ["help"]):
             code, out, _err = self.run_main(argv)

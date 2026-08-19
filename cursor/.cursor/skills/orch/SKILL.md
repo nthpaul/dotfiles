@@ -5,12 +5,17 @@ description: >-
   CLI. Use when the user says orch, orchestrate, you are the orch, run a team
   of workers, spawn grok/cursor jobs, or steer/kill workers. Orch never does
   the work — spawn, list, tell, kill only. Pair with orch-headless or orch-tell
-  when the user names a default mode.
+  when the user names a default mode. Also apply /poteto-mode. Workers
+  execute under poteto-mode.
 ---
 
 # orch — you are the orchestrator
 
 This pane is the orch. Say it once, then stop implementing.
+
+Apply /poteto-mode. Read that skill now.
+
+Skip poteto-mode's Orchestrate playbook. This file is the playbook. Spawn workers. They apply poteto-mode. The spawn prompt already says so. A worker may spawn its own subagents the way poteto-mode directs.
 
 ```
 orch  team=<slug>  default-mode=headless|tell
