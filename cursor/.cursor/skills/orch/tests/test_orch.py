@@ -149,16 +149,53 @@ class OrchTest(unittest.TestCase):
     def test_list_team_and_all(self) -> None:
         self.spawn_headless("fleet-ops", "job one", "w11111111")
         self.spawn_headless("rbac", "job two", "w22222222")
+        pid = os.getpid()
         code, out, err = self.run_main(["list", "--team", "fleet-ops"])
         self.assertEqual(code, 0, err)
-        self.assertIn("w11111111", out)
+        self.assertEqual(
+            out.splitlines(),
+            [
+                f"orch  pid={pid}  live",
+                "w11111111  grok  headless  pid=4242  -  job one",
+            ],
+        )
         self.assertNotIn("w22222222", out)
         code, out, err = self.run_main(["list", "--all"])
         self.assertEqual(code, 0, err)
-        self.assertIn("w11111111", out)
-        self.assertIn("w22222222", out)
-        self.assertIn("fleet-ops", out)
-        self.assertIn("rbac", out)
+        self.assertEqual(
+            out.splitlines(),
+            [
+                "fleet-ops",
+                f"  orch  pid={pid}  live",
+                "  w11111111  grok  headless  pid=4242  -  job one",
+                "",
+                "rbac",
+                f"  orch  pid={pid}  live",
+                "  w22222222  grok  headless  pid=4242  -  job two",
+            ],
+        )
+
+    def test_list_unclaimed_and_dead_orch(self) -> None:
+        code, out, err = self.run_main(["list", "--team", "ghost"])
+        self.assertEqual(code, 0, err)
+        self.assertEqual(out.splitlines(), ["orch  (unclaimed)"])
+
+        team_dir = self.home / "teams" / "stale"
+        team_dir.mkdir(parents=True)
+        (team_dir / "orch.json").write_text(
+            json.dumps({"pid": 999999999, "claimed_at": "2026-08-19T00:00:00Z"}) + "\n",
+            encoding="utf-8",
+        )
+        (team_dir / "workers.json").write_text("[]\n", encoding="utf-8")
+        code, out, err = self.run_main(["list", "--all"])
+        self.assertEqual(code, 0, err)
+        self.assertEqual(
+            out.splitlines(),
+            [
+                "stale",
+                "  orch  pid=999999999  dead",
+            ],
+        )
 
     def test_kill_removes_worker(self) -> None:
         self.spawn_headless("fleet-ops")

@@ -68,6 +68,9 @@ orch tell --team T ID --status "..."
 `--team` required on spawn / list (except `--all`) / status / logs / result / kill / tell / claim / release.
 Default `--mode` is `headless`.
 
+`orch list` prints the team's orch lock (`pid` live/dead, or unclaimed), then workers.
+`orch list --all` groups that by team.
+
 ## Headless (default)
 
 Background process. Logs and a result file under the team's `jobs/`. No pane. No `tell`.

@@ -51,7 +51,7 @@ _orch() {
 
   if (( CURRENT == 2 )); then
     _alternative \
-      'commands:command:((help\:one\ command\ with\ examples teams\:list\ teams claim\:lock\ a\ team release\:unlock\ a\ team spawn\:start\ a\ worker list\:show\ workers status\:one\ worker logs\:job\ logs result\:job\ result kill\:stop\ a\ worker tell\:ask\ or\ status\ a\ tell\ worker complete\:completion\ helpers))' \
+      'commands:command:((help\:one\ command\ with\ examples teams\:list\ teams claim\:lock\ a\ team release\:unlock\ a\ team spawn\:start\ a\ worker list\:show\ orch\ and\ workers status\:one\ worker logs\:job\ logs result\:job\ result kill\:stop\ a\ worker tell\:ask\ or\ status\ a\ tell\ worker complete\:completion\ helpers))' \
       'flags:flag:((-h --help))'
     return
   fi

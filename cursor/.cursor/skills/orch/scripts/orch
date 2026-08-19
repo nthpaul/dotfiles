@@ -137,12 +137,13 @@ Examples:
   orch spawn --team rbac --cwd ~/src --steal grok add the gate
 """,
     "list": """\
-list — workers on one team, or every team
+list — orch + workers on one team, or every team
 
   orch list --team T
   orch list --all
 
---team is required unless you pass --all.
+Orch lock first (pid live/dead, or unclaimed), then workers.
+--all groups by team. --team is required unless you pass --all.
 
 Examples:
   orch list --team fleet-ops
@@ -881,7 +882,7 @@ def write_request(
     return path
 
 
-def format_worker_line(team: str, worker: dict[str, Any], *, show_team: bool) -> str:
+def format_worker_line(worker: dict[str, Any]) -> str:
     worker_id = worker.get("id", "?")
     kind = worker.get("kind", "?")
     mode = worker.get("mode", "?")
@@ -890,8 +891,26 @@ def format_worker_line(team: str, worker: dict[str, Any], *, show_team: bool) ->
     job = str(worker.get("job") or "").replace("\n", " ")
     if len(job) > 60:
         job = job[:57] + "..."
-    prefix = f"{team}  " if show_team else ""
-    return f"{prefix}{worker_id}  {kind}  {mode}  pid={pid}  {name}  {job}"
+    return f"{worker_id}  {kind}  {mode}  pid={pid}  {name}  {job}"
+
+
+def format_orch_line(lock: dict[str, Any] | None) -> str:
+    if lock is None:
+        return "orch  (unclaimed)"
+    raw = lock.get("pid")
+    try:
+        pid = int(raw)
+    except (TypeError, ValueError):
+        return "orch  pid=?  dead"
+    state = "live" if pid_alive(pid) else "dead"
+    return f"orch  pid={pid}  {state}"
+
+
+def team_lines(team: str, *, indent: str = "") -> list[str]:
+    lines = [f"{indent}{format_orch_line(read_lock(team))}"]
+    for worker in load_workers(team):
+        lines.append(f"{indent}{format_worker_line(worker)}")
+    return lines
 
 
 def cmd_teams(_args: argparse.Namespace) -> int:
@@ -999,15 +1018,18 @@ def cmd_spawn(args: argparse.Namespace) -> int:
 
 def cmd_list(args: argparse.Namespace) -> int:
     if args.all:
-        for team in list_teams():
-            for worker in load_workers(team):
-                print(format_worker_line(team, worker, show_team=True))
+        for index, team in enumerate(list_teams()):
+            if index:
+                print()
+            print(team)
+            for line in team_lines(team, indent="  "):
+                print(line)
         return 0
     if not args.team:
         die("list needs --team T or --all", 2)
     team = validate_team(args.team)
-    for worker in load_workers(team):
-        print(format_worker_line(team, worker, show_team=False))
+    for line in team_lines(team):
+        print(line)
     return 0
 
 
@@ -1195,7 +1217,7 @@ def parser_for(command: str) -> OrchParser:
         p.add_argument("job", nargs="+", help="job prompt")
         return p
     if command == "list":
-        p = OrchParser(prog="orch list", description="List workers.")
+        p = OrchParser(prog="orch list", description="List orch and workers.")
         add_team_flag(p, required=False)
         p.add_argument("--all", action="store_true", help="every team")
         return p
