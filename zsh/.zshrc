@@ -136,6 +136,8 @@ export PATH=$PATH:$ANDROID_HOME/platform-tools
 export PATH=$PATH:$HOME/.maestro/bin
 
 
+# Leftover agents/worktrees inventory (`hanging-resources`)
+export PATH="$HOME/.cursor/skills/hanging-resources/scripts:$PATH"
 # hanging-resources tab completion (after compinit so it sticks)
 if [[ -f "$HOME/.cursor/skills/hanging-resources/completions/_hanging-resources" ]]; then
   source "$HOME/.cursor/skills/hanging-resources/completions/_hanging-resources"

@@ -21,7 +21,7 @@ _hanging-resources() {
 
   case $cmd in
     --only)
-      _values 'type' agents worktrees hermes codex docker
+      _values 'type' agents claude grok worktrees hermes codex docker
       return
       ;;
     --agent-idle-min)
@@ -33,7 +33,7 @@ _hanging-resources() {
       ;;
     scan)
       if [[ ${words[CURRENT-1]} == --only ]]; then
-        _values 'type' agents worktrees hermes codex docker
+        _values 'type' agents claude grok worktrees hermes codex docker
         return
       fi
       _values 'flag' --only --agent-idle-min --help
@@ -42,15 +42,15 @@ _hanging-resources() {
     clean)
       type=${words[3]}
       if (( CURRENT == 3 )); then
-        _values 'type' agents hermes codex worktrees docker
+        _values 'type' agents claude grok hermes codex worktrees docker
         return
       fi
       if [[ ${words[CURRENT-1]} == --only ]]; then
-        _values 'type' agents worktrees hermes codex docker
+        _values 'type' agents claude grok worktrees hermes codex docker
         return
       fi
       case $type in
-        agents|hermes|codex)
+        agents|claude|grok|hermes|codex)
           _alternative \
             'flags:flag:((--all --dry-run --kill-9))' \
             "pids:pid:_hr_ids ${type}"

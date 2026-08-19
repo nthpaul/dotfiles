@@ -18,9 +18,9 @@ DRY_RUN=0
 usage() {
   cat <<'EOF'
 Usage:
-  hanging-resources [scan] [--only agents|worktrees|hermes|codex|docker] [--agent-idle-min N]
+  hanging-resources [scan] [--only agents|claude|grok|codex|worktrees|hermes|docker] [--agent-idle-min N]
 
-  hanging-resources clean agents|hermes|codex [--all] [--dry-run] [--kill-9] [PID...]
+  hanging-resources clean agents|claude|grok|codex|hermes [--all] [--dry-run] [--kill-9] [PID...]
   hanging-resources clean worktrees [--all] [--dry-run] [PATH|repo/slug|slug...]
   hanging-resources clean docker [--all] [--dry-run] [--force] [ID|NAME...]
 
@@ -192,49 +192,110 @@ ensure_self_pids() {
   SELF_PIDS=$(collect_self_pids)
 }
 
-# --- discovery (one id per line) ---
+cmd_is_kind() {
+  local kind="$1" cmd="$2"
+  local exe="${cmd%% *}"
+  case "$kind" in
+    agents)
+      [[ "$cmd" == */cursor-agent* && "$cmd" != *worker-server* ]]
+      ;;
+    claude)
+      [[ "$cmd" == *slack-code-bridge* ]] && return 1
+      [[ "$exe" == *Claude.app* || "$exe" == *ClaudeCode.app* || "$exe" == *"Claude Code.app"* ]] && return 1
+      [[ "$exe" == "claude" || "$exe" == */claude || "$exe" == *"/.local/share/claude/versions/"* ]]
+      ;;
+    grok)
+      [[ "$exe" == "grok" || "$exe" == */grok || "$exe" == */.grok/bin/agent || "$exe" == *grok-macos* ]]
+      ;;
+    codex)
+      [[ "$cmd" == *"codex sandbox"* || "$cmd" == *node_repl* || "$cmd" == */codex.js* ]] && return 0
+      [[ "$exe" == "codex" || "$exe" == */codex ]]
+      ;;
+    hermes)
+      [[ "$cmd" == *hermes_cli.main* && "$cmd" == *"gateway restart"* ]]
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
 
-list_agent_pids() {
+idle_min_for() {
+  local kind="$1" cmd="$2"
+  if [[ "$kind" == codex && ( "$cmd" == *"codex sandbox"* || "$cmd" == *node_repl* ) ]]; then
+    echo 60
+  else
+    echo "$AGENT_IDLE_MIN"
+  fi
+}
+
+process_label() {
+  local kind="$1" cmd="$2"
+  case "$kind" in
+    agents) echo "cursor-agent" ;;
+    claude) echo "claude" ;;
+    grok)
+      if [[ "$cmd" == *" -p "* || "$cmd" == *"/grok -p"* ]]; then
+        echo "grok -p"
+      else
+        echo "grok"
+      fi
+      ;;
+    codex)
+      if [[ "$cmd" == *node_repl* ]]; then
+        echo "codex node_repl"
+      elif [[ "$cmd" == *"codex sandbox"* ]]; then
+        echo "codex sandbox"
+      else
+        echo "codex"
+      fi
+      ;;
+    *) echo "$kind" ;;
+  esac
+}
+
+# pid, etime, cpu, rss, cmd — one row per matching process
+each_kind_row() {
+  local kind="$1"
+  local pid ppid etime cpu rss cmd
+  while read -r pid ppid etime cpu rss cmd; do
+    [[ "$pid" =~ ^[0-9]+$ ]] || continue
+    [[ -n "$cmd" ]] || continue
+    cmd_is_kind "$kind" "$cmd" || continue
+    printf '%s\t%s\t%s\t%s\t%s\n' "$pid" "$etime" "$cpu" "$rss" "$cmd"
+  done < <(ps -ax -o pid=,ppid=,etime=,%cpu=,rss=,command= 2>/dev/null)
+}
+
+list_idle_pids() {
+  local kind="$1"
   ensure_self_pids
-  while IFS= read -r line; do
-    [[ -z "$line" ]] && continue
-    local pid etime cpu mins cpu_int
-    pid=$(awk '{print $1}' <<<"$line")
+  local pid etime cpu rss cmd mins cpu_int need
+  while IFS=$'\t' read -r pid etime cpu rss cmd; do
+    [[ -z "$pid" ]] && continue
     is_self_pid "$pid" && continue
-    etime=$(awk '{print $3}' <<<"$line")
-    cpu=$(awk '{print $4}' <<<"$line")
     mins=$(etime_to_min "$etime")
     cpu_int=${cpu%.*}
-    (( mins < AGENT_IDLE_MIN )) && continue
+    need=$(idle_min_for "$kind" "$cmd")
+    (( mins < need )) && continue
     (( cpu_int > 1 )) && continue
     printf '%s\n' "$pid"
-  done < <(ps -ax -o pid=,ppid=,etime=,%cpu=,rss=,command= \
-    | awk '/\/cursor-agent( |$)/ && $0 !~ /worker-server/ && $0 !~ /awk/ {print}')
+  done < <(each_kind_row "$kind")
   return 0
 }
+
+# --- discovery (one id per line) ---
+
+list_agent_pids() { list_idle_pids agents; }
+list_claude_pids() { list_idle_pids claude; }
+list_grok_pids() { list_idle_pids grok; }
+list_codex_pids() { list_idle_pids codex; }
 
 list_hermes_pids() {
-  while IFS= read -r line; do
-    [[ -z "$line" ]] && continue
-    awk '{print $1}' <<<"$line"
-  done < <(ps -ax -o pid=,etime=,%cpu=,rss=,command= \
-    | awk '/hermes_cli\.main gateway restart/ && $0 !~ /awk/ {print}')
-  return 0
-}
-
-list_codex_pids() {
-  while IFS= read -r line; do
-    [[ -z "$line" ]] && continue
-    local pid etime cpu mins cpu_int
-    pid=$(awk '{print $1}' <<<"$line")
-    etime=$(awk '{print $2}' <<<"$line")
-    cpu=$(awk '{print $3}' <<<"$line")
-    mins=$(etime_to_min "$etime")
-    cpu_int=${cpu%.*}
-    (( mins < 60 || cpu_int > 1 )) && continue
+  local pid etime cpu rss cmd
+  while IFS=$'\t' read -r pid etime cpu rss cmd; do
+    [[ -z "$pid" ]] && continue
     printf '%s\n' "$pid"
-  done < <(ps -ax -o pid=,etime=,%cpu=,rss=,command= \
-    | awk '/codex sandbox|cua_node\/bin\/node_repl/ && $0 !~ /awk/ {print}')
+  done < <(each_kind_row hermes)
   return 0
 }
 
@@ -288,30 +349,15 @@ pid_command() {
 
 assert_pid_kind() {
   local kind="$1" pid="$2"
-  local cmd
+  local cmd short
   [[ "$kind" == any ]] && return 0
   cmd=$(pid_command "$pid")
   [[ -n "$cmd" ]] || return 0
-  case "$kind" in
-    agents)
-      [[ "$cmd" == *cursor-agent* ]] || {
-        echo "pid $pid is not cursor-agent: $cmd" >&2
-        return 1
-      }
-      ;;
-    hermes)
-      [[ "$cmd" == *hermes_cli.main* && "$cmd" == *"gateway restart"* ]] || {
-        echo "pid $pid is not a stuck Hermes gateway restart: $cmd" >&2
-        return 1
-      }
-      ;;
-    codex)
-      [[ "$cmd" == *"codex sandbox"* || "$cmd" == *node_repl* ]] || {
-        echo "pid $pid is not a Codex sandbox: $cmd" >&2
-        return 1
-      }
-      ;;
-  esac
+  cmd_is_kind "$kind" "$cmd" && return 0
+  short="$cmd"
+  (( ${#short} > 120 )) && short="${short:0:120}…"
+  echo "pid $pid is not $kind: $short" >&2
+  return 1
 }
 
 # --- scan ---
@@ -321,6 +367,14 @@ cmd_scan() {
     case "$1" in
       --only)
         ONLY="${2:-}"
+        case "$ONLY" in
+          agents|claude|grok|codex|hermes|worktrees|docker) ;;
+          *)
+            echo "Unknown type: $ONLY" >&2
+            usage >&2
+            exit 2
+            ;;
+        esac
         shift 2
         ;;
       --agent-idle-min)
@@ -352,28 +406,39 @@ cmd_scan() {
   section() {
     printf '\n## %s\n' "$1"
   }
-
-  if want agents; then
-    section "Idle cursor-agent"
+  scan_idle_kind() {
+    local kind="$1" title="$2"
+    local pid etime cpu rss cmd mins cpu_int need cwd mb
+    section "$title"
     found=0
-    while IFS= read -r line; do
-      [[ -z "$line" ]] && continue
-      pid=$(awk '{print $1}' <<<"$line")
+    while IFS=$'\t' read -r pid etime cpu rss cmd; do
+      [[ -z "$pid" ]] && continue
       is_self_pid "$pid" && continue
-      etime=$(awk '{print $3}' <<<"$line")
-      cpu=$(awk '{print $4}' <<<"$line")
-      rss=$(awk '{print $5}' <<<"$line")
       mins=$(etime_to_min "$etime")
       cpu_int=${cpu%.*}
-      (( mins < AGENT_IDLE_MIN )) && continue
+      need=$(idle_min_for "$kind" "$cmd")
+      (( mins < need )) && continue
       (( cpu_int > 1 )) && continue
       cwd=$(lsof -a -d cwd -p "$pid" 2>/dev/null | awk 'NR==2 {print $NF}')
       mb=$(rss_mb "$rss")
-      emit "- pid $pid · age $etime · cpu ${cpu}% · ~${mb}MB · ports $(ports_for_pid_tree "$pid") · cwd ${cwd:-?}"
+      emit "- pid $pid · age $etime · cpu ${cpu}% · ~${mb}MB · ports $(ports_for_pid_tree "$pid") · $(process_label "$kind" "$cmd") · cwd ${cwd:-?}"
       found=1
-    done < <(ps -ax -o pid=,ppid=,etime=,%cpu=,rss=,command= \
-      | awk '/\/cursor-agent( |$)/ && $0 !~ /worker-server/ && $0 !~ /awk/ {print}')
-    (( found == 0 )) && echo "(none)"
+    done < <(each_kind_row "$kind")
+    if (( found == 0 )); then
+      echo "(none)"
+    fi
+  }
+
+  if want agents; then
+    scan_idle_kind agents "Idle cursor-agent"
+  fi
+
+  if want claude; then
+    scan_idle_kind claude "Idle Claude"
+  fi
+
+  if want grok; then
+    scan_idle_kind grok "Idle Grok"
   fi
 
   if want hermes; then
@@ -390,36 +455,13 @@ cmd_scan() {
       found=1
     done < <(ps -ax -o pid=,etime=,%cpu=,rss=,command= \
       | awk '/hermes_cli\.main gateway restart/ && $0 !~ /awk/ {print}')
-    (( found == 0 )) && echo "(none)"
+    if (( found == 0 )); then
+      echo "(none)"
+    fi
   fi
 
   if want codex; then
-    section "Idle Codex sandbox"
-    found=0
-    while IFS= read -r line; do
-      [[ -z "$line" ]] && continue
-      pid=$(awk '{print $1}' <<<"$line")
-      etime=$(awk '{print $2}' <<<"$line")
-      cpu=$(awk '{print $3}' <<<"$line")
-      rss=$(awk '{print $4}' <<<"$line")
-      mins=$(etime_to_min "$etime")
-      cpu_int=${cpu%.*}
-      (( mins < 60 || cpu_int > 1 )) && continue
-      cmd=$(awk '{for (i=5;i<=NF;i++) printf "%s ", $i; print ""}' <<<"$line")
-      label="codex sandbox"
-      if [[ "$cmd" == */bin/node_repl* || "$cmd" == *" node_repl"* ]]; then
-        label="codex node_repl"
-      fi
-      wd=""
-      if [[ "$cmd" == *"--working-dir "* ]]; then
-        wd=$(sed -n 's/.*--working-dir \([^ ]*\).*/\1/p' <<<"$cmd")
-      fi
-      mb=$(rss_mb "$rss")
-      emit "- pid $pid · age $etime · cpu ${cpu}% · ~${mb}MB · ports $(ports_for_pid_tree "$pid") · $label${wd:+ · $wd}"
-      found=1
-    done < <(ps -ax -o pid=,etime=,%cpu=,rss=,command= \
-      | awk '/codex sandbox|cua_node\/bin\/node_repl/ && $0 !~ /awk/ {print}')
-    (( found == 0 )) && echo "(none)"
+    scan_idle_kind codex "Idle Codex"
   fi
 
   if want worktrees; then
@@ -447,7 +489,9 @@ cmd_scan() {
         found=1
       done < <(find "$WORKTREES_ROOT" -mindepth 2 -maxdepth 2 -type d 2>/dev/null || true)
     fi
-    (( found == 0 )) && echo "(none)"
+    if (( found == 0 )); then
+      echo "(none)"
+    fi
   fi
 
   if want docker; then
@@ -462,7 +506,9 @@ cmd_scan() {
         emit "- $id  $status  $names  $image  $(docker_ports_label "$ports")"
         found=1
       done < <(list_docker_rows)
-      (( found == 0 )) && echo "(none)"
+      if (( found == 0 )); then
+        echo "(none)"
+      fi
     fi
   fi
 
@@ -636,7 +682,7 @@ remove_docker() {
 
 cmd_clean() {
   if [[ $# -lt 1 ]]; then
-    echo "hanging-resources clean: pass a type (agents|hermes|codex|worktrees|docker)" >&2
+    echo "hanging-resources clean: pass a type (agents|claude|grok|codex|hermes|worktrees|docker)" >&2
     usage >&2
     exit 2
   fi
@@ -657,7 +703,7 @@ cmd_clean() {
   done
 
   case "$kind" in
-    agents|hermes|codex|worktrees|docker) ;;
+    agents|claude|grok|codex|hermes|worktrees|docker) ;;
     *)
       echo "Unknown type: $kind" >&2
       usage >&2
@@ -678,12 +724,11 @@ cmd_clean() {
   local ids=() spec path
 
   case "$kind" in
-    agents|hermes|codex)
+    agents|claude|grok|codex|hermes)
       if (( all == 1 )); then
         case "$kind" in
-          agents) mapfile -t ids < <(list_agent_pids) ;;
           hermes) mapfile -t ids < <(list_hermes_pids) ;;
-          codex) mapfile -t ids < <(list_codex_pids) ;;
+          *) mapfile -t ids < <(list_idle_pids "$kind") ;;
         esac
         if [[ ${#ids[@]} -eq 0 ]]; then
           echo "clean $kind: nothing to kill"
@@ -774,10 +819,14 @@ cmd_complete() {
   ensure_self_pids
   case "${1:-}" in
     agents) list_agent_pids ;;
+    claude) list_claude_pids ;;
+    grok) list_grok_pids ;;
     hermes) list_hermes_pids ;;
     codex) list_codex_pids ;;
     kill)
       list_agent_pids
+      list_claude_pids
+      list_grok_pids
       list_hermes_pids
       list_codex_pids
       ;;
@@ -801,7 +850,7 @@ cmd_complete() {
       done < <(list_docker_rows)
       ;;
     *)
-      echo "hanging-resources complete: agents|hermes|codex|worktrees|docker|kill" >&2
+      echo "hanging-resources complete: agents|claude|grok|hermes|codex|worktrees|docker|kill" >&2
       exit 2
       ;;
   esac
