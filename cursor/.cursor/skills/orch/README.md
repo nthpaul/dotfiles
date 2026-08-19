@@ -6,6 +6,16 @@ Home: `~/.cursor/skills/orch/`
 State: `$ORCH_HOME` (default `~/.orch`)
 Script: `scripts/orch` (also `~/.local/bin/orch`)
 
+## Skills (how a Cursor pane becomes the orch)
+
+| Skill | What it does |
+|---|---|
+| **orch** | You are the orch. Pick team + default mode, then only spawn/list/tell/kill. |
+| **orch-headless** | Same, default `--mode headless` for the session. |
+| **orch-tell** | Same, default `--mode tell` (Cursor panes). Grok stays headless. |
+
+Say `/orch`, `/orch-headless`, or `/orch-tell` — or “you’re the orch”. The pane stamps `orch team=… default-mode=…` once and does not implement.
+
 ## Install
 
 zshrc already has PATH + completion (after hanging-resources, before the grok installer):
