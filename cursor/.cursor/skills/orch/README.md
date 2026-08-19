@@ -12,7 +12,7 @@ Script: `scripts/orch` (also `~/.local/bin/orch`)
 |---|---|
 | **orch** | You are the orch. Pick team + default mode, then only spawn/list/tell/kill. |
 | **orch-headless** | Same, default `--mode headless` for the session. |
-| **orch-tell** | Same, default `--mode tell` (Cursor panes). Grok stays headless. |
+| **orch-tell** | Same, default `--mode tell` (live grok and cursor panes). |
 
 Say `/orch`, `/orch-headless`, or `/orch-tell` — or “you’re the orch”. The pane stamps `orch team=… default-mode=…` once and does not implement.
 
@@ -88,9 +88,10 @@ Grok: `grok -p …`. Cursor: `cursor-agent -p …`. When the process exits, `res
 
 ## Tell (live pane)
 
-tmux window you can attach. Cursor only in v1. Orch claims a scientist name and you steer with `orch tell`.
+tmux window you can attach. Grok or Cursor. Orch claims a scientist name and you steer with `orch tell`.
 
 ```bash
+orch spawn --team fleet-ops --mode tell grok "fix the flaky test"
 orch spawn --team fleet-ops --mode tell --name curie cursor "watch Slack for X"
 orch list --team fleet-ops
 orch tell --team fleet-ops w1a2b3c4 --ask "now pull the GitHub PRs"
@@ -100,12 +101,7 @@ orch kill --team fleet-ops w1a2b3c4
 
 `orch tell` is `tell NAME --ask|--status` for that worker. Same team only. Worker must be `--mode tell`.
 
-Grok tell is not v1:
-
-```bash
-orch spawn --team fleet-ops --mode tell grok "…"
-# exit 2 — Grok tell is not v1; use --mode headless
-```
+Grok panes skip Cursor's `i` / `C-u` inject (those keys scroll or type a letter in Grok). telld reads `@orch_kind` on the pane.
 
 ## What kill does
 

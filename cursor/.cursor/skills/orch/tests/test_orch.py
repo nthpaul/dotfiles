@@ -170,23 +170,41 @@ class OrchTest(unittest.TestCase):
         self.assertEqual(self.workers("fleet-ops"), [])
         term.assert_called_once_with(4242)
 
-    def test_tell_plus_grok_refused(self) -> None:
-        code, _out, err = self.run_main(
-            [
-                "spawn",
-                "--team",
-                "demo",
-                "--mode",
-                "tell",
-                "grok",
-                "do",
-                "it",
-            ]
-        )
-        self.assertEqual(code, 2)
-        self.assertIn("Grok tell is not v1; use --mode headless", err)
-        self.assertEqual(self.workers("demo"), [])
-        self.assertFalse((self.home / "teams" / "demo" / "jobs").exists())
+    def test_tell_grok_spawns(self) -> None:
+        with (
+            patch.object(orch, "ensure_tmux_session"),
+            patch.object(orch, "tmux_new_window", return_value=("%42", 99)) as tw,
+            patch.object(orch, "next_free_scientist", return_value="curie"),
+            patch.object(orch, "claim_scientist") as claim,
+            patch.object(orch, "set_pane_kind") as kind_opt,
+            patch.object(orch, "ensure_telld"),
+        ):
+            code, out, err = self.run_main(
+                [
+                    "spawn",
+                    "--team",
+                    "demo",
+                    "--mode",
+                    "tell",
+                    "--id",
+                    "w1a2b3c4",
+                    "grok",
+                    "do",
+                    "it",
+                ]
+            )
+        self.assertEqual(code, 0, err)
+        self.assertIn("w1a2b3c4", out)
+        tw.assert_called_once()
+        self.assertEqual(tw.call_args.kwargs["kind"], "grok")
+        claim.assert_called_once_with("curie", "%42")
+        kind_opt.assert_called_once_with("%42", "grok")
+        workers = self.workers("demo")
+        self.assertEqual(len(workers), 1)
+        self.assertEqual(workers[0]["kind"], "grok")
+        self.assertEqual(workers[0]["mode"], "tell")
+        self.assertEqual(workers[0]["name"], "curie")
+        self.assertEqual(workers[0]["pane"], "%42")
 
     def test_list_without_team_invalid(self) -> None:
         code, _out, err = self.run_main(["list"])

@@ -22,10 +22,10 @@ from typing import Any, Iterator, NoReturn
 TEAM_RE = re.compile(r"^[a-z][a-z0-9-]{0,31}$")
 WORKER_ID_RE = re.compile(r"^w[0-9a-f]{7,8}$")
 PANE_OPTION = "@scientist"
+KIND_OPTION = "@orch_kind"
 TMUX_SESSION = "orch"
 TELL_NAMES_PATH = Path.home() / ".cursor" / "skills" / "agent-tell" / "names.txt"
 ROSTER_PATH = Path.home() / ".cursor" / "scientists" / "roster.json"
-GROK_TELL_MSG = "Grok tell is not v1; use --mode headless"
 PUBLIC_COMMANDS = [
     "teams",
     "claim",
@@ -66,7 +66,7 @@ Usage:
 
 Teams keep workers apart. Spawn starts one. Kill drops it.
 Headless writes jobs/<id>/result.json. Tell uses a tmux pane + scientist name.
-Grok tell is not v1 — use --mode headless.
+Tell works for grok and cursor.
 
 Examples:
   orch spawn --team fleet-ops grok fix the login flake
@@ -125,12 +125,14 @@ spawn — start a worker on a team
   orch spawn --team T [--mode headless|tell] grok|cursor JOB...
              [--cwd DIR] [--name NAME] [--id ID] [--steal]
 
-Default mode is headless. Grok tell is not v1.
+Default mode is headless.
 --steal takes the team lock even if another orch pid is live.
 Headless detaches and returns at once. Result lands in jobs/<id>/result.json.
+Tell opens a tmux pane for grok or cursor.
 
 Examples:
   orch spawn --team fleet-ops grok fix the login flake
+  orch spawn --team fleet-ops --mode tell grok fix the login flake
   orch spawn --team fleet-ops --mode tell cursor draft the slack reply
   orch spawn --team rbac --cwd ~/src --steal grok add the gate
 """,
@@ -664,10 +666,34 @@ def ensure_tmux_session() -> None:
     run(["tmux", "new-session", "-d", "-s", TMUX_SESSION, "-n", "_boot"])
 
 
+def tell_bin_args(kind: str, prompt: str, cwd: str) -> list[str]:
+    if kind == "grok":
+        return [
+            resolve_bin("grok"),
+            "--cwd",
+            cwd,
+            "--always-approve",
+            prompt,
+        ]
+    return [
+        resolve_bin("cursor-agent"),
+        "--force",
+        "--trust",
+        "--workspace",
+        cwd,
+        prompt,
+    ]
+
+
+def set_pane_kind(pane: str, kind: str) -> None:
+    run(["tmux", "set-option", "-p", "-t", pane, KIND_OPTION, kind])
+
+
 def tmux_new_window(
     *,
     team: str,
     worker_id: str,
+    kind: str,
     cwd: str,
     result_path: Path,
     job: str,
@@ -679,12 +705,7 @@ def tmux_new_window(
         f"ORCH_JOB_ID={worker_id}",
         f"ORCH_HOME={orch_home()}",
         f"ORCH_RESULT={result_path}",
-        resolve_bin("cursor-agent"),
-        "--force",
-        "--trust",
-        "--workspace",
-        cwd,
-        prompt_prefix(team, worker_id, result_path) + job,
+        *tell_bin_args(kind, prompt_prefix(team, worker_id, result_path) + job, cwd),
     ]
     created = run(
         [
@@ -906,9 +927,6 @@ def cmd_spawn(args: argparse.Namespace) -> int:
     team = validate_team(args.team)
     kind = args.kind
     mode = args.mode
-    if mode == "tell" and kind == "grok":
-        print(GROK_TELL_MSG, file=sys.stderr)
-        return 2
     job = " ".join(args.job).strip()
     if not job:
         die("job text is required", 2)
@@ -947,6 +965,7 @@ def cmd_spawn(args: argparse.Namespace) -> int:
         pane, pid = tmux_new_window(
             team=team,
             worker_id=worker_id,
+            kind=kind,
             cwd=cwd,
             result_path=result_path,
             job=job,
@@ -955,6 +974,7 @@ def cmd_spawn(args: argparse.Namespace) -> int:
         window = f"{team}-{worker_id}"
         name = next_free_scientist(args.name)
         claim_scientist(name, pane)
+        set_pane_kind(pane, kind)
         ensure_telld()
 
     record_worker(

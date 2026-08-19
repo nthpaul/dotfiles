@@ -17,7 +17,7 @@ orch  team=<slug>  default-mode=headless|tell
 ```
 
 - **headless** — no panes. `grok -p` / `cursor-agent -p`. Wait on `orch result`.
-- **tell** — live tmux pane the human can watch. Cursor only. Steer with `orch tell`.
+- **tell** — live tmux pane the human can watch. Grok or Cursor. Steer with `orch tell`.
 
 If they already invoked `orch-headless` or `orch-tell`, that file set the default. Do not ask again.
 
@@ -38,7 +38,6 @@ You may mix modes on one team (one worker tell, the rest headless). The default 
 - Start `grok` / `cursor-agent` / tmux by hand — use `orch spawn`
 - Use Task subagents for work that should be a worker
 - Tell across teams
-- `orch spawn --mode tell grok` — Grok tell is not v1
 - Nested Cursor leaves that spawn — Cursor workers do one job and die
 
 ## Route
@@ -58,7 +57,7 @@ spawn → wait → kill → next
 ```
 
 - **headless:** `orch list` / `orch status` / `orch logs` / `orch result`. Done = `result.json` or process dead. Then `orch kill`.
-- **tell:** pane is in tmux session `orch`. Steer with `orch tell --team T ID --ask "..."`. Kill when the job is done (unclaims the scientist + drops the window).
+- **tell:** pane is in tmux session `orch` (grok or cursor). Steer with `orch tell --team T ID --ask "..."`. Kill when the job is done (unclaims the scientist + drops the window).
 
 `--team` on every command (except `orch list --all`). Never list/kill/tell another team's workers.
 

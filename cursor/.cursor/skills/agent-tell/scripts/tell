@@ -24,6 +24,7 @@ INBOX_DIR = ROSTER_DIR / "inbox"
 PID_PATH = ROSTER_DIR / "telld.pid"
 LOG_PATH = ROSTER_DIR / "telld.log"
 PANE_OPTION = "@scientist"
+KIND_OPTION = "@orch_kind"
 
 SEND_PRE_ENTER_S = 0.08
 SEND_LOCK_HOLD_S = 0.35
@@ -483,6 +484,20 @@ def pane_lock_path(pane_id: str) -> Path:
     return LOCK_DIR / f"pane-{pane_id.lstrip('%')}.lock"
 
 
+def pane_kind(pane_id: str) -> str:
+    result = run(
+        ["tmux", "show-options", "-p", "-t", pane_id, "-v", KIND_OPTION],
+        check=False,
+        capture=True,
+    )
+    if result.returncode != 0:
+        return "cursor"
+    value = result.stdout.strip().lower()
+    if value in {"grok", "cursor"}:
+        return value
+    return "cursor"
+
+
 def ensure_insert_mode(pane_id: str) -> None:
     run(["tmux", "send-keys", "-t", pane_id, "i"], check=False)
     time.sleep(0.12)
@@ -493,6 +508,15 @@ def clear_composer(pane_id: str) -> None:
     time.sleep(0.05)
 
 
+def type_into_pane(pane_id: str, message: str) -> None:
+    if pane_kind(pane_id) != "grok":
+        ensure_insert_mode(pane_id)
+        clear_composer(pane_id)
+    run(["tmux", "send-keys", "-t", pane_id, "-l", "--", message])
+    time.sleep(SEND_PRE_ENTER_S)
+    run(["tmux", "send-keys", "-t", pane_id, "Enter"])
+
+
 def inject_user_turn(pane_id: str, message: str, *, full_turn: bool) -> bool:
     """Type a user message into a pane. If full_turn, wait Ready→Working→Ready."""
     LOCK_DIR.mkdir(parents=True, exist_ok=True)
@@ -500,14 +524,14 @@ def inject_user_turn(pane_id: str, message: str, *, full_turn: bool) -> bool:
     with lock_path.open("a+", encoding="utf-8") as lock_file:
         fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
         try:
+            kind = pane_kind(pane_id)
             wait_s = DELIVER_READY_WAIT_S if full_turn else 20.0
-            if not wait_until_ready(pane_id, wait_s):
+            if kind != "grok" and not wait_until_ready(pane_id, wait_s):
                 return False
-            ensure_insert_mode(pane_id)
-            clear_composer(pane_id)
-            run(["tmux", "send-keys", "-t", pane_id, "-l", "--", message])
-            time.sleep(SEND_PRE_ENTER_S)
-            run(["tmux", "send-keys", "-t", pane_id, "Enter"])
+            type_into_pane(pane_id, message)
+            if kind == "grok":
+                time.sleep(SEND_LOCK_HOLD_S)
+                return True
             accepted = wait_until_busy(pane_id, DELIVER_BUSY_WAIT_S if full_turn else 5.0)
             if not accepted:
                 time.sleep(SEND_LOCK_HOLD_S)
@@ -559,15 +583,14 @@ def deliver_one(name: str, pane_id: str) -> bool:
     with lock_path.open("a+", encoding="utf-8") as lock_file:
         fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
         try:
-            if not wait_until_ready(pane_id, DELIVER_READY_WAIT_S):
+            kind = pane_kind(pane_id)
+            if kind != "grok" and not wait_until_ready(pane_id, DELIVER_READY_WAIT_S):
                 log(f"deliver: deferred {path.name} (pane {pane_id} not ready)")
                 return False
-            ensure_insert_mode(pane_id)
-            clear_composer(pane_id)
-            run(["tmux", "send-keys", "-t", pane_id, "-l", "--", message])
-            time.sleep(SEND_PRE_ENTER_S)
-            run(["tmux", "send-keys", "-t", pane_id, "Enter"])
-            if not wait_until_busy(pane_id, DELIVER_BUSY_WAIT_S):
+            type_into_pane(pane_id, message)
+            if kind == "grok":
+                time.sleep(SEND_LOCK_HOLD_S)
+            elif not wait_until_busy(pane_id, DELIVER_BUSY_WAIT_S):
                 time.sleep(SEND_LOCK_HOLD_S)
             archive_file(path)
             log(f"deliver: archived {path.name}")
