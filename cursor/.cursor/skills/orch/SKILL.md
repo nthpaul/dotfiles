@@ -62,7 +62,7 @@ spawn → wait → kill → next
 ```
 
 - **headless:** `orch list` / `orch status` / `orch logs` / `orch result`. Done = `result.json` or process dead. Then `orch kill`.
-- **tell:** pane is in tmux session `orch` (grok or cursor). Steer with `orch tell --team T ID --ask "..."`. Kill when the job is done (unclaims the scientist + drops the window).
+- **tell:** pane is in tmux session `team_<slug>` (window `team:<slug>`). Steer with `orch tell --team T ID --ask "..."`. Kill when the job is done (unclaims the scientist + drops the window).
 
 `--team` on every command (except `orch list --all`). Never list/kill/tell another team's workers.
 

@@ -216,9 +216,13 @@ class OrchTest(unittest.TestCase):
         self.assertEqual(self.workers("fleet-ops"), [])
         term.assert_called_once_with(4242)
 
+    def test_tmux_team_names(self) -> None:
+        self.assertEqual(orch.tmux_session_name("fleet-ops"), "team_fleet-ops")
+        self.assertEqual(orch.tmux_team_window_name("fleet-ops"), "team:fleet-ops")
+
     def test_tell_grok_spawns(self) -> None:
         with (
-            patch.object(orch, "ensure_tmux_session"),
+            patch.object(orch, "ensure_tmux_session", return_value="team_demo") as sess,
             patch.object(orch, "tmux_new_window", return_value=("%42", 99)) as tw,
             patch.object(orch, "next_free_scientist", return_value="curie"),
             patch.object(orch, "claim_scientist") as claim,
@@ -241,8 +245,10 @@ class OrchTest(unittest.TestCase):
             )
         self.assertEqual(code, 0, err)
         self.assertIn("w1a2b3c4", out)
+        sess.assert_called_once_with("demo")
         tw.assert_called_once()
         self.assertEqual(tw.call_args.kwargs["kind"], "grok")
+        self.assertEqual(tw.call_args.kwargs["session"], "team_demo")
         claim.assert_called_once_with("curie", "%42")
         kind_opt.assert_called_once_with("%42", "grok")
         workers = self.workers("demo")
@@ -251,6 +257,8 @@ class OrchTest(unittest.TestCase):
         self.assertEqual(workers[0]["mode"], "tell")
         self.assertEqual(workers[0]["name"], "curie")
         self.assertEqual(workers[0]["pane"], "%42")
+        self.assertEqual(workers[0]["session"], "team_demo")
+        self.assertEqual(workers[0]["window"], "demo-w1a2b3c4")
 
     def test_list_without_team_invalid(self) -> None:
         code, _out, err = self.run_main(["list"])

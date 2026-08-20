@@ -22,4 +22,4 @@ orch  team=<slug>  default-mode=tell
 5. Grok or Cursor as the orch skill routes. Steer with `orch tell --team T ID --ask "..."`.
 6. Kill when the job is done — that unclaims the scientist and drops the window.
 
-Do not implement. The human watches the `orch` tmux session. You only spawn, tell, and kill.
+Do not implement. The human watches the `team:<slug>` tmux window. You only spawn, tell, and kill.

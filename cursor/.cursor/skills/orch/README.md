@@ -91,7 +91,7 @@ Grok: `grok -p …`. Cursor: `cursor-agent -p …`. When the process exits, `res
 
 ## Tell (live pane)
 
-tmux window you can attach. Grok or Cursor. Orch claims a scientist name and you steer with `orch tell`.
+tmux window you can attach (`team:<slug>` in session `team_<slug>`). Grok or Cursor. Orch claims a scientist name and you steer with `orch tell`.
 
 ```bash
 orch spawn --team fleet-ops --mode tell grok "fix the flaky test"

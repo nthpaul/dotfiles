@@ -23,7 +23,6 @@ TEAM_RE = re.compile(r"^[a-z][a-z0-9-]{0,31}$")
 WORKER_ID_RE = re.compile(r"^w[0-9a-f]{7,8}$")
 PANE_OPTION = "@scientist"
 KIND_OPTION = "@orch_kind"
-TMUX_SESSION = "orch"
 TELL_NAMES_PATH = Path.home() / ".cursor" / "skills" / "agent-tell" / "names.txt"
 ROSTER_PATH = Path.home() / ".cursor" / "scientists" / "roster.json"
 PUBLIC_COMMANDS = [
@@ -662,11 +661,31 @@ def cmd_wrap(args: argparse.Namespace) -> int:
     return 0
 
 
-def ensure_tmux_session() -> None:
-    probe = run(["tmux", "has-session", "-t", TMUX_SESSION], check=False, capture=True)
-    if probe.returncode == 0:
-        return
-    run(["tmux", "new-session", "-d", "-s", TMUX_SESSION, "-n", "_boot"])
+def tmux_session_name(team: str) -> str:
+    # tmux rewrites ':' in session names to '_', so we store the safe form.
+    return f"team_{team}"
+
+
+def tmux_team_window_name(team: str) -> str:
+    return f"team:{team}"
+
+
+def ensure_tmux_session(team: str) -> str:
+    session = tmux_session_name(team)
+    probe = run(["tmux", "has-session", "-t", session], check=False, capture=True)
+    if probe.returncode != 0:
+        run(
+            [
+                "tmux",
+                "new-session",
+                "-d",
+                "-s",
+                session,
+                "-n",
+                tmux_team_window_name(team),
+            ]
+        )
+    return session
 
 
 def tell_bin_args(kind: str, prompt: str, cwd: str) -> list[str]:
@@ -694,6 +713,7 @@ def set_pane_kind(pane: str, kind: str) -> None:
 
 def tmux_new_window(
     *,
+    session: str,
     team: str,
     worker_id: str,
     kind: str,
@@ -715,7 +735,7 @@ def tmux_new_window(
             "tmux",
             "new-window",
             "-t",
-            TMUX_SESSION,
+            session,
             "-n",
             window,
             "-c",
@@ -802,20 +822,23 @@ def terminate_pid(pid: int) -> None:
         pass
 
 
-def reap_empty_orch_session() -> None:
+def reap_empty_team_session(session: str | None, team: str) -> None:
+    if not session:
+        return
     listed = run(
-        ["tmux", "list-windows", "-t", TMUX_SESSION, "-F", "#{window_name}"],
+        ["tmux", "list-windows", "-t", session, "-F", "#{window_name}"],
         check=False,
         capture=True,
     )
     if listed.returncode != 0:
         return
     names = [name for name in listed.stdout.splitlines() if name]
-    if not names or names == ["_boot"]:
-        run(["tmux", "kill-session", "-t", TMUX_SESSION], check=False)
+    leftover = {"_boot", tmux_team_window_name(team)}
+    if not names or set(names) <= leftover:
+        run(["tmux", "kill-session", "-t", session], check=False)
 
 
-def kill_tell_runtime(worker: dict[str, Any]) -> None:
+def kill_tell_runtime(worker: dict[str, Any], team: str) -> None:
     name = worker.get("name")
     pane = worker.get("pane")
     session = worker.get("session")
@@ -831,7 +854,7 @@ def kill_tell_runtime(worker: dict[str, Any]) -> None:
     pid = worker.get("pid")
     if isinstance(pid, int):
         terminate_pid(pid)
-    reap_empty_orch_session()
+    reap_empty_team_session(str(session) if session else None, team)
 
 
 def record_worker(team: str, worker: dict[str, Any]) -> None:
@@ -982,8 +1005,9 @@ def cmd_spawn(args: argparse.Namespace) -> int:
     if mode == "headless":
         pid = start_headless_wrapper(team, worker_id)
     else:
-        ensure_tmux_session()
+        session = ensure_tmux_session(team)
         pane, pid = tmux_new_window(
+            session=session,
             team=team,
             worker_id=worker_id,
             kind=kind,
@@ -991,7 +1015,6 @@ def cmd_spawn(args: argparse.Namespace) -> int:
             result_path=result_path,
             job=job,
         )
-        session = TMUX_SESSION
         window = f"{team}-{worker_id}"
         name = next_free_scientist(args.name)
         claim_scientist(name, pane)
@@ -1125,7 +1148,7 @@ def kill_one(team: str, worker_id: str) -> None:
     if worker is None:
         die(f"no worker {worker_id} on {team}")
     if worker.get("mode") == "tell":
-        kill_tell_runtime(worker)
+        kill_tell_runtime(worker, team)
     else:
         pid = worker.get("pid")
         if isinstance(pid, int):
