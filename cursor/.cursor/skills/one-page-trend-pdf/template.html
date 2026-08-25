@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>TREND TITLE</title>
+  <style>
+    @page { size: letter landscape; margin: 0.5in 0.55in; }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      color: #111;
+      font: 11pt/1.4 "Iowan Old Style", Palatino, Georgia, serif;
+    }
+    h1 { font-size: 20pt; margin: 0 0 2px; letter-spacing: -0.03em; }
+    .sub { font: 9.5pt/1.35 -apple-system, BlinkMacSystemFont, sans-serif; color: #444; margin: 0 0 14px; }
+    .kpis { display: flex; gap: 18px; margin: 0 0 16px; }
+    .kpi { flex: 1; border-top: 2px solid #111; padding-top: 6px; }
+    .kpi .n { font: 700 22pt/1 -apple-system, BlinkMacSystemFont, sans-serif; font-variant-numeric: tabular-nums; }
+    .kpi .l { font: 8.5pt/1.3 -apple-system, BlinkMacSystemFont, sans-serif; color: #444; margin-top: 3px; }
+    .chart-wrap { margin: 8px 0 10px; }
+    svg { display: block; width: 100%; height: auto; }
+    table { width: 100%; border-collapse: collapse; font: 9pt/1.35 -apple-system, BlinkMacSystemFont, sans-serif; margin-top: 8px; }
+    th, td { text-align: left; padding: 5px 8px 5px 0; border-bottom: 1px solid #ddd; }
+    th { border-bottom: 1px solid #111; font-weight: 600; }
+    .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .wow-up { color: #9b1d1d; font-weight: 600; }
+    .note { font: 8.5pt/1.35 -apple-system, BlinkMacSystemFont, sans-serif; color: #444; margin-top: 10px; }
+    .legend { font: 8.5pt/1.3 -apple-system, BlinkMacSystemFont, sans-serif; display: flex; gap: 16px; margin: 0 0 4px; }
+    .swatch { display: inline-block; width: 10px; height: 10px; margin-right: 5px; vertical-align: -1px; }
+    code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 8.5pt; }
+  </style>
+</head>
+<body>
+
+<h1>CLAIM SENTENCE WITH THE NUMBER IN IT.</h1>
+<p class="sub">
+  What you counted · where · period grain · pulled DATE
+</p>
+
+<div class="kpis">
+  <div class="kpi">
+    <div class="n">N</div>
+    <div class="l">First span<br>what the number is</div>
+  </div>
+  <div class="kpi">
+    <div class="n">A → B</div>
+    <div class="l">Next span<br>what changed</div>
+  </div>
+  <div class="kpi">
+    <div class="n">N</div>
+    <div class="l">Latest full period<br>how it compares</div>
+  </div>
+  <div class="kpi">
+    <div class="n">+N%</div>
+    <div class="l">Week-on-week<br>from → to</div>
+  </div>
+</div>
+
+<div class="legend">
+  <span><span class="swatch" style="background:#1a1a1a"></span>Primary series name</span>
+  <span><span class="swatch" style="background:#c45c26"></span>Second series name</span>
+</div>
+
+<div class="chart-wrap">
+  <!-- viewBox 920×300. Axis at x=56. Baseline y=240. Max bar 200px.
+       Periods sit at x = 130, 270, 410, 550, 690, 830.
+       Primary bar: x = center-38, width 36, fill #1a1a1a (last/peak #9b1d1d).
+       Second bar: x = center+2, width 36, fill #c45c26.
+       y = 240 - height. height = value / max * 200. Use 4px when value is 1. -->
+  <svg viewBox="0 0 920 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Period counts">
+    <line x1="56" y1="40" x2="56" y2="240" stroke="#bbb" stroke-width="1"/>
+    <line x1="56" y1="240" x2="900" y2="240" stroke="#111" stroke-width="1.2"/>
+    <g font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="11" fill="#666" text-anchor="end">
+      <text x="50" y="244">0</text>
+      <text x="50" y="194">Y1</text>
+      <text x="50" y="144">Y2</text>
+      <text x="50" y="94">Y3</text>
+      <text x="50" y="44">YMAX</text>
+    </g>
+    <g stroke="#eee" stroke-width="1">
+      <line x1="56" y1="190" x2="900" y2="190"/>
+      <line x1="56" y1="140" x2="900" y2="140"/>
+      <line x1="56" y1="90" x2="900" y2="90"/>
+      <line x1="56" y1="40" x2="900" y2="40"/>
+    </g>
+    <!-- Repeat one pair of rects + labels per period. See SKILL.md chart rules. -->
+  </svg>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Period</th>
+      <th class="num">Primary</th>
+      <th class="num">vs prior</th>
+      <th class="num">Second series</th>
+      <th>Notes</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Mon–Sun</td>
+      <td class="num">0</td>
+      <td class="num">—</td>
+      <td class="num">0</td>
+      <td>One line.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p class="note">
+  How you counted. What you left out. What this page does not prove.
+</p>
+
+</body>
+</html>
