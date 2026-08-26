@@ -12,9 +12,12 @@ background-opacity=1.0
 
 font-size = 15
 font-thicken
-font-family = Hack Nerd Font Mono Regular
+font-family = Geist Mono
+font-family = Symbols Nerd Font Mono
+font-style = Medium
 font-feature = -calt, -liga, -dlig
-font-thicken-strength = 50
+font-thicken-strength = 20
+adjust-cell-height = 10%
 
 window-padding-x = 5
 window-padding-y = 5

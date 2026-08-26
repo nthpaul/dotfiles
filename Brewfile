@@ -43,7 +43,8 @@ cask "visual-studio-code"
 cask "zed"
 
 # Fonts
-cask "font-hack-nerd-font"
+cask "font-geist-mono"
+cask "font-symbols-only-nerd-font"
 
 # Java
 cask "zulu@17"
