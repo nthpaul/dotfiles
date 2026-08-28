@@ -1,0 +1,10 @@
+---
+description: Slack posts as Paul via Slack MCP. Load slack-as-paul to send, post, reply, or share in Slack.
+alwaysApply: true
+---
+
+# Slack as Paul
+
+Slack posts as Paul through Slack MCP. Infisical Slack tokens are a different identity.
+
+Load `slack-as-paul` when the user asks to send, post, reply, or share anything in Slack.
