@@ -2,71 +2,71 @@
   "version": 1,
   "skills": {
     "create-hook": {
-      "lastSyncedAt": 1787927677169
+      "lastSyncedAt": 1788215593009
     },
     "create-rule": {
-      "lastSyncedAt": 1787927677169
+      "lastSyncedAt": 1788215593009
     },
     "create-skill": {
-      "lastSyncedAt": 1787927677169
+      "lastSyncedAt": 1788215593009
     },
     "create-subagent": {
-      "lastSyncedAt": 1787927677169
+      "lastSyncedAt": 1788215593009
     },
     "migrate-to-skills": {
-      "lastSyncedAt": 1787927677169
+      "lastSyncedAt": 1788215593009
     },
     "shell": {
-      "lastSyncedAt": 1787927677169
+      "lastSyncedAt": 1788215593009
     },
     "statusline": {
-      "lastSyncedAt": 1787927677169
+      "lastSyncedAt": 1788215593009
     },
     "update-cli-config": {
-      "lastSyncedAt": 1787927677169
+      "lastSyncedAt": 1788215593009
     },
     "update-cursor-settings": {
-      "lastSyncedAt": 1787927677169
+      "lastSyncedAt": 1788215593009
     },
     "canvas": {
-      "lastSyncedAt": 1787927677169
+      "lastSyncedAt": 1788215593009
     },
     "split-to-prs": {
-      "lastSyncedAt": 1787927677169
+      "lastSyncedAt": 1788215593009
     },
     "sdk": {
-      "lastSyncedAt": 1787927677169
+      "lastSyncedAt": 1788215593009
     },
     "loop": {
-      "lastSyncedAt": 1787927677169
+      "lastSyncedAt": 1788215593009
     },
     "review": {
-      "lastSyncedAt": 1787927677169
+      "lastSyncedAt": 1788215593009
     },
     "review-bugbot": {
-      "lastSyncedAt": 1787927677169
+      "lastSyncedAt": 1788215593009
     },
     "review-security": {
-      "lastSyncedAt": 1787927677169
+      "lastSyncedAt": 1788215593009
     },
     "rename-chat": {
-      "lastSyncedAt": 1787927677169
+      "lastSyncedAt": 1788215593009
     },
     "new-repo": {
-      "lastSyncedAt": 1787927677169
+      "lastSyncedAt": 1788215593009
     },
     "origin": {
-      "lastSyncedAt": 1787927677169
+      "lastSyncedAt": 1788215593009
     },
     "share": {
-      "lastSyncedAt": 1787927677169
+      "lastSyncedAt": 1788215593009
     },
     "goal": {
-      "lastSyncedAt": 1787927677169
+      "lastSyncedAt": 1788215593009
     },
-    "babysit": {
-      "lastSyncedAt": 1787927677169
+    "autopilot": {
+      "lastSyncedAt": 1788215593009
     }
   },
-  "lastInventoryAt": 1787852322958
+  "lastInventoryAt": 1788182437922
 }
