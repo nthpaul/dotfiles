@@ -82,6 +82,9 @@ trust_level = "trusted"
 [projects."/Users/ple/Documents/Codex/2026-07-26/i"]
 trust_level = "trusted"
 
+[projects."/Users/ple/projects/traba/the-matrix"]
+trust_level = "trusted"
+
 [notice]
 hide_full_access_warning = true
 

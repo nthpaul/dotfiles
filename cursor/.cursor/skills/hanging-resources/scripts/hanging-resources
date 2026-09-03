@@ -18,19 +18,21 @@ DRY_RUN=0
 usage() {
   cat <<'EOF'
 Usage:
-  hanging-resources [scan] [--only agents|claude|grok|codex|worktrees|hermes|docker] [--agent-idle-min N]
+  hanging-resources [scan] [--only agents|claude|grok|codex|orch|worktrees|hermes|docker|headless] [--agent-idle-min N]
 
-  hanging-resources clean agents|claude|grok|codex|hermes [--all] [--dry-run] [--kill-9] [PID...]
+  hanging-resources clean agents|claude|grok|codex|orch|hermes [--all] [--dry-run] [--kill-9] [PID...]
   hanging-resources clean worktrees [--all] [--dry-run] [PATH|repo/slug|slug...]
   hanging-resources clean docker [--all] [--dry-run] [--force] [ID|NAME...]
 
 scan (default) lists leftovers. clean never guesses: pass targets or --all.
 
-  --all       every item the scan would report for that type
-  --dry-run   print what would be removed; do not act
-  --kill-9    after TERM, SIGKILL if the pid is still up
-  --force     docker: allow removing a running container
-              (docker --all skips running containers unless --force)
+  --only headless   grok -p, cursor-agent -p, claude -p, codex exec, orch wrap
+                    (any age / CPU — these are background leftovers)
+  --all             every item the scan would report for that type
+  --dry-run         print what would be removed; do not act
+  --kill-9          after TERM, SIGKILL if the pid is still up
+  --force           docker: allow removing a running container
+                    (docker --all skips running containers unless --force)
 
 Shorthand (same as clean):
   hanging-resources kill PID...
@@ -169,7 +171,20 @@ docker_ports_label() {
 }
 
 want() {
-  [[ -z "$ONLY" || "$ONLY" == "$1" ]]
+  local kind="$1"
+  if [[ -z "$ONLY" || "$ONLY" == "$kind" ]]; then
+    return 0
+  fi
+  if [[ "$ONLY" == "headless" ]]; then
+    case "$kind" in
+      agents|claude|grok|codex|orch) return 0 ;;
+    esac
+  fi
+  return 1
+}
+
+want_idle() {
+  [[ "$ONLY" != "headless" ]] && want "$1"
 }
 
 collect_self_pids() {
@@ -197,7 +212,11 @@ cmd_is_kind() {
   local exe="${cmd%% *}"
   case "$kind" in
     agents)
-      [[ "$cmd" == */cursor-agent* && "$cmd" != *worker-server* ]]
+      [[ "$cmd" == *worker-server* ]] && return 1
+      [[ "$exe" == "cursor-agent" || "$exe" == */cursor-agent || "$cmd" == */cursor-agent* ]] && return 0
+      [[ "$cmd" == */.local/share/cursor-agent/* ]] && return 0
+      # PATH symlink / exec -a "$0" when invoked as `agent`
+      [[ "$exe" == "agent" || "$exe" == */.local/bin/agent ]]
       ;;
     claude)
       [[ "$cmd" == *slack-code-bridge* ]] && return 1
@@ -205,11 +224,17 @@ cmd_is_kind() {
       [[ "$exe" == "claude" || "$exe" == */claude || "$exe" == *"/.local/share/claude/versions/"* ]]
       ;;
     grok)
-      [[ "$exe" == "grok" || "$exe" == */grok || "$exe" == */.grok/bin/agent || "$exe" == *grok-macos* ]]
+      [[ "$cmd" == *"/Grok Bot.app/"* ]] && return 1
+      [[ "$exe" == "grok" || "$exe" == */grok || "$exe" == */.grok/bin/agent || "$exe" == *grok-macos* ]] && return 0
+      [[ "$exe" == *"/.grok/downloads/grok-"* ]]
       ;;
     codex)
+      [[ "$cmd" == *"/Codex.app/"* ]] && return 1
       [[ "$cmd" == *"codex sandbox"* || "$cmd" == *node_repl* || "$cmd" == */codex.js* ]] && return 0
       [[ "$exe" == "codex" || "$exe" == */codex ]]
+      ;;
+    orch)
+      [[ "$cmd" == *" orch __wrap "* || "$cmd" == *"/orch __wrap "* || "$cmd" == *" orch __wrap" ]]
       ;;
     hermes)
       [[ "$cmd" == *hermes_cli.main* && "$cmd" == *"gateway restart"* ]]
@@ -218,6 +243,61 @@ cmd_is_kind() {
       return 1
       ;;
   esac
+}
+
+# Flag tokens before the first positional. Interactive `grok "fix -p x"` is not headless.
+is_headless_cmd() {
+  local kind="$1" cmd="$2"
+  local -a toks=()
+  local i=1 n tok next
+  [[ -n "$cmd" ]] || return 1
+  if [[ "$kind" == orch ]]; then
+    return 0
+  fi
+  read -r -a toks <<<"$cmd"
+  n=${#toks[@]}
+  (( n > 1 )) || return 1
+  while (( i < n )); do
+    tok="${toks[i]}"
+    if [[ "$tok" == "--" ]]; then
+      return 1
+    fi
+    if [[ "$tok" == -* ]]; then
+      case "$tok" in
+        -p|--print|--single|--prompt-json|--prompt-file|--single=*|--prompt-json=*|--prompt-file=*|--print=*)
+          return 0
+          ;;
+      esac
+      if [[ "$tok" == *=* ]]; then
+        i=$((i + 1))
+        continue
+      fi
+      next="${toks[i+1]:-}"
+      if [[ -n "$next" && "$next" != -* ]]; then
+        i=$((i + 2))
+      else
+        i=$((i + 1))
+      fi
+      continue
+    fi
+    case "$kind" in
+      grok)
+        if [[ "$tok" == "agent" ]]; then
+          next="${toks[i+1]:-}"
+          case "$next" in
+            headless|stdio|serve) return 0 ;;
+          esac
+        fi
+        ;;
+      codex)
+        if [[ "$tok" == "exec" || "$tok" == "e" ]]; then
+          return 0
+        fi
+        ;;
+    esac
+    return 1
+  done
+  return 1
 }
 
 idle_min_for() {
@@ -232,10 +312,26 @@ idle_min_for() {
 process_label() {
   local kind="$1" cmd="$2"
   case "$kind" in
-    agents) echo "cursor-agent" ;;
-    claude) echo "claude" ;;
+    agents)
+      if is_headless_cmd agents "$cmd"; then
+        echo "cursor-agent -p"
+      else
+        echo "cursor-agent"
+      fi
+      ;;
+    claude)
+      if is_headless_cmd claude "$cmd"; then
+        echo "claude -p"
+      else
+        echo "claude"
+      fi
+      ;;
     grok)
-      if [[ "$cmd" == *" -p "* || "$cmd" == *"/grok -p"* ]]; then
+      if [[ "$cmd" == *" agent headless"* ]]; then
+        echo "grok agent headless"
+      elif [[ "$cmd" == *" agent stdio"* ]]; then
+        echo "grok agent stdio"
+      elif is_headless_cmd grok "$cmd"; then
         echo "grok -p"
       else
         echo "grok"
@@ -246,10 +342,13 @@ process_label() {
         echo "codex node_repl"
       elif [[ "$cmd" == *"codex sandbox"* ]]; then
         echo "codex sandbox"
+      elif is_headless_cmd codex "$cmd"; then
+        echo "codex exec"
       else
         echo "codex"
       fi
       ;;
+    orch) echo "orch wrap" ;;
     *) echo "$kind" ;;
   esac
 }
@@ -266,18 +365,26 @@ each_kind_row() {
   done < <(ps -ax -o pid=,ppid=,etime=,%cpu=,rss=,command= 2>/dev/null)
 }
 
-list_idle_pids() {
+row_is_hanging() {
+  local kind="$1" etime="$2" cpu="$3" cmd="$4"
+  local mins cpu_int need
+  if is_headless_cmd "$kind" "$cmd"; then
+    return 0
+  fi
+  mins=$(etime_to_min "$etime")
+  cpu_int=${cpu%.*}
+  need=$(idle_min_for "$kind" "$cmd")
+  (( mins >= need )) && (( cpu_int <= 1 ))
+}
+
+list_kind_pids() {
   local kind="$1"
   ensure_self_pids
-  local pid etime cpu rss cmd mins cpu_int need
+  local pid etime cpu rss cmd
   while IFS=$'\t' read -r pid etime cpu rss cmd; do
     [[ -z "$pid" ]] && continue
     is_self_pid "$pid" && continue
-    mins=$(etime_to_min "$etime")
-    cpu_int=${cpu%.*}
-    need=$(idle_min_for "$kind" "$cmd")
-    (( mins < need )) && continue
-    (( cpu_int > 1 )) && continue
+    row_is_hanging "$kind" "$etime" "$cpu" "$cmd" || continue
     printf '%s\n' "$pid"
   done < <(each_kind_row "$kind")
   return 0
@@ -285,10 +392,11 @@ list_idle_pids() {
 
 # --- discovery (one id per line) ---
 
-list_agent_pids() { list_idle_pids agents; }
-list_claude_pids() { list_idle_pids claude; }
-list_grok_pids() { list_idle_pids grok; }
-list_codex_pids() { list_idle_pids codex; }
+list_agent_pids() { list_kind_pids agents; }
+list_claude_pids() { list_kind_pids claude; }
+list_grok_pids() { list_kind_pids grok; }
+list_codex_pids() { list_kind_pids codex; }
+list_orch_pids() { list_kind_pids orch; }
 
 list_hermes_pids() {
   local pid etime cpu rss cmd
@@ -368,7 +476,7 @@ cmd_scan() {
       --only)
         ONLY="${2:-}"
         case "$ONLY" in
-          agents|claude|grok|codex|hermes|worktrees|docker) ;;
+          agents|claude|grok|codex|orch|hermes|worktrees|docker|headless) ;;
           *)
             echo "Unknown type: $ONLY" >&2
             usage >&2
@@ -406,39 +514,67 @@ cmd_scan() {
   section() {
     printf '\n## %s\n' "$1"
   }
-  scan_idle_kind() {
-    local kind="$1" title="$2"
-    local pid etime cpu rss cmd mins cpu_int need cwd mb
-    section "$title"
+  emit_proc() {
+    local kind="$1" pid="$2" etime="$3" cpu="$4" rss="$5" cmd="$6"
+    local cwd mb
+    cwd=$(lsof -a -d cwd -p "$pid" 2>/dev/null | awk 'NR==2 {print $NF}')
+    mb=$(rss_mb "$rss")
+    emit "- pid $pid · age $etime · cpu ${cpu}% · ~${mb}MB · ports $(ports_for_pid_tree "$pid") · $(process_label "$kind" "$cmd") · cwd ${cwd:-?}"
+  }
+
+  scan_kind_mode() {
+    local kind="$1" title="$2" mode="$3"
+    local pid etime cpu rss cmd
+    local print_empty=1 header_printed=0
+    if [[ -z "$ONLY" && "$mode" == "headless" ]]; then
+      print_empty=0
+    fi
     found=0
     while IFS=$'\t' read -r pid etime cpu rss cmd; do
       [[ -z "$pid" ]] && continue
       is_self_pid "$pid" && continue
-      mins=$(etime_to_min "$etime")
-      cpu_int=${cpu%.*}
-      need=$(idle_min_for "$kind" "$cmd")
-      (( mins < need )) && continue
-      (( cpu_int > 1 )) && continue
-      cwd=$(lsof -a -d cwd -p "$pid" 2>/dev/null | awk 'NR==2 {print $NF}')
-      mb=$(rss_mb "$rss")
-      emit "- pid $pid · age $etime · cpu ${cpu}% · ~${mb}MB · ports $(ports_for_pid_tree "$pid") · $(process_label "$kind" "$cmd") · cwd ${cwd:-?}"
+      if [[ "$mode" == "headless" ]]; then
+        is_headless_cmd "$kind" "$cmd" || continue
+      else
+        is_headless_cmd "$kind" "$cmd" && continue
+        row_is_hanging "$kind" "$etime" "$cpu" "$cmd" || continue
+      fi
+      if (( header_printed == 0 )); then
+        section "$title"
+        header_printed=1
+      fi
+      emit_proc "$kind" "$pid" "$etime" "$cpu" "$rss" "$cmd"
       found=1
     done < <(each_kind_row "$kind")
-    if (( found == 0 )); then
+    if (( found == 0 && print_empty == 1 )); then
+      section "$title"
       echo "(none)"
     fi
   }
 
   if want agents; then
-    scan_idle_kind agents "Idle cursor-agent"
+    if want_idle agents; then
+      scan_kind_mode agents "Idle cursor-agent" idle
+    fi
+    scan_kind_mode agents "Headless cursor-agent" headless
   fi
 
   if want claude; then
-    scan_idle_kind claude "Idle Claude"
+    if want_idle claude; then
+      scan_kind_mode claude "Idle Claude" idle
+    fi
+    scan_kind_mode claude "Headless Claude" headless
   fi
 
   if want grok; then
-    scan_idle_kind grok "Idle Grok"
+    if want_idle grok; then
+      scan_kind_mode grok "Idle Grok" idle
+    fi
+    scan_kind_mode grok "Headless Grok" headless
+  fi
+
+  if want orch; then
+    scan_kind_mode orch "Orch wrappers" headless
   fi
 
   if want hermes; then
@@ -461,7 +597,10 @@ cmd_scan() {
   fi
 
   if want codex; then
-    scan_idle_kind codex "Idle Codex"
+    if want_idle codex; then
+      scan_kind_mode codex "Idle Codex" idle
+    fi
+    scan_kind_mode codex "Headless Codex" headless
   fi
 
   if want worktrees; then
@@ -682,7 +821,7 @@ remove_docker() {
 
 cmd_clean() {
   if [[ $# -lt 1 ]]; then
-    echo "hanging-resources clean: pass a type (agents|claude|grok|codex|hermes|worktrees|docker)" >&2
+    echo "hanging-resources clean: pass a type (agents|claude|grok|codex|orch|hermes|worktrees|docker)" >&2
     usage >&2
     exit 2
   fi
@@ -703,7 +842,7 @@ cmd_clean() {
   done
 
   case "$kind" in
-    agents|claude|grok|codex|hermes|worktrees|docker) ;;
+    agents|claude|grok|codex|orch|hermes|worktrees|docker) ;;
     *)
       echo "Unknown type: $kind" >&2
       usage >&2
@@ -724,11 +863,11 @@ cmd_clean() {
   local ids=() spec path
 
   case "$kind" in
-    agents|claude|grok|codex|hermes)
+    agents|claude|grok|codex|orch|hermes)
       if (( all == 1 )); then
         case "$kind" in
           hermes) mapfile -t ids < <(list_hermes_pids) ;;
-          *) mapfile -t ids < <(list_idle_pids "$kind") ;;
+          *) mapfile -t ids < <(list_kind_pids "$kind") ;;
         esac
         if [[ ${#ids[@]} -eq 0 ]]; then
           echo "clean $kind: nothing to kill"
@@ -821,12 +960,14 @@ cmd_complete() {
     agents) list_agent_pids ;;
     claude) list_claude_pids ;;
     grok) list_grok_pids ;;
+    orch) list_orch_pids ;;
     hermes) list_hermes_pids ;;
     codex) list_codex_pids ;;
     kill)
       list_agent_pids
       list_claude_pids
       list_grok_pids
+      list_orch_pids
       list_hermes_pids
       list_codex_pids
       ;;
@@ -850,17 +991,81 @@ cmd_complete() {
       done < <(list_docker_rows)
       ;;
     *)
-      echo "hanging-resources complete: agents|claude|grok|hermes|codex|worktrees|docker|kill" >&2
+      echo "hanging-resources complete: agents|claude|grok|orch|hermes|codex|worktrees|docker|kill" >&2
       exit 2
       ;;
   esac
+}
+
+cmd_self_test() {
+  local fails=0
+  expect() {
+    local name="$1" got="$2" want="$3"
+    if [[ "$got" != "$want" ]]; then
+      echo "FAIL $name: got $got want $want" >&2
+      fails=$((fails + 1))
+    fi
+  }
+  expect_kind() {
+    local kind="$1" cmd="$2" want="$3"
+    if cmd_is_kind "$kind" "$cmd"; then
+      expect "kind $kind :: $cmd" 1 "$want"
+    else
+      expect "kind $kind :: $cmd" 0 "$want"
+    fi
+  }
+  expect_headless() {
+    local kind="$1" cmd="$2" want="$3"
+    if is_headless_cmd "$kind" "$cmd"; then
+      expect "headless $kind :: $cmd" 1 "$want"
+    else
+      expect "headless $kind :: $cmd" 0 "$want"
+    fi
+  }
+
+  expect_kind grok "/Users/ple/.grok/bin/grok -p do the thing" 1
+  expect_kind grok "grok" 1
+  expect_kind grok "/Applications/Grok Bot.app/Contents/MacOS/Grok Bot" 0
+  expect_kind grok "/Users/ple/.grok/downloads/grok-1.0.13-macos-aarch64 -p hi" 1
+  expect_kind agents "/Users/ple/.local/bin/cursor-agent -p --force --trust --workspace /tmp hi" 1
+  expect_kind agents "cursor-agent -p hi" 1
+  expect_kind agents "agent -p --force hi" 1
+  expect_kind agents "/Users/ple/.local/share/cursor-agent/versions/x/index.js -p hi" 1
+  expect_kind agents "cursor-agent --workspace /tmp worker-server" 0
+  expect_kind claude "claude -p do it" 1
+  expect_kind claude "/Users/ple/.local/share/claude/versions/2.1.153 -p hi" 1
+  expect_kind orch "/Library/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python /Users/ple/.dotfiles/cursor/.cursor/skills/orch/scripts/orch __wrap --team shift-manager --id w0fea1d1c" 1
+  expect_kind orch "python3 orch list --team x" 0
+  expect_kind codex "codex exec fix the bug" 1
+
+  expect_headless grok "/Users/ple/.grok/bin/grok -p ORCH_TEAM=x do the thing" 1
+  expect_headless grok "grok --cwd /tmp -p do the thing --always-approve" 1
+  expect_headless grok "grok" 0
+  expect_headless grok "grok fix -p the bug" 0
+  expect_headless grok "grok agent headless --grok-ws-url wss://x" 1
+  expect_headless grok "grok agent stdio" 1
+  expect_headless grok "grok --prompt-file /tmp/p.md" 1
+  expect_headless agents "cursor-agent -p --force --trust --workspace /tmp hi" 1
+  expect_headless agents "cursor-agent --force --trust --workspace /tmp hi" 0
+  expect_headless claude "claude -p hello" 1
+  expect_headless claude "claude --print hello" 1
+  expect_headless claude "claude" 0
+  expect_headless codex "codex exec fix it" 1
+  expect_headless codex "codex" 0
+  expect_headless orch "python3 /x/orch __wrap --team t --id w1" 1
+
+  if (( fails > 0 )); then
+    echo "self-test: $fails failed" >&2
+    exit 1
+  fi
+  echo "self-test: ok"
 }
 
 main() {
   local sub="scan"
   if [[ $# -gt 0 ]]; then
     case "$1" in
-      scan|clean|kill|worktree-remove|complete)
+      scan|clean|kill|worktree-remove|complete|self-test)
         sub=$1
         shift
         ;;
@@ -884,6 +1089,7 @@ main() {
     kill) cmd_kill "$@" ;;
     worktree-remove) cmd_worktree_remove "$@" ;;
     complete) cmd_complete "$@" ;;
+    self-test) cmd_self_test "$@" ;;
   esac
 }
 

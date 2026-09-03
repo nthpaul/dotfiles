@@ -1,12 +1,13 @@
 ---
 name: hanging-resources
 description: >-
-  Identify hanging local resources and list them: idle cursor-agent, Claude,
-  Grok, and Codex sessions, stuck Hermes gateway restarts, leftover git
-  worktrees under ~/.traba/worktrees, and Docker leftovers. Use when the user
-  asks about hanging resources, hanging items, leftover agents/worktrees, or
-  wants a cleanup inventory. Prefer the hanging-resources CLI — do not re-scan
-  by hand.
+  Identify hanging local resources and list them: idle and headless
+  cursor-agent / Claude / Grok / Codex processes (including grok -p,
+  cursor-agent -p, claude -p, codex exec, orch wrappers), stuck Hermes
+  gateway restarts, leftover git worktrees under ~/.traba/worktrees, and
+  Docker leftovers. Use when the user asks about hanging resources, hanging
+  items, leftover agents/worktrees, or wants a cleanup inventory. Prefer the
+  hanging-resources CLI — do not re-scan by hand.
 ---
 
 # Hanging resources
@@ -24,6 +25,8 @@ hanging-resources --only agents
 hanging-resources --only claude
 hanging-resources --only grok
 hanging-resources --only codex
+hanging-resources --only orch
+hanging-resources --only headless
 hanging-resources --only worktrees
 hanging-resources --only hermes
 hanging-resources --only docker
@@ -49,6 +52,7 @@ hanging-resources clean agents --all --kill-9
 
 hanging-resources clean claude --all
 hanging-resources clean grok 41200
+hanging-resources clean orch --all
 hanging-resources clean hermes --all
 hanging-resources clean codex 1234
 
@@ -69,20 +73,26 @@ hanging-resources clean docker postgres_local --force
 
 | Category | Signal |
 |----------|--------|
-| **Idle cursor-agent** | `cursor-agent` process older than idle threshold, ~0% CPU. The CLI skips its own parent chain. |
-| **Idle Claude** | Claude Code CLI (`claude` or `~/.local/share/claude/versions/…`). Same idle rule. Skip the desktop app and slack-code-bridge. |
-| **Idle Grok** | `grok` / `~/.grok/bin/grok` (including `grok -p` orch workers). Same idle rule. |
+| **Idle cursor-agent** | Interactive `cursor-agent` older than idle threshold, ~0% CPU. Skips its own parent chain. Also matches `agent` (PATH symlink) and `~/.local/share/cursor-agent/…`. |
+| **Headless cursor-agent** | `cursor-agent -p` / `--print` (orch workers included). Listed at any age / CPU. |
+| **Idle Claude** | Interactive Claude Code CLI (`claude` or `~/.local/share/claude/versions/…`). Same idle rule. Skip the desktop app and slack-code-bridge. |
+| **Headless Claude** | `claude -p` / `--print`. Listed at any age / CPU. |
+| **Idle Grok** | Interactive `grok` / `~/.grok/bin/grok`. Same idle rule. Skip Grok Bot.app. |
+| **Headless Grok** | `grok -p` / `--single` / `--prompt-file` / `--prompt-json`, plus `grok agent headless` / `stdio` / `serve`. Listed at any age / CPU. |
+| **Orch wrappers** | `orch __wrap` parent of a headless grok/cursor worker. Listed at any age / CPU. |
 | **Stuck Hermes gateway** | `hermes_cli.main gateway restart` still running (any age). |
-| **Idle Codex** | Codex CLI (`codex` / `codex.js`), plus `codex sandbox` / `node_repl` (sandbox idle after ~1h). Skip the Codex app. |
+| **Idle Codex** | Interactive Codex CLI (`codex` / `codex.js`), plus `codex sandbox` / `node_repl` (sandbox idle after ~1h). Skip the Codex app. |
+| **Headless Codex** | `codex exec` (alias `e`). Listed at any age / CPU. |
 | **Leftover worktrees** | Entries under `$TRABA_WORKTREES_ROOT` (default `~/.traba/worktrees`) registered via `git worktree list` on known repos (`traba`, `the-matrix` if present). Main checkouts are not hanging. |
 | **Docker leftovers** | `docker ps -a` when the daemon is up. If the daemon is down, say so once — do not invent containers. |
 
 Expected / not hanging by default:
 
-- Active `cursor-agent` / `claude` / `grok` / `codex` for this chat (young or using CPU)
+- Active interactive `cursor-agent` / `claude` / `grok` / `codex` for this chat (young or using CPU)
 - `tell daemon run`
 - Language servers / MCP helpers / IDE helpers
 - Live tmux sessions themselves (only report idle agents *inside* them)
+- Headless `-p` / `exec` / `orch __wrap` processes **are** hanging — they are background leftovers even while busy
 
 ## Report format
 
@@ -95,7 +105,7 @@ End with: ask which items to kill/remove. Do not act until they say so.
 
 ## Cleanup (only when asked)
 
-- **cursor-agent / claude / grok / hermes / codex:** `hanging-resources clean agents|claude|grok|hermes|codex <pid>` (add `--kill-9` if TERM is not enough).
+- **cursor-agent / claude / grok / orch / hermes / codex:** `hanging-resources clean agents|claude|grok|orch|hermes|codex <pid>` (add `--kill-9` if TERM is not enough).
 - **Worktrees:** `hanging-resources clean worktrees <path|repo/slug|slug>`. Large `node_modules` trees are slow — say so; do not use `lsof +D` (too slow).
 - **Docker:** `hanging-resources clean docker <id|name>`. Running containers need `--force`.
 - Prefer removing only the paths/pids the user named. If they say “all”, `hanging-resources clean <type> --all` (show `--dry-run` first if they might not want the whole set).
