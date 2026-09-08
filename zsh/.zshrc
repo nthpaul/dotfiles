@@ -111,12 +111,21 @@ fi
 # The next line updates PATH for the Google Cloud SDK.
 if [ -f '/Users/ple/google-cloud-sdk/path.zsh.inc' ]; then . '/Users/ple/google-cloud-sdk/path.zsh.inc'; fi
 
-# The next line enables shell command completion for gcloud.
-if [ -f '/Users/ple/google-cloud-sdk/completion.zsh.inc' ]; then . '/Users/ple/google-cloud-sdk/completion.zsh.inc'; fi
+# gcloud completion is ~160ms; load it on first use.
+gcloud() {
+  unset -f gcloud
+  [ -f '/Users/ple/google-cloud-sdk/completion.zsh.inc' ] && . '/Users/ple/google-cloud-sdk/completion.zsh.inc'
+  command gcloud "$@"
+}
 
+# nvm.sh is ~350ms. `node` on PATH is Hermes (~/.local/bin); nvm loads on first `nvm`.
 export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+nvm() {
+  unset -f nvm
+  [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+  [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"
+  nvm "$@"
+}
 
 # JAVA
 export PATH="/opt/homebrew/opt/openjdk/bin:$PATH"
@@ -156,13 +165,6 @@ export PATH="$HOME/.cursor/skills/agent-tell/scripts:$PATH"
 
 # Added by cua-driver-rs installer — see https://github.com/trycua/cua
 export PATH="/Users/ple/.local/bin:$PATH"
-
-# >>> cursor-google-mcp-oauth >>>
-# Auto-export Infisical Google OAuth client for Cursor MCP (${env:MCP_GOOGLE_OAUTH_*})
-if command -v infisical >/dev/null 2>&1; then
-  eval "$(infisical export --projectId=bf8b9a80-9fd7-48f6-985e-c199b94781d3 --env=local --format=dotenv 2>/dev/null | command rg '^MCP_GOOGLE_OAUTH_' | sed 's/^/export /')"
-fi
-# <<< cursor-google-mcp-oauth <<<
 
 # >>> grok installer >>>
 export PATH="$HOME/.grok/bin:$PATH"
