@@ -1,4 +1,4 @@
-model = "gpt-5.6-sol"
+model = "gpt-6-astra"
 model_reasoning_effort = "medium"
 tool_output_token_limit = 25000
 web_search = "live"
@@ -12,6 +12,7 @@ approvals_reviewer = "user"
 plan_mode_reasoning_effort = "high"
 
 notify = ["/Users/ple/.codex/computer-use/Codex Computer Use.app/Contents/SharedSupport/SkyComputerUseClient.app/Contents/MacOS/SkyComputerUseClient", "turn-ended"]
+service_tier = "default"
 
 [projects."/Users/ple/projects/traba/traba-server-node"]
 trust_level = "trusted"
@@ -85,6 +86,54 @@ trust_level = "trusted"
 [projects."/Users/ple/projects/traba/the-matrix"]
 trust_level = "trusted"
 
+[projects."/Users/ple/Documents/ChatGPT/worlds"]
+trust_level = "trusted"
+
+[projects."/Users/ple/Documents/Codex/2026-09-04/hatch-pet-users-ple-dotfiles-codex"]
+trust_level = "trusted"
+
+[projects."/Users/ple/Documents/Codex/2026-09-04/realtime-voice-chat"]
+trust_level = "trusted"
+
+[projects."/Users/ple/Documents/Codex/2026-09-05/realtime-voice-chat"]
+trust_level = "trusted"
+
+[projects."/Users/ple/Documents/ChatGPT/Aether"]
+trust_level = "trusted"
+
+[projects."/Users/ple/Documents/Codex/2026-09-06/realtime-voice-chat"]
+trust_level = "trusted"
+
+[projects."/Users/ple/projects/world-engine"]
+trust_level = "trusted"
+
+[projects."/Users/ple/Documents/Codex/2026-09-07/realtime-voice-chat"]
+trust_level = "trusted"
+
+[projects."/Users/ple/Documents/Codex/2026-09-07/realtime-voice-chat-2"]
+trust_level = "trusted"
+
+[projects."/Users/ple/Documents/Codex/2026-09-07/realtime-voice-chat-3"]
+trust_level = "trusted"
+
+[projects."/Users/ple/Documents/Codex/2026-09-07/realtime-voice-chat-4"]
+trust_level = "trusted"
+
+[projects."/Users/ple/Documents/Codex/2026-09-07/realtime-voice-chat-5"]
+trust_level = "trusted"
+
+[projects."/Users/ple/Documents/Codex/2026-09-07/realtime-voice-chat-6"]
+trust_level = "trusted"
+
+[projects."/Users/ple/Documents/Codex/2026-09-08/realtime-voice-chat"]
+trust_level = "trusted"
+
+[projects."/Users/ple/Documents/Codex/2026-09-08/realtime-voice-chat-2"]
+trust_level = "trusted"
+
+[projects."/Users/ple/Documents/Codex/2026-09-09/https-drive-google-com-file-d"]
+trust_level = "trusted"
+
 [notice]
 hide_full_access_warning = true
 
@@ -101,29 +150,41 @@ url = "https://mcp.figma.com/mcp"
 
 [mcp_servers.node_repl]
 args = []
-command = "/Applications/Codex.app/Contents/Resources/cua_node/bin/node_repl"
+command = "/Applications/ChatGPT.app/Contents/Resources/cua_node/bin/node_repl"
 startup_timeout_sec = 120
 
 [mcp_servers.node_repl.env]
 NODE_REPL_NATIVE_PIPE_CONNECT_TIMEOUT_MS = "1000"
-NODE_REPL_NODE_MODULE_DIRS = "/Applications/Codex.app/Contents/Resources/cua_node/lib/node_modules"
-NODE_REPL_NODE_PATH = "/Applications/Codex.app/Contents/Resources/cua_node/bin/node"
-NODE_REPL_TRUSTED_CODE_PATHS = "/Users/ple/.codex"
+NODE_REPL_NODE_MODULE_DIRS = "/Applications/ChatGPT.app/Contents/Resources/cua_node/lib/node_modules"
+NODE_REPL_NODE_PATH = "/Applications/ChatGPT.app/Contents/Resources/cua_node/bin/node"
+NODE_REPL_TRUSTED_CODE_PATHS = "/Users/ple/.codex:/Applications/ChatGPT.app/Contents/Resources/cua_node/lib/node_modules"
 CODEX_HOME = "/Users/ple/.codex"
-NODE_REPL_TRUSTED_BROWSER_CLIENT_SHA256S = "028a14b6eaa6d98dac2aae00764345ab9f244801ed8493d42b9af3be5575006e,f204d340535055781952b10ed396de20b842f00a19e430852f7e121ad1ce91f6"
 BROWSER_USE_AVAILABLE_BACKENDS = "chrome,iab"
-NODE_REPL_INSTRUCTIONS_USE_CASE_BROWSER = "Control the in-app browser in conjunction with the Browser Plugin."
-NODE_REPL_INSTRUCTIONS_USE_CASE_CHROME = "Control the Chrome browser in conjunction with the Chrome Plugin. Prefer this method of controlling Chrome over alternatives (such as Computer Use) unless the user explicitly mentions an alternative."
-NODE_REPL_INSTRUCTIONS_USE_CASE_COMPUTER_USE = "Control desktop apps on macOS through Computer Use."
+BROWSER_USE_TINYSKY_ENABLED = "1"
+NODE_REPL_INSTRUCTIONS_USE_CASE_BROWSER = ""
+NODE_REPL_INSTRUCTIONS_USE_CASE_CHROME = ""
+NODE_REPL_INSTRUCTIONS_USE_CASE_COMPUTER_USE = ""
 BROWSER_USE_CODEX_APP_BUILD_FLAVOR = "prod"
-BROWSER_USE_CODEX_APP_VERSION = "26.727.51351"
-CODEX_CLI_PATH = "/Applications/Codex.app/Contents/Resources/codex"
+BROWSER_USE_CODEX_APP_VERSION = "26.901.51231"
+NODE_REPL_TRUSTED_SERVICES = '{"browser":"/Users/ple/.codex/plugins/cache/openai-bundled/browser/26.901.51231/scripts/browser-service.mjs","sky":"@oai/sky/service"}'
+SKY_CUA_SERVICE_PATH = "/Users/ple/.codex/computer-use/Codex Computer Use.app"
+CODEX_CLI_PATH = "/Applications/ChatGPT.app/Contents/Resources/codex"
 
 [mcp_servers.computer-use]
 command = "./Codex Computer Use.app/Contents/SharedSupport/SkyComputerUseClient.app/Contents/MacOS/SkyComputerUseClient"
 args = ["mcp"]
 cwd = "."
 enabled = false
+
+[mcp_servers.superhuman-docs]
+url = "https://docs.superhuman.com/apis/mcp"
+
+[mcp_servers.granola]
+url = "https://mcp.granola.ai/mcp"
+
+[mcp_servers.datadog]
+enabled_tools = ["search_datadog_logs", "search_datadog_spans", "get_datadog_trace"]
+url = "https://mcp.us5.datadoghq.com/v1/mcp"
 
 [plugins."github@openai-curated"]
 enabled = true
@@ -155,16 +216,27 @@ enabled = true
 [plugins."visualize@openai-bundled"]
 enabled = true
 
+[plugins."codex-app-tools@openai-bundled"]
+enabled = true
+
+[plugins."unified-computer-use@openai-bundled"]
+enabled = true
+
+[plugins."computer-use@openai-bundled"]
+enabled = true
+
+[tui]
+theme = "gruvbox-light"
+
 [tui.model_availability_nux]
-"gpt-5.5" = 3
+"gpt-5.5" = 4
+gpt-6-astra = 4
 
 [marketplaces.openai-bundled]
-last_updated = "2026-08-16T21:16:49Z"
 source_type = "local"
 source = "/Users/ple/.codex/.tmp/bundled-marketplaces/openai-bundled"
 
 [marketplaces.openai-primary-runtime]
-last_updated = "2026-08-16T21:25:42Z"
 source_type = "local"
 source = "/Users/ple/.cache/codex-runtimes/codex-primary-runtime/plugins/openai-primary-runtime"
 
@@ -174,23 +246,29 @@ js_repl = false
 [desktop]
 followUpQueueMode = "queue"
 dock-icon-preference = "app-default"
-appearanceLightCodeThemeId = "proof"
+appearanceLightCodeThemeId = "linear"
+selected-avatar-id = "codex"
+avatar-overlay-mascot-width-px = 224
+conversationDetailMode = "STEPS_COMMANDS"
+appearanceTheme = "system"
+usePointerCursors = false
 
 [desktop.appearanceLightChromeTheme]
-accent = "#3d755d"
-contrast = 45
-ink = "#2f312d"
-opaqueWindows = false
-surface = "#f5f3ed"
+accent = "#5e6ad2"
+accentSource = "custom"
+contrast = 40
+ink = "#1b1b1b"
+opaqueWindows = true
+surface = "#fcfcfd"
 
 [desktop.appearanceLightChromeTheme.fonts]
+code = '"Geist Mono", ui-monospace, "SFMono-Regular"'
+ui = "Inter"
 
 [desktop.appearanceLightChromeTheme.semanticColors]
-diffAdded = "#3d755d"
-diffRemoved = "#ba2623"
-skill = "#5f6ac2"
+diffAdded = "#52a450"
+diffRemoved = "#c94446"
+skill = "#8160d8"
 
 [shell_environment_policy.set]
-BROWSER_USE_AVAILABLE_BACKENDS = "chrome,iab"
 NODE_REPL_TRUSTED_BROWSER_CLIENT_SHA256S = "028a14b6eaa6d98dac2aae00764345ab9f244801ed8493d42b9af3be5575006e,f204d340535055781952b10ed396de20b842f00a19e430852f7e121ad1ce91f6"
-NODE_REPL_TRUSTED_CODE_PATHS = "/Users/ple/.codex"
