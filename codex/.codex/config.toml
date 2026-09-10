@@ -1,5 +1,5 @@
 model = "gpt-6-astra"
-model_reasoning_effort = "medium"
+model_reasoning_effort = "high"
 tool_output_token_limit = 25000
 web_search = "live"
 
@@ -252,6 +252,7 @@ avatar-overlay-mascot-width-px = 224
 conversationDetailMode = "STEPS_COMMANDS"
 appearanceTheme = "system"
 usePointerCursors = false
+show-context-window-usage = true
 
 [desktop.appearanceLightChromeTheme]
 accent = "#5e6ad2"
