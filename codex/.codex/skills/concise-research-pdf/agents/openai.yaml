@@ -1,0 +1,4 @@
+interface:
+  display_name: "Concise Research PDF"
+  short_description: "Compact LaTeX briefs with diagrams and citations"
+  default_prompt: "Use $concise-research-pdf to turn these findings into a concise article-style PDF with precise citations and useful diagrams."

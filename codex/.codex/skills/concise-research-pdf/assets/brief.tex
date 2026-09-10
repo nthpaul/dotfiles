@@ -1,0 +1,99 @@
+\documentclass[11pt,letterpaper]{article}
+\usepackage{concise-research}
+\hypersetup{pdftitle={Shared equipment: a reservation brief},
+  pdfauthor={Demonstration},pdfsubject={Synthetic example of a concise research PDF}}
+\begin{document}
+\brieftitle{Shared equipment: a reservation brief}{Decision and evidence}{Demonstration \quad | \quad Synthetic assumptions}
+
+\textbf{Pilot one shared reservation calendar.} In this fictional workshop,
+three duplicate bookings cost 24 minutes each week. A single acceptance
+check could prevent those conflicts; the pilot must measure whether people
+actually use it. No live system or observed customer data is represented.
+
+\section*{What the example establishes}
+The input ledger is deliberately small. It supports an arithmetic estimate,
+not a forecast of adoption or financial return. Keep those distinctions in
+the final recommendation. Assumptions and calculations appear in
+\hyperref[app:inputs]{Appendix A}.
+
+\begin{table}[htbp]
+\centering\small
+\begin{tabularx}{\linewidth}{@{}lYY@{}}
+\toprule
+\textbf{Measure} & \textbf{Synthetic input} & \textbf{Decision implication}\\
+\midrule
+Weekly requests & 60 requests & Small enough for a manual pilot.\\
+Duplicate bookings & 3 per week & Define a conflict before counting it.\\
+Time per conflict & 8 minutes & 24 minutes of avoidable work per week, if all three are prevented.\\
+Adoption & Unknown & Log calendar use; do not assume compliance.\\
+\bottomrule
+\end{tabularx}
+\caption{Illustrative inputs; these are not measured results.}
+\end{table}
+
+\section*{A small, explicit workflow}
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[node distance=12mm]
+\node[researchbox,text width=27mm] (request) {Request\\resource, time};
+\node[researchbox,text width=27mm,right=of request] (check) {Check\\availability};
+\node[researchbox,text width=27mm,right=of check] (reserve) {Reserve\\return receipt};
+\node[researchbox,text width=27mm,below=of check,dashed] (revise) {Conflict\\choose a slot};
+\draw[researcharrow] (request) -- (check);
+\draw[researcharrow] (check) -- node[above,font=\footnotesize] {free} (reserve);
+\draw[researcharrow,dashed] (check) -- node[right,font=\footnotesize] {occupied} (revise);
+\end{tikzpicture}
+\caption{Proposed flow. A receipt confirms acceptance; a request alone does not.}
+\end{figure}
+
+\section*{How to decide after the pilot}
+Record requests, conflicts, and time spent resolving them for one week.
+Keep the calendar if conflicts decline without increasing coordination
+time. If use is inconsistent, investigate access and ownership before
+adding automation. The example makes no causal claim from a one-week comparison.
+
+\clearpage
+\appendix
+\section{Inputs and a minimal contract}\label{app:inputs}
+This appendix demonstrates how to retain implementation detail without
+expanding the main brief. Delete it when the reader does not need it.
+
+\subsection*{Reproducible calculation}
+All figures are invented for this layout demonstration:
+\[
+  3\ \mbox{conflicts/week}\times8\ \mbox{minutes/conflict}
+  =24\ \mbox{minutes/week}.
+\]
+The implied conflict rate is $3/60=5\%$. These values do not include
+setup time, behavior changes, or partial adoption. They establish an
+upper bound on recovered time under the example's assumptions.
+
+\subsection*{Proposed reservation record}
+\begin{tabularx}{\linewidth}{@{}lYY@{}}
+\toprule
+\textbf{Field} & \textbf{Meaning} & \textbf{Constraint}\\
+\midrule
+\texttt{request\_id} & Caller-generated identifier & Repeated identical requests return the same receipt.\\
+\texttt{equipment\_id} & Shared resource & Must identify an available resource.\\
+\texttt{start}, \texttt{end} & UTC instants & End follows start; accepted intervals cannot overlap for one resource.\\
+\texttt{receipt\_id} & Accepted reservation & Returned only after the reservation is committed.\\
+\bottomrule
+\end{tabularx}
+\par\vspace{4pt}
+
+\subsection*{Failure behavior}
+Check availability and accept the reservation atomically. A conflicting
+request returns a conflict result without a receipt. Reusing a request ID
+with changed content returns an invalid-request result. A timeout leaves
+the outcome unknown: look up the original request ID before creating a
+new one. These are proposed contracts, not claims about an existing service.
+
+\subsection*{Evidence and links}
+\textbf{Source:} the synthetic input ledger in Table 1 and the calculation
+above. No external research supports the illustrative numbers.
+This \href{https://example.org}{demonstration external link} exists only
+to exercise PDF link annotations. Replace it with descriptive links to
+actual evidence in a real brief; include the exact section or page when
+it matters. The \hyperref[app:inputs]{internal appendix link} demonstrates
+cross-reference resolution.
+\end{document}
