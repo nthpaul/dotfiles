@@ -1,6 +1,7 @@
 # ALIASES
 alias vim='nvim'
 alias claude='claude --dangerously-skip-permissions'
+alias codex='codex --dangerously-bypass-approvals-and-sandbox'
 alias lzg='lazygit'
 
 alias ls='gls -lahps --author --group-directories-first --color=auto'

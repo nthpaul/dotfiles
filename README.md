@@ -28,8 +28,9 @@ Stow creates relative symlinks so the repo stays portable across machines.
 - Editors: `nvim/`, `zed/`, `cursor/` (includes [agent-tell](cursor/.cursor/skills/agent-tell/) lab for tmux Cursor agents), `vscode/`
 - Terminal/tools: `tmux/`, `ghostty/`, `direnv/`, `yazi/`, `zellij/`
 - macOS: `hammerspoon/`
-- Dev tools: `asdf/`, `graphite/`, `opencode/`, `github-copilot/`, `codex/`
+- Dev tools: `asdf/`, `graphite/`, `opencode/`, `github-copilot/`
 - Git/GitHub: `git/` (.gitconfig, global gitignore), `gh/` (CLI config; `hosts.yml` stays local)
+- Codex: `codex/` (`config.toml`, `AGENTS.md`, `rules/`, `skills/`, `plans/`; auth, sessions, sqlite, and caches stay local)
 - Claude Code: `claude/` (`settings.json`; `skills/` symlinked to `codex/.codex/skills`)
 - Grok: `grok/` (`config.toml`, `skills/`; auth, sessions, MCP credentials, and caches stay local)
 

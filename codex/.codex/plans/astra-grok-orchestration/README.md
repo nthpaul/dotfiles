@@ -4,6 +4,10 @@ Proposed architecture, 13 September 2026. This records the design; it does not i
 
 Read [the six-page PDF](astra-grok-plan.pdf) for five vector diagrams covering services, data structures, normal assignments, mediated broadcasts, and urgent replanning. The plan also defines delivery and recovery contracts, tmux ownership, implementation stages, and validation gates.
 
+[The state map](state-map.md) expands the design into independent state machines, transition guards, failure/recovery cases, and implementation gates. It distinguishes the original plan's states from proposed additions.
+
+[The model-agnostic SQLite design](sqlite/README.md) provides complete executable DDL, a populated example database, and constraint tests. Coordinator/worker roles are independent of provider, model, adapter, and session identity. This is a storage proposal; live runtime guarantees remain unverified.
+
 ## Editable sources and rebuild
 
 The portable LaTeX source and style are in [sources/](sources/). Install Tectonic and Poppler, then run from this directory:

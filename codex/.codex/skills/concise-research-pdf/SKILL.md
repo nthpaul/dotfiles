@@ -20,6 +20,10 @@ Produce an article the reader can use immediately: conclusion first, evidence ne
 
 Use the PDF skill's artifact-operation hook and runtime discovery if that skill is available; keep this workflow usable with ordinary Python, Tectonic, and Poppler too. Honor an explicitly requested authoring format. Direct LaTeX is the default for this style; Pandoc is optional for prose-heavy Markdown, using the same visual settings rather than depending on a particular Pandoc template version.
 
+Reuse the supplied document and evidence when converting an existing report; investigate only gaps or claims that need verification. Reuse existing editable sources for revisions and the bundled template for new briefs.
+
+Resolve the toolchain once per session with `command -v python3 tectonic pdftoppm pdftotext pdfinfo`. The build helper uses only Python's standard library; Tectonic compiles, and Poppler handles rendering and basic PDF inspection. Use these installed tools directly. Add a dependency only for a required operation they cannot perform; ordinary briefs need no virtual environment, Python PDF packages, Pandoc, or second TeX distribution.
+
 The self-contained starter includes a neutral worked example with a table, vector diagram, links, and an optional appendix. Read and adapt [assets/brief.tex](assets/brief.tex); the shared style is [assets/concise-research.sty](assets/concise-research.sty). Replace all illustrative content and metadata for real work. Both files travel with the source.
 
 Resolve this skill's directory from its loaded path. In these commands, `SKILL` means that directory and `OUT` is a dedicated artifact directory outside source repositories (for example, a user-selected work-docs directory or `~/Documents/Codex/briefs/<topic>`):
@@ -30,12 +34,22 @@ python3 "$SKILL/scripts/build_pdf.py" --init "$OUT/sources"
 python3 "$SKILL/scripts/build_pdf.py" --source "$OUT/sources/brief.tex" --output "$OUT/brief.pdf"
 ```
 
-The helper refuses to overwrite starter sources, compiles from the source directory so relative assets work, keeps logs in `<output-stem>-build`, and renders **every page** to a fresh `<output-stem>-qa-*` directory at 150 DPI. Tools resolve from `PATH`; `--tectonic` and `--pdftoppm` accept explicit executable paths returned by runtime discovery. Tectonic may download TeX packages on its first build. A missing dependency or failed build stops with an actionable error; do not substitute an unverified result.
+The helper refuses to overwrite starter sources, compiles from the source directory so relative assets work, keeps logs in `<output-stem>-build`, and renders **every page** to a fresh `<output-stem>-qa-*` directory at 150 DPI. Tools resolve from `PATH`; `--tectonic` and `--pdftoppm` accept explicit executable paths returned by runtime discovery. Reuse Tectonic's persistent package/font cache across builds. A first build or newly introduced package may require downloads; a network/cache permission failure needs the environment's approval flow, not a replacement toolchain. A missing dependency or failed build stops with an actionable error; do not substitute an unverified result.
+
+Batch content and layout edits before invoking the helper; it already compiles and renders in one command. Review page images in manageable batches, collect corrections, and rebuild only for actual defects or requested changes. After a rebuild, inspect every final page again because pagination can shift.
 
 ## Verify and deliver
 
 Inspect all final page PNGs at readable resolution after the last edit. Check title balance, paragraph and heading breaks, table wrapping, diagram labels/arrows, citations, page numbering, clipping, and excess empty pages. A successful compiler run is not visual QA. The helper rejects overfull boxes and unresolved LaTeX references/citations; underfull warnings still need a human/model layout check.
 
-Also extract text and inspect PDF link annotations with an available PDF library to verify expected sections, accurate metadata, and intended destinations. Check factual claims and links against their actual evidence; syntax checks cannot establish source accuracy. If rendering or inspection is unavailable, report that limitation rather than claiming QA passed.
+Use Poppler for basic verification, saving its outputs beside the artifact:
+
+```bash
+pdftotext -layout "$OUT/brief.pdf" "$OUT/brief-text.txt"
+pdfinfo "$OUT/brief.pdf" > "$OUT/brief-metadata.txt"
+pdfinfo -url "$OUT/brief.pdf" > "$OUT/brief-links.txt"
+```
+
+Check expected text, metadata, and external link destinations against those outputs. Internal links or annotation details beyond `pdfinfo -url` need an available PDF library or viewer when relevant. Check factual claims and links against their actual evidence; syntax checks cannot establish source accuracy. If rendering or inspection is unavailable, report that limitation rather than claiming QA passed.
 
 Deliver the PDF and a compact account of validation; include sources or a preview when useful or requested. Preserve editable sources, the build log, and final page renders beside the artifact. Follow the active PDF skill's output-citation convention when applicable. Do not publish or send externally unless the user requests it.

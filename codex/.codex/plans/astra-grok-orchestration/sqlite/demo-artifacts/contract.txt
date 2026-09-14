@@ -1,0 +1,1 @@
+Demo contract v1: each result identifies its task, run, and assignment.

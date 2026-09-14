@@ -4,3 +4,7 @@ sources/*.aux
 sources/*.log
 sources/*.out
 sources/*.pdf
+sqlite/__pycache__/
+sqlite/example.sqlite3
+sqlite/example.sqlite3-shm
+sqlite/example.sqlite3-wal
