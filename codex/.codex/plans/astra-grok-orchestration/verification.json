@@ -1,0 +1,40 @@
+{
+  "pages": 6,
+  "metadata": {
+    "/Creator": "LaTeX with hyperref",
+    "/Title": "Astra and Grok: orchestration architecture plan",
+    "/Subject": "Proposed services, data contracts, communication, and implementation gates",
+    "/Author": "Prepared for Paul",
+    "/Producer": "xdvipdfmx (0.1)",
+    "/CreationDate": "D:20260913234454-00'00'"
+  },
+  "external_links": [
+    {
+      "page": 6,
+      "uri": "https://docs.langchain.com/oss/python/langchain/multi-agent/subagents"
+    },
+    {
+      "page": 6,
+      "uri": "https://www.anthropic.com/engineering/managed-agents"
+    },
+    {
+      "page": 6,
+      "uri": "https://www.sqlite.org/isolation.html"
+    },
+    {
+      "page": 6,
+      "uri": "https://www.rabbitmq.com/docs/confirms"
+    }
+  ],
+  "page_word_counts": [
+    263,
+    323,
+    290,
+    233,
+    330,
+    492
+  ],
+  "text_and_link_checks": "passed",
+  "visual_qa": "All six final page renders inspected at readable resolution; diagrams, text, page breaks, and references checked.",
+  "pdf_sha256": "63cca6d7919c9b60fd61e704b023908ad5a061f000bb6b2542bf29eac10c5930"
+}

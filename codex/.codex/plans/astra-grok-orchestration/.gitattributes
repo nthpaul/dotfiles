@@ -1,0 +1,2 @@
+# Preserve verbatim CLI output and source snapshots with their recorded hashes.
+evidence/* -whitespace

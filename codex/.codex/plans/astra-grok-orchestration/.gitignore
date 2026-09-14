@@ -1,0 +1,6 @@
+astra-grok-plan-build/
+astra-grok-plan-qa-*/
+sources/*.aux
+sources/*.log
+sources/*.out
+sources/*.pdf
