@@ -1,0 +1,17 @@
+[
+  {
+    "source": "/Users/ple/.dotfiles/cursor/.cursor/skills/orch/scripts/orch",
+    "copy": "orch.py",
+    "sha256": "899141451a493f88dcb96537ee45a6fbeb2ac700bff9e16ca27a21e273d4e401"
+  },
+  {
+    "source": "/Users/ple/.dotfiles/codex/.codex/skills/orchestrate/SKILL.md",
+    "copy": "orchestrate-skill.md",
+    "sha256": "fa623443a0880d8e14758c6428aa39b5d5048b2e1e21804c755c82b6ff1637db"
+  },
+  {
+    "source": "/Users/ple/.dotfiles/tmux/.config/tmux/tmux.conf",
+    "copy": "tmux.conf",
+    "sha256": "49386932b23dcff2b8b9425047a0d8ba0d09c061e81841927f6442e6809dab8e"
+  }
+]

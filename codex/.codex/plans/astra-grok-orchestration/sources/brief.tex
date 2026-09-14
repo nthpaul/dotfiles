@@ -1,0 +1,293 @@
+\documentclass[11pt,letterpaper]{article}
+\usepackage{concise-research}
+\usepackage{listings}
+\usetikzlibrary{fit,calc}
+\hypersetup{pdftitle={Astra and Grok: orchestration architecture plan},pdfauthor={Prepared for Paul},pdfsubject={Proposed services, data contracts, communication, and implementation gates}}
+\briefheader{Astra / Grok orchestration}{Architecture plan v1.0}
+\lstset{basicstyle=\ttfamily\small,columns=fullflexible,keepspaces=true,breaklines=true,showstringspaces=false,frame=single,rulecolor=\color{researchink!30},backgroundcolor=\color{researchink!3},framesep=6pt}
+\newcommand{\captext}[1]{\par\vspace{3pt}{\small\textit{#1}\par}\vspace{3pt}}
+\tikzset{box/.style={researchbox,font=\small,inner sep=6pt},edge/.style={researcharrow},lab/.style={font=\small,fill=white,inner sep=2pt,align=center},life/.style={draw=researchink!40,dashed}}
+\begin{document}
+\brieftitle{Astra and Grok: an orchestration plan}{One planner, visible workers, durable communication}{Prepared for Paul \quad | \quad 13 September 2026 \quad | \quad Proposed design}
+
+\textbf{Build a small local runtime controlled by Astra.} Astra owns planning,
+delegation, routing decisions, and acceptance. Grok workers execute bounded tasks
+and report only to Astra. Runtime code handles persistence, delivery, and process
+monitoring without consuming a model turn for routine bookkeeping.
+
+Keep two logical structures: \textbf{current state} and \textbf{append-only history}.
+Inboxes and the bulletin are views over them. Central supervision is an established
+pattern [\hyperref[s1]{1}]; these particular schemas and guarantees are proposals.
+Live transport, interruption, and recovery must pass the implementation gates on page 6.
+
+\begin{center}
+\begin{tikzpicture}
+\node[box,text width=26mm] (u) at (0,0) {User};
+\node[box,text width=43mm] (a) at (0,-1.2) {Astra / Codex pane\\Plan, delegate, review};
+\node[box,text width=52mm] (r) at (0,-2.9) {Runtime + CLI\\Validate, persist, deliver, monitor};
+\node[box,text width=35mm] (s) at (5.6,-1.2) {SQLite + artifacts\\Durable local storage};
+\node[box,text width=36mm] (w1) at (-5,-4.9) {Grok pane A\\Investigation};
+\node[box,text width=36mm] (w2) at (0,-4.9) {Grok pane B\\Implementation};
+\node[box,text width=36mm] (w3) at (5,-4.9) {Grok pane C\\Verification};
+\draw[edge,<->] (u)--node[lab,right]{goals / decisions}(a);
+\draw[edge,<->] (a)--node[lab,right]{commands / inbox}(r);
+\draw[edge,<->] (r.east)-|node[lab,pos=.25,above]{commit / read}(s.south);
+\draw[edge,<->] (r.south west)--node[lab,sloped,above]{assign / report}(w1.north);
+\draw[edge,<->] (r)--node[lab,right]{assign / report}(w2);
+\draw[edge,<->] (r.south east)--node[lab,sloped,above]{assign / report}(w3.north);
+\end{tikzpicture}
+\captext{Figure 1. Service relationships. The runtime transports messages; Astra makes coordination decisions. Worker-to-worker messaging is absent by design.}
+\end{center}
+
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{31mm}Y@{}}
+\toprule\textbf{Component} & \textbf{Responsibility}\\\midrule
+Orchestrator skill & Delegation and review policy; scoped assignments, relevant context, dependency decisions, and result acceptance.\\
+Runtime service & One local daemon with storage, delivery scheduler, process manager, and provider adapters as modules. No separate broker in v1.\\
+Worker runner & Owns the Grok process in its pane; reports events, receives assignments, and preserves logs. No nested agents in v1.\\
+Artifact store & Versioned files for contracts, code evidence, and large outputs. Messages carry references with content hashes.\\
+\bottomrule
+\end{tabularx}
+
+\clearpage
+\section*{Data structures and ownership}
+\textbf{Stable IDs outlive processes.} Keep \texttt{worker\_id}, \texttt{task\_id},
+and \texttt{run\_id} distinct. A task may be reassigned; a worker may restart; a pane
+may be reused. PID, process start identity, pane ID, and Grok session ID are handles,
+not primary keys. A retry creates a new run and retains the old history.
+
+\begin{center}
+\begin{tikzpicture}
+\node[box,text width=58mm] (t) at (-4,0) {\textbf{Team / plan}\\team ID, coordinator, revision\\ownership epoch};
+\node[box,text width=58mm] (a) at (4,0) {\textbf{Agent registry}\\agent ID, role, name\\current task/run, health};
+\node[box,text width=58mm] (j) at (-4,-2) {\textbf{Task}\\task ID, owner, dependencies\\scope, acceptance, status};
+\node[box,text width=58mm] (r) at (4,-2) {\textbf{Run / attempt}\\run ID, task ID, agent ID\\process, pane, revision};
+\node[box,text width=58mm] (e) at (-4,-4) {\textbf{Event history}\\ID, sequence, type, sender\\task/run, body, references};
+\node[box,text width=58mm] (d) at (4,-4) {\textbf{Delivery / resolution}\\event ID + recipient\\delivery state; issue outcome};
+\draw[edge] (t)--node[lab,above]{has agents}(a);
+\draw[edge] (t)--node[lab,right]{has tasks}(j);
+\draw[edge] (a)--node[lab,right]{executes}(r);
+\draw[edge] (j)--node[lab,above]{runs}(r);
+\draw[edge] (j)--node[lab,right]{has history}(e);
+\draw[edge] (e)--node[lab,above]{0..N\\recipients}(d);
+\draw[edge] (r.south west)--node[lab,sloped,above]{emits}(e.north east);
+\end{tikzpicture}
+\captext{Figure 2. Main record relationships. Event history is immutable; the other records hold current state. All records are scoped to one team.}
+\end{center}
+
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{32mm}Y@{}}
+\toprule\textbf{Requested view} & \textbf{Proposed representation}\\\midrule
+Process mapping & \texttt{orchestrator} and \texttt{workers}, keyed by stable agent ID. Show name, current task/run, health, last heartbeat, and last substantive event.\\
+Alive / dead & Derived filters over one registry. Do not move records between separate dictionaries; unresponsive is distinct from exited.\\
+Work history & One ordered event stream, filtered by orchestrator, worker, task, or run. Preserve timestamps and sequence numbers as fields.\\
+Normal / override inbox & Pending or unresolved deliveries for Astra, filtered by priority. Each worker also has an inbox for Astra-authorized commands.\\
+Community bulletin & Published announcements with source proposal and recipient references. Actionable announcements also create tracked deliveries.\\
+\bottomrule
+\end{tabularx}
+
+\textbf{Write contract.} The runtime atomically appends the event, changes affected
+state, and inserts pending deliveries before returning a durable receipt. SQLite
+provides transactional isolation with serialized writers [\hyperref[s3]{3}].
+Agents use the CLI/API; they do not rewrite a shared JSON document. JSON remains
+the inspection/export format. Artifact files are finalized and hashed before their
+references are committed; incomplete or missing artifacts cannot satisfy acceptance.
+
+\clearpage
+\section*{Message schema and delivery contract}
+\textbf{Structured metadata; free-form explanation.} The example below is a
+persisted event, not a delimiter-based string. The runtime assigns event IDs,
+team sequence numbers, timestamps, and validated sender identity. Workers supply
+the report and suggested recipients; only Astra can authorize forwarding.
+
+\begin{lstlisting}
+{
+  "schema_version": 1,
+  "event_id": "evt-0042",
+  "team_id": "auth-upgrade",
+  "sequence": 42,
+  "timestamp": "2026-09-13T14:05:00Z",
+  "type": "plan_conflict",
+  "from": "worker-auth",
+  "run_id": "run-017",
+  "to": "orchestrator",
+  "task_id": "task-auth-api",
+  "plan_revision": 3,
+  "priority": "urgent",
+  "suggested_recipients": ["worker-ui", "worker-tests"],
+  "body": "The contract cannot represent partial success.",
+  "artifact_refs": ["artifact-contract-v2"],
+  "reply_to": null
+}
+\end{lstlisting}
+
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{32mm}>{\raggedright\arraybackslash}p{31mm}Y@{}}
+\toprule\textbf{Message} & \textbf{Direction} & \textbf{Meaning}\\\midrule
+Assignment & Astra to worker & Task, scope, dependencies, revision, acceptance criteria.\\
+Progress / result & Worker to Astra & Store progress quietly; a result enters review.\\
+Question / conflict & Worker to Astra & Track unresolved issue; priority can be urgent.\\
+Proposal & Worker to Astra & Suggest recipients and attach an artifact reference.\\
+Publication & Astra to workers & One delivery per selected recipient; retain source event.\\
+Pause / resume / cancel & Astra to runner & Track requests separately from confirmed outcomes.\\
+\bottomrule
+\end{tabularx}
+
+\textbf{Four distinct facts.} A \emph{receipt} confirms durable storage.
+\emph{Delivered} means the adapter submitted the message to the session.
+\emph{Acknowledged} means the recipient accepted that message ID, confirmed by the
+protocol or explicit worker response. \emph{Resolved} means the question or requested
+action has an outcome. Acknowledgment never proves task completion. Established
+messaging systems make the same receipt/processing distinction [\hyperref[s4]{4}].
+
+Each mutation carries a request ID. An identical retry returns the same receipt;
+changed content with the same ID is rejected. Delivery retries reuse the message ID
+and recipients deduplicate. Track delivery per recipient, not only a high-water
+timestamp: urgent processing may skip older normal messages. Sequence numbers
+record commit order, not a guarantee of causal order between independent workers.
+
+\clearpage
+\section*{Normal assignments and mediated broadcasts}
+\textbf{Workers run while Astra remains available.} The runtime presents compact
+results and actionable issues. Routine progress, heartbeats, and delivery bookkeeping
+are recorded without triggering conversational acknowledgment loops.
+
+\begin{center}
+\begin{tikzpicture}
+\node[box,text width=30mm] at (0,0) {Astra};
+\node[box,text width=35mm] at (6,0) {Runtime / store};
+\node[box,text width=30mm] at (12,0) {Grok worker};
+\foreach \x in {0,6,12}{\draw[life](\x,-.4)--(\x,-4.5);}
+\draw[edge](0,-.9)--node[lab,above]{1. assign task + request ID}(6,-.9);
+\node[lab] at (4.4,-1.4) {commit task + event + delivery};
+\draw[edge](6,-1.9)--node[lab,above]{2. launch / resume + deliver}(12,-1.9);
+\draw[edge](12,-2.5)--node[lab,above]{3. acknowledge; execute}(6,-2.5);
+\draw[edge](12,-3.1)--node[lab,above]{4. result + evidence references}(6,-3.1);
+\draw[edge](6,-3.7)--node[lab,above]{5. notify: awaiting review}(0,-3.7);
+\draw[edge](0,-4.3)--node[lab,above]{6. accept or request revision}(6,-4.3);
+\end{tikzpicture}
+\captext{Figure 3. Assignment and result flow. The runtime records Astra's acceptance decision. Process exit or a zero exit code alone cannot accept a task.}
+\end{center}
+
+\textbf{The bulletin records approved routing.} A worker proposes an announcement;
+Astra determines whether it affects the plan and chooses recipients. Forward a
+versioned contract reference rather than paraphrasing the contract. A bulletin
+entry alone is insufficient when another worker must act: create a delivery too.
+
+\begin{center}
+\begin{tikzpicture}
+\node[box,text width=24mm] at (0,0) {Worker A};
+\node[box,text width=24mm] at (4.2,0) {Runtime};
+\node[box,text width=24mm] at (8.4,0) {Astra};
+\node[box,text width=24mm] at (12.6,0) {Worker B};
+\foreach \x in {0,4.2,8.4,12.6}{\draw[life](\x,-.4)--(\x,-3.85);}
+\draw[edge](0,-1)--node[lab,above]{1. propose}(4.2,-1);
+\draw[edge](4.2,-1.65)--node[lab,above]{2. route proposal}(8.4,-1.65);
+\draw[edge](8.4,-2.3)--node[lab,above]{3. publish to B}(4.2,-2.3);
+\draw[edge](4.2,-2.95)--node[lab,above]{4. deliver original artifact reference}(12.6,-2.95);
+\draw[edge](12.6,-3.6)--node[lab,above]{5. acknowledge publication}(4.2,-3.6);
+\end{tikzpicture}
+\captext{Figure 4. One recipient is shown. Fan-out produces separate delivery records while retaining one publication and its original proposal.}
+\end{center}
+
+\textbf{Context contract.} Each assignment includes the objective, relevant plan
+decisions, expected output, acceptance checks, and exclusive write scope. Workers
+return findings, artifact references, validation evidence, and unresolved issues.
+Astra retrieves history selectively after compaction instead of rereading all logs.
+
+\clearpage
+\section*{Urgent messages and recovery}
+\textbf{Priority changes scheduling, not storage order.} The override inbox is the
+urgent unresolved view. It is checked before normal messages; repeated reports of
+the same issue are coalesced. An urgent flag alone cannot interrupt a model turn or
+stop an executing tool. The transport adapter must establish those capabilities.
+
+\begin{center}
+\begin{tikzpicture}
+\node[box,text width=24mm] at (0,0) {Worker A};
+\node[box,text width=24mm] at (4.2,0) {Runtime};
+\node[box,text width=24mm] at (8.4,0) {Astra};
+\node[box,text width=24mm] at (12.6,0) {Affected B};
+\foreach \x in {0,4.2,8.4,12.6}{\draw[life](\x,-.4)--(\x,-5.15);}
+\draw[edge](0,-.9)--node[lab,above]{1. urgent conflict}(4.2,-.9);
+\draw[edge](4.2,-1.5)--node[lab,above]{2. persist + wake}(8.4,-1.5);
+\draw[edge](8.4,-2.1)--node[lab,above]{3. pause affected tasks}(4.2,-2.1);
+\draw[edge](4.2,-2.7)--node[lab,above]{4. request pause; hold new dispatch}(12.6,-2.7);
+\draw[edge](12.6,-3.3)--node[lab,above]{5. paused / cannot yet pause}(4.2,-3.3);
+\draw[edge](4.2,-3.9)--node[lab,above]{6. report actual state}(8.4,-3.9);
+\draw[edge](8.4,-4.5)--node[lab,above]{7. commit revised assignments}(4.2,-4.5);
+\draw[edge](4.2,-5.1)--node[lab,below]{8. deliver revision + explicit resume}(12.6,-5.1);
+\end{tikzpicture}
+\captext{Figure 5. Urgent replan. Worker A stops its own dependent work when blocked. Astra selects affected tasks; unrelated work can continue. A pause is never assumed before confirmation.}
+\end{center}
+
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{34mm}Y@{}}
+\toprule\textbf{Failure or race} & \textbf{Required behavior}\\\midrule
+Old-plan result arrives & Preserve it with its assignment revision. Astra checks changed dependencies before accepting or requesting revision.\\
+Worker exits or stalls & Separate process health from task outcome. Inspect artifacts and pending actions before retrying with a new run ID.\\
+Runtime / Astra restarts & Restore plan, unresolved deliveries, and runs. Reconcile actual process identities and sessions before new dispatch.\\
+Delivery ack is lost & Retry the same message ID; recipient deduplicates. If acceptance cannot be verified, preserve the outcome as uncertain.\\
+External action times out & Inspect the original action before retrying. Message deduplication does not guarantee exactly-once external effects.\\
+\bottomrule
+\end{tabularx}
+
+\textbf{Recovery ownership.} One active coordinator session controls a team. An
+ownership epoch rejects stale-session commands after takeover. Record execution
+intent before launching a process and observed outcome afterward; reconcile
+incomplete intents on restart. Durable history remains outside the agent's context,
+consistent with the recovery principle in [\hyperref[s2]{2}].
+
+\textbf{Independent states.} Tasks move from queued to running to awaiting review
+to accepted, with blocked, failed, and cancelled outcomes. Run health is starting,
+running, unresponsive, or exited. Pause/cancel requests are control states with
+separate confirmation. A live PID does not imply useful progress or completed work.
+
+\clearpage
+\section*{Delivery plan, tmux rules, and decision gates}
+\textbf{First milestone: two tasks and one revision in a single window.} Astra delegates two tasks, receives results, requests one revision, and accepts
+the combined outcome. Also demonstrate restart recovery and an urgent replan.
+
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{8mm}>{\raggedright\arraybackslash}p{35mm}Y@{}}
+\toprule & \textbf{Atomic stage} & \textbf{Exit evidence}\\\midrule
+1 & Transport spike & Launch, stream, acknowledge, follow up, resume, and cancel one Grok run. Wake the exact Astra session; document unsupported behavior.\\
+2 & Store + pane lifecycle & Stable IDs, transactional events and deliveries, pane ownership, reuse, and tiling. No lost concurrent events or wrong-pane cleanup.\\
+3 & Routing + recovery & Normal/urgent inboxes, bulletin fan-out, deduplication, takeover, and stale-result checks. Recover at each delivery boundary.\\
+4 & Skill + integration & Astra/Grok role contracts, isolated worktrees, acceptance review, and a CI-passing Graphite stack. Complete the first milestone.\\
+\bottomrule
+\end{tabularx}
+
+\textbf{Pane contract.} Proposed default: the orchestrator's existing tmux window,
+with a separate pane per agent and a visible runtime/status pane. Register exact server, window, and pane IDs. Reuse idle team-owned panes;
+otherwise split and run \texttt{select-layout tiled}, the action already bound to
+Ctrl-b then \texttt{t}. Preserve focus; cleanup only the worker pane. Queue work when the screen is full.
+Verify process start identity before signaling a PID. Reuse sessions for related work;
+start fresh sessions for unrelated work.
+
+\textbf{Code ownership.} One current executing attempt per task; isolated worktrees
+for concurrent writers. One named integration worker assembles accepted changes.
+Use \texttt{gt create} and \texttt{gt submit --no-interactive}; every PR must
+independently pass required CI. Publication stays within the task's authorization.
+
+\textbf{Open choices and local evidence.} Recommend a live runner activity view
+with steering commands; full Grok TUI remains an open choice. Start with two workers.
+Installed Grok 1.0.30 advertises streaming JSON; Codex 0.154.0 advertises
+\texttt{queue}. Interruption semantics remain untested. Existing \texttt{orch}
+creates and kills separate windows; reuse selectively. Omit its mandatory
+\texttt{poteto-mode} and nested agents. Resolve the missing documented \texttt{wt}
+script path before code tasks.
+
+\textbf{Required fault tests.} PID reuse; crash before send and after send/before ack;
+duplicate assignment; urgent conflict during a tool call; old-revision result;
+coordinator takeover. Measure urgent acknowledgment latency, recovery time, failed
+deliveries, and coordination turns before increasing concurrency.
+
+\section*{Evidence and limits}
+{\small
+\begin{enumerate}[leftmargin=1.5em]
+\item\label{s1} LangChain, \href{https://docs.langchain.com/oss/python/langchain/multi-agent/subagents}{Subagents}, ``Key characteristics'' and ``Sync vs. async.'' Supports centralized routing and asynchronous workers, not this exact implementation.
+\item\label{s2} Anthropic, \href{https://www.anthropic.com/engineering/managed-agents}{Scaling Managed Agents: Decoupling the brain from the hands}, 8 April 2026, ``Decouple the brain from the hands'' and ``The session is not Claude's context window.'' Supports durable history independent of a running harness.
+\item\label{s3} SQLite, \href{https://www.sqlite.org/isolation.html}{Isolation in SQLite}, ``Isolation and Concurrency.'' Transactional isolation and serialized writers.
+\item\label{s4} RabbitMQ, \href{https://www.rabbitmq.com/docs/confirms}{Consumer Acknowledgements and Publisher Confirms}. Durable receipt and recipient processing are separate. No RabbitMQ dependency is proposed.
+\end{enumerate}
+Sources retrieved 13 September 2026. Local source copies, CLI help, hashes, and
+line references accompany this plan in \texttt{evidence/}. All proposed runtime
+guarantees remain subject to the above tests; no workers were launched for this plan.
+}
+\end{document}
