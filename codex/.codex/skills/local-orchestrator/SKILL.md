@@ -1,15 +1,17 @@
 ---
 name: local-orchestrator
-description: Operate the local codex-orch daemon for durable Astra-led worker assignments, inbox routing, process controls, and evidence-based review. Use when the user requests this local orchestration runtime or work on its active team.
+description: Operate the local codex-orch daemon and full-screen board for durable Astra-led worker assignments, inbox routing, process controls, and evidence-based review. Use when the user requests this local orchestration runtime, its board, or work on its active team.
 ---
 
 # Local orchestrator
 
-Use `codex-orch` for runtime mutations and reads. Read the [runtime guide](../../orchestrator/README.md) for startup, command schemas, credential handling, and the offline exercise. The daemon owns SQLite, delivery, resource bookkeeping, and execution logs; edit state through its API.
+Use `codex-orch` for runtime mutations and reads. Use `codex-orch board` for the multi-team TUI. Read the [runtime guide](../../orchestrator/README.md) for startup, command schemas, credential handling, the board, and the offline exercise. The daemon owns SQLite, delivery, resource bookkeeping, and execution logs; edit state through its API. For board keys, attach rules, and requested-versus-observed display, read [references/board.md](references/board.md).
 
-Astra owns planning, assignments, mediated routing, revisions, and acceptance. Register bounded workers with the default Astra model and medium reasoning unless the task specifies another adapter or model. Workers execute their assignment and report to the coordinator; they do not spawn nested workers or send worker-to-worker instructions.
+Astra owns planning, assignments, mediated routing, revisions, and acceptance. The coordinator delegates implementation, review, and integration as separate assignments and reviews compact evidence artifacts, not source trees. Automation owns monitoring (`ci_watch`, usage ticks, inbox polling). The integration worker owns CI fixes. Workers execute their assignment and report to the coordinator; they do not spawn nested workers or send worker-to-worker instructions.
 
-Write each assignment with its objective, relevant context, expected output, acceptance criteria, dependencies, and exclusive write scope. Concurrent writers need registered isolated worktrees. Reuse a worker session for related follow-up work; use a fresh session for unrelated work. Keep the coordinator available for user steering while the daemon records routine progress quietly.
+`register` defaults to Grok `grok-4.6` high in the owned pane. Do not send `mode` unless the assignment requires `--mode exec`. Explicit `--adapter codex` or `--adapter fake` keep those transports. Budget, preflight, and CI watch use generic `request KIND --body`; do not invent extra CLI verbs.
+
+Write each assignment with its objective, relevant context, expected output, acceptance criteria, dependencies, exclusive write scope, and optional `budgets`. Concurrent writers need registered isolated worktrees. Reuse a worker session for related follow-up work; use a fresh session for unrelated work. Keep the coordinator available for user steering while the daemon records routine progress quietly. Assignment handoffs stay bounded: one worker, one write scope, report back.
 
 Inspect urgent unresolved inbox entries before normal results. Route worker proposals by publishing their original artifact references to explicitly selected recipients. A stored receipt, delivery, acknowledgment, resolution, and accepted result are distinct facts; advance each only with its own evidence.
 

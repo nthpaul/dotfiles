@@ -148,9 +148,13 @@ def parser():
     register = commands.add_parser('register', help='Register a worker and save its credentials')
     common(register)
     register.add_argument('name')
-    register.add_argument('--adapter', choices=('codex', 'grok', 'fake'), default='codex')
-    register.add_argument('--model', help='Override adapter default (Codex: gpt-6-astra)')
-    register.add_argument('--effort', default='medium')
+    register.add_argument('--adapter', choices=('codex', 'grok', 'fake'), default='grok')
+    register.add_argument('--model', default=None,
+                         help='Override adapter default (Grok: grok-4.6, Codex: gpt-6-astra)')
+    register.add_argument('--effort', default=None,
+                         help='Override adapter default (Grok: high, Codex/fake: medium)')
+    register.add_argument('--mode', choices=('interactive', 'exec'), default=None,
+                         help='Worker transport (omit: grok interactive, others exec)')
     register.add_argument('--request-id', default=None)
     register.add_argument('--save-credentials')
     for name in ('status', 'history', 'inbox', 'bulletin'):
@@ -163,7 +167,32 @@ def parser():
         view.add_argument('--priority', choices=('normal', 'urgent'))
         view.add_argument('--after', type=int)
         view.add_argument('--limit', type=int)
+    board = commands.add_parser('board', help='Full-screen board over one or more runtime homes')
+    common(board)
+    board.add_argument('--homes', action='append', default=[], help='Additional runtime home (repeatable)')
+    board.add_argument('--snapshot', action='store_true', help='Print a deterministic snapshot and exit')
+    board.add_argument('--width', type=int, default=100)
+    board.add_argument('--height', type=int, default=30)
+    board.add_argument('--team', help='Select a team id')
+    board.add_argument('--section', default='tasks')
+    board.add_argument('--filter', default='', dest='board_filter')
     return root
+
+
+def register_body(args):
+    """Personal default is grok-4.6 high. Explicit adapter/mode keep backend defaults."""
+    body = {'name': args.name, 'adapter': args.adapter}
+    if args.model is not None:
+        body['model'] = args.model
+    elif args.adapter == 'grok':
+        body['model'] = 'grok-4.6'
+    if args.effort is not None:
+        body['effort'] = args.effort
+    elif args.adapter == 'grok':
+        body['effort'] = 'high'
+    if getattr(args, 'mode', None):
+        body['mode'] = args.mode
+    return body
 
 
 def main(argv=None):
@@ -174,6 +203,9 @@ def main(argv=None):
         os.execv(sys.executable, [sys.executable, '-m', 'orchestrator.daemon', '--home', str(home)])
     from .client import call
     try:
+        if args.operation == 'board':
+            from .board import main as board_main
+            return board_main(args)
         if args.operation in ('doctor', 'start'):
             result = doctor() if args.operation == 'doctor' else start_daemon(home)
             print(json.dumps(result, indent=2))
@@ -200,7 +232,7 @@ def main(argv=None):
                 print(f'request_id={request_id}', file=sys.stderr)
                 if args.operation == 'register':
                     kind = 'register'
-                    body = {key: getattr(args, key) for key in ('name', 'adapter', 'model', 'effort') if getattr(args, key) is not None}
+                    body = register_body(args)
                 else:
                     kind, body = args.kind, args.body
                 message = dict(op='command', token=token, epoch=epoch, request_id=request_id, kind=kind, body=body)
