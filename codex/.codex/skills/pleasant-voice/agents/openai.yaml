@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pleasant Voice"
+  short_description: "Human spoken voice, then small skim tables"
+  default_prompt: "Use $pleasant-voice to make this draft conversational and easy to read, with a small skim table where useful."
