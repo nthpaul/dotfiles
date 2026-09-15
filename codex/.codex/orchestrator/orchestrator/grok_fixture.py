@@ -18,7 +18,7 @@ if spec.get('child_seconds'):
     subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(' + str(float(spec['child_seconds'])) + ')'])
 time.sleep(spec.get('delay', 0))
 if spec.get('progress'):
-    print(json.dumps({'type': 'stream_event', 'event': {'delta': {'type': 'text_delta', 'text': spec['progress']}}}), flush=True)
+    print(json.dumps({'type': 'assistant', 'message': {'content': [{'type': 'text', 'text': spec['progress']}]}}), flush=True)
 report = spec.get('report', {'outcome': 'completed', 'summary': 'Fixture complete',
                            'changes': [], 'validation': [], 'unresolved': [], 'artifacts': []})
 if not spec.get('missing_result'):
