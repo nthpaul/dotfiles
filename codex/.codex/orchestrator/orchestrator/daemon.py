@@ -16,8 +16,10 @@ from pathlib import Path
 
 from .adapters import build_wake_command
 from .client import MAX_MESSAGE
-from .resources import IntegrationManager, ProcessIdentity, TmuxManager, WorktreeManager, verify_stack_ci
+from .preflight import fingerprint as preflight_fingerprint, run_commands as run_preflight
+from .resources import IntegrationManager, ProcessIdentity, TmuxManager, WorktreeManager, ci_watch_disposition, verify_stack_ci
 from .store import Store, Invalid, dump, now, require, uid
+from .usage import exceeded
 
 
 def write_private(path, value):
@@ -102,10 +104,12 @@ class Runtime:
         with store.transaction():
             store.update('runs', run['id'], heartbeat=now())
             store.update('sessions', actor['id'], heartbeat=now())
+        pane = store.one("SELECT * FROM resources WHERE owner_run=? AND kind='pane'", (run['id'],))
         return {'run': run, 'assignment': assignment, 'assignment_delivery_id': delivery['id'],
                 'session': {k:v for k,v in actor.items() if k != 'token_hash'}, 'messages': messages,
                 'epoch': store.team(actor)['epoch'],
-                'control_epoch': json.loads(control['body'])['epoch'] if control else json.loads(assignment['body'])['epoch']}
+                'control_epoch': json.loads(control['body'])['epoch'] if control else json.loads(assignment['body'])['epoch'],
+                'pane': json.loads(pane['detail']) if pane else None}
 
     def runner_observe(self, actor, run, request):
         store = self.store
@@ -205,6 +209,8 @@ class Runtime:
                     store.update('runs', run['id'], confirmed_generation=run['control_generation'])
                 holds = [h for h in json.loads(task['holds']) if h != f'control:{run["id"]}']
                 store.update('tasks', task['id'], holds=dump(holds))
+        elif kind == 'usage':
+            require(not run['released'], 'Released run')
         elif kind == 'uncertain':
             store.update('runs', run['id'], health='unresponsive', observed='unknown', outcome='uncertain')
             store.db.execute("UPDATE resources SET state='quarantined' WHERE owner_run=? AND state='held'", (run['id'],))
@@ -469,6 +475,10 @@ class Runtime:
                     self.launch(operation)
                 elif operation['kind'] in ('worktree', 'integration'):
                     self.execute_external(operation)
+                elif operation['kind'] == 'preflight':
+                    self.execute_preflight(operation)
+                elif operation['kind'] == 'ci_watch':
+                    self.poll_ci_watch(operation)
             except Exception as error:
                 with store.transaction():
                     store.update('operations', operation['id'], state='uncertain', outcome=dump({'error':str(error)}), updated=now())
@@ -488,7 +498,144 @@ class Runtime:
                         store.db.execute("UPDATE operations SET state='uncertain',updated=? WHERE run_id=? AND state='running'", (now(),run['id']))
                         task = store.get('tasks', run['task_id'])
                         self.internal_event(task['team_id'], 'runner_missing', {'run_id':run['id'], 'runner_alive':alive}, run['id'])
+        self.enforce_budgets()
         self.schedule_wakes()
+
+    def execute_preflight(self, operation):
+        store = self.store
+        intent = json.loads(operation['intent'])
+        team = store.get('teams', operation['team_id'])
+        if intent.get('epoch') != team['epoch']:
+            with store.transaction():
+                store.update('operations', operation['id'], state='uncertain',
+                             outcome=dump({'reason': 'stale ownership epoch'}), updated=now())
+            return
+        digest, payload = preflight_fingerprint(intent['cwd'], intent['commands'], intent.get('scope'), intent.get('environment'))
+        previous = store.one(
+            "SELECT * FROM operations WHERE team_id=? AND kind='preflight' AND state='succeeded' AND json_extract(outcome,'$.fingerprint')=? ORDER BY created DESC LIMIT 1",
+            (operation['team_id'], digest))
+        with store.transaction():
+            store.update('operations', operation['id'], state='running', updated=now())
+        if previous:
+            with store.transaction():
+                store.update('operations', operation['id'], state='succeeded',
+                             outcome=dump({'fingerprint': digest, 'reused': True, 'passed': True,
+                                           'source_operation': previous['id']}), updated=now())
+                self.internal_event(operation['team_id'], 'operation_observed',
+                                    {'operation_id': operation['id'], 'reused': True, 'fingerprint': digest})
+            return
+        try:
+            passed, outputs = run_preflight(intent['commands'], intent.get('environment'))
+        except Exception as error:
+            with store.transaction():
+                store.update('operations', operation['id'], state='failed',
+                             outcome=dump({'fingerprint': digest, 'reused': False, 'passed': False, 'error': str(error)}),
+                             updated=now())
+            return
+        with store.transaction():
+            store.update('operations', operation['id'], state='succeeded' if passed else 'failed',
+                         outcome=dump({'fingerprint': digest, 'reused': False, 'passed': passed,
+                                       'code': payload['code']['head'], 'outputs': outputs}), updated=now())
+            self.internal_event(operation['team_id'], 'operation_observed',
+                                {'operation_id': operation['id'], 'passed': passed, 'fingerprint': digest})
+
+    def poll_ci_watch(self, operation):
+        store = self.store
+        intent = json.loads(operation['intent'])
+        if intent.get('next_retry_at', 0) > now():
+            return
+        team = store.get('teams', operation['team_id'])
+        if intent.get('epoch') != team['epoch']:
+            with store.transaction():
+                store.update('operations', operation['id'], state='uncertain',
+                             outcome=dump({'reason': 'stale ownership epoch'}), updated=now())
+            return
+        with store.transaction():
+            store.update('operations', operation['id'], state='running', updated=now())
+        try:
+            result = verify_stack_ci(intent['repo'], intent['pr'], intent['expected_head'])
+        except Exception as error:
+            result = {'passed': False, 'reason': str(error), 'stack': []}
+        disposition = ci_watch_disposition(result)
+        attempts = int(intent.get('attempts', 0)) + 1
+        intent['attempts'] = attempts
+        interval = min(60_000, int(intent.get('interval_ms', 5000)) * (2 ** max(0, attempts - 1)))
+        intent['next_retry_at'] = now() + interval
+        outcome = dict(result, expected_head=intent['expected_head'], attempts=attempts, disposition=disposition)
+        if disposition == 'pending' and attempts < int(intent.get('max_attempts', 36)):
+            with store.transaction():
+                store.update('operations', operation['id'], state='pending', intent=dump(intent),
+                             outcome=dump(outcome), updated=now())
+            return
+        failed = disposition != 'succeeded'
+        with store.transaction():
+            store.update('operations', operation['id'], state='failed' if failed else 'succeeded',
+                         intent=dump(intent), outcome=dump(outcome), updated=now())
+            event = self.internal_event(operation['team_id'], 'operation_observed',
+                                        {'operation_id': operation['id'], 'outcome': outcome})
+            if failed:
+                actor = self.actor_for(team['coordinator_session'])
+                key = f"ci:{intent['pr']}:{intent['expected_head']}"
+                text = 'CI watch failed: ' + str(result.get('reason') or disposition)
+                self.open_issue(actor, intent.get('task_id'), key, event, text)
+
+    def open_issue(self, actor, task_id, key, event_id, text):
+        store = self.store
+        previous = store.one("SELECT * FROM issues WHERE team_id=? AND task_id=? AND coalescing_key=? AND state='open'",
+                             (actor['team_id'], task_id, key))
+        if previous:
+            store.update('issues', previous['id'], event_id=event_id, priority='urgent', blocks_acceptance=1)
+            return previous['id']
+        iid = uid('issue')
+        store.insert('issues', id=iid, team_id=actor['team_id'], task_id=task_id, coalescing_key=key,
+                     event_id=event_id, priority='urgent', blocks_acceptance=1)
+        store.notify(actor, event_id)
+        if task_id:
+            task = store.get('tasks', task_id)
+            if task['state'] not in ('accepted', 'cancelled'):
+                store.update('tasks', task_id, state='blocked')
+        return iid
+
+    def enforce_budgets(self):
+        store = self.store
+        for run in store.all('SELECT * FROM runs WHERE released=0'):
+            task = store.get('tasks', run['task_id'])
+            session = store.get('sessions', run['session_id'])
+            try:
+                budgets = store.resolved_budgets(task, session)
+            except Exception:
+                continue
+            if not budgets:
+                continue
+            event = store.one("SELECT body FROM events WHERE run_id=? AND type='runner_usage' ORDER BY sequence DESC LIMIT 1",
+                              (run['id'],))
+            if not event:
+                continue
+            body = json.loads(event['body'])
+            hits = exceeded(budgets, body.get('delta') or {})
+            if not hits:
+                continue
+            actor = self.actor_for(store.get('teams', task['team_id'])['coordinator_session'])
+            with store.transaction():
+                holds = json.loads(store.get('tasks', task['id'])['holds'])
+                for key in hits:
+                    hold = f'budget:{key}'
+                    if hold not in holds:
+                        holds.append(hold)
+                    eid = store.event(actor, 'budget_exceeded',
+                                      {'run_id': run['id'], 'budget': key, 'enforcement': 'latest_check',
+                                       'upstream_hardstop': False, 'usage': body},
+                                      task_id=task['id'], run_id=run['id'], priority='urgent', source='runtime')
+                    self.open_issue(actor, task['id'], hold, eid,
+                                    f'Budget {key} exceeded on latest local check; upstream token hardstop is impossible')
+                store.update('tasks', task['id'], holds=dump(holds))
+                if run['desired'] != 'cancelled':
+                    generation = run['control_generation'] + 1
+                    store.update('runs', run['id'], desired='cancelled', control_generation=generation)
+                    store.event(actor, 'control_requested',
+                                {'action': 'cancel', 'generation': generation, 'epoch': store.get('teams', task['team_id'])['epoch'],
+                                 'reason': 'budget exceeded'},
+                                task_id=task['id'], run_id=run['id'], source='runtime')
 
     def schedule_wakes(self):
         store = self.store
@@ -526,7 +673,8 @@ class Runtime:
         # Surviving runners reconnect; started effects are never blindly replayed.
         with self.store.transaction():
             self.store.db.execute("UPDATE deliveries SET state='uncertain',last_error='runtime restarted during send' WHERE state='sending' AND acknowledged_at IS NULL")
-            self.store.db.execute("UPDATE operations SET state='uncertain',outcome=?,updated=? WHERE state='running' AND kind<>'launch'", (dump({'reason':'runtime restarted during external effect'}), now()))
+            self.store.db.execute("UPDATE operations SET state='pending',updated=? WHERE state='running' AND kind='ci_watch'", (now(),))
+            self.store.db.execute("UPDATE operations SET state='uncertain',outcome=?,updated=? WHERE state='running' AND kind NOT IN ('launch','ci_watch')", (dump({'reason':'runtime restarted during external effect'}), now()))
             for operation in self.store.all("SELECT id FROM operations WHERE state='uncertain' AND kind='integration'"):
                 self.release_operation_resource(operation['id'], uncertain=True)
         self.tick()

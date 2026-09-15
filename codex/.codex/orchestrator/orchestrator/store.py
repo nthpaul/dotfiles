@@ -191,13 +191,28 @@ class Store:
             self.insert('command_requests', id=request_id, session_id=actor['id'], payload=payload, response=dump(response), created=now())
             return response
 
-    def cmd_register(self, actor, body):
-        adapter = body.get('adapter', 'codex')
+    def worker_config(self, body):
+        adapter = body.get('adapter', 'grok')
         require(adapter in ('codex', 'grok', 'fake'), 'Unknown adapter')
+        defaults = {'codex': ('gpt-6-astra', 'medium'), 'grok': ('grok-4.6', 'high'), 'fake': ('', 'medium')}
+        config = {'adapter': adapter, 'model': body.get('model', defaults[adapter][0]),
+                  'effort': body.get('effort', defaults[adapter][1])}
+        require(isinstance(config['model'], str) and isinstance(config['effort'], str), 'Model and effort must be strings')
+        if 'mode' in body and body['mode'] is not None:
+            require(body['mode'] in ('interactive', 'exec'), 'mode must be interactive or exec')
+            config['mode'] = body['mode']
+        if 'budgets' in body and body['budgets'] is not None:
+            from .usage import validate_budgets
+            try:
+                config['budgets'] = validate_budgets(body['budgets'])
+            except ValueError as error:
+                raise Invalid(str(error)) from error
+        return config
+
+    def cmd_register(self, actor, body):
         name = body.get('name')
         require(isinstance(name, str) and name.strip(), 'Worker name required')
-        config = {'adapter': adapter, 'model': body.get('model', 'gpt-6-astra' if adapter == 'codex' else ('grok-4.6' if adapter == 'grok' else '')), 'effort': body.get('effort', 'medium')}
-        require(isinstance(config['model'], str) and isinstance(config['effort'], str), 'Model and effort must be strings')
+        config = self.worker_config(body)
         aid, sid, token = uid('agent'), uid('session'), secrets.token_urlsafe(32)
         self.insert('agents', id=aid, team_id=actor['team_id'], role='worker', name=name, config=dump(config))
         self.insert('sessions', id=sid, agent_id=aid, token_hash=hashed(token), config=dump(config), heartbeat=now())
@@ -554,18 +569,113 @@ class Store:
         self.update('teams', actor['team_id'], state='completed')
         return {'event_id': self.event(actor, 'team_completed', body)}
 
+    def resolved_budgets(self, task, session=None):
+        from .usage import validate_budgets
+        budgets = {}
+        team = self.get('teams', task['team_id'])
+        for raw in (json.loads(team['config']).get('budgets'),
+                    json.loads((session or {}).get('config') or '{}').get('budgets') if session else None,
+                    json.loads(task['spec']).get('budgets')):
+            if raw:
+                budgets.update(validate_budgets(raw))
+        return budgets
+
+    def cmd_budget(self, actor, body):
+        from .usage import validate_budgets
+        scope = body.get('scope')
+        require(scope in ('team', 'agent', 'task'), 'Budget scope must be team, agent, or task')
+        try:
+            budgets = validate_budgets(body.get('budgets') or {})
+        except ValueError as error:
+            raise Invalid(str(error)) from error
+        if scope == 'team':
+            require(body.get('id') == actor['team_id'], 'Budget team id must be this team')
+            target = self.team(actor)
+        else:
+            target = self.owned(actor, {'agent': 'agents', 'task': 'tasks'}[scope], body['id'])
+        if scope == 'team':
+            config = json.loads(target['config'])
+            config['budgets'] = budgets
+            self.update('teams', target['id'], config=dump(config))
+        elif scope == 'agent':
+            config = json.loads(target['config'])
+            config['budgets'] = budgets
+            self.update('agents', target['id'], config=dump(config))
+            self.db.execute("UPDATE sessions SET config=? WHERE agent_id=? AND state<>'superseded'", (dump(config), target['id']))
+        else:
+            spec = json.loads(target['spec'])
+            spec['budgets'] = budgets
+            self.update('tasks', target['id'], spec=dump(spec))
+        return {'event_id': self.event(actor, 'budget_set', {'scope': scope, 'id': target['id'], 'budgets': budgets}), 'budgets': budgets}
+
+    def cmd_preflight(self, actor, body):
+        task = self.owned(actor, 'tasks', body['task_id'])
+        commands = body.get('commands')
+        require(isinstance(commands, list) and commands, 'preflight commands required')
+        for command in commands:
+            require(isinstance(command, dict) and isinstance(command.get('argv'), list) and command['argv']
+                    and all(isinstance(part, str) and part for part in command['argv']), 'each command needs a nonempty argv list')
+            if command.get('cwd') is not None:
+                require(isinstance(command['cwd'], str) and Path(command['cwd']).is_dir(), 'command cwd must exist')
+        scope = body.get('scope', [])
+        require(isinstance(scope, list) and all(isinstance(item, str) and item for item in scope), 'scope must be paths')
+        environment = body.get('environment', {})
+        require(isinstance(environment, dict) and all(isinstance(k, str) and isinstance(v, str) for k, v in environment.items()), 'environment keys and values must be strings')
+        intent = {'task_id': task['id'], 'cwd': json.loads(task['spec'])['cwd'], 'commands': commands,
+                  'scope': scope, 'environment': environment, 'epoch': self.team(actor)['epoch']}
+        oid = self.operation(actor['team_id'], None, 'preflight', intent)
+        eid = self.event(actor, 'operation_requested', {'operation_id': oid, 'kind': 'preflight'}, task_id=task['id'])
+        return {'operation_id': oid, 'event_id': eid}
+
+    def cmd_ci_watch(self, actor, body):
+        task = self.owned(actor, 'tasks', body['task_id'])
+        require(isinstance(body.get('pr'), (int, str)) and str(body.get('pr')), 'PR number required')
+        head = body.get('expected_head')
+        require(isinstance(head, str) and re.fullmatch(r'(?:[0-9a-f]{40}|[0-9a-f]{64})', head), 'expected_head must be a full lowercase commit OID')
+        interval = body.get('interval_ms', 5000)
+        attempts = body.get('max_attempts', 36)
+        require(isinstance(interval, int) and 200 <= interval <= 60_000, 'interval_ms out of bounds')
+        require(isinstance(attempts, int) and 1 <= attempts <= 120, 'max_attempts out of bounds')
+        intent = {'task_id': task['id'], 'pr': body['pr'], 'expected_head': head, 'repo': json.loads(task['spec'])['cwd'],
+                  'interval_ms': interval, 'max_attempts': attempts, 'attempts': 0, 'next_retry_at': 0,
+                  'epoch': self.team(actor)['epoch']}
+        oid = self.operation(actor['team_id'], None, 'ci_watch', intent)
+        eid = self.event(actor, 'operation_requested', {'operation_id': oid, 'kind': 'ci_watch'}, task_id=task['id'])
+        return {'operation_id': oid, 'event_id': eid}
+
     def read(self, token, view, filters=None):
         actor = self.authenticate(token)
         filters = filters or {}
         if view == 'status':
             team = self.team(actor)
-            return {'team': team, 'agents': self.all('SELECT id,role,name,retired FROM agents WHERE team_id=?', (team['id'],)),
-                    'sessions': self.all('SELECT s.id,s.agent_id,s.external_id,s.state,s.heartbeat,s.config FROM sessions s JOIN agents a ON a.id=s.agent_id WHERE a.team_id=?', (team['id'],)),
-                    'tasks': self.all('SELECT * FROM tasks WHERE team_id=?', (team['id'],)),
-                    'runs': self.all('SELECT r.* FROM runs r JOIN tasks t ON t.id=r.task_id WHERE t.team_id=?', (team['id'],)),
+            runs = self.all('SELECT r.* FROM runs r JOIN tasks t ON t.id=r.task_id WHERE t.team_id=?', (team['id'],))
+            usage = {}
+            for event in self.all("SELECT run_id, body FROM events WHERE team_id=? AND type='runner_usage' ORDER BY sequence", (team['id'],)):
+                usage[event['run_id']] = json.loads(event['body'])
+            sessions = {s['id']: s for s in self.all('SELECT s.id,s.agent_id,s.external_id,s.state,s.heartbeat,s.config FROM sessions s JOIN agents a ON a.id=s.agent_id WHERE a.team_id=?', (team['id'],))}
+            tasks = {t['id']: t for t in self.all('SELECT * FROM tasks WHERE team_id=?', (team['id'],))}
+            for run in runs:
+                run['usage'] = usage.get(run['id'])
+                run['budgets'] = self.resolved_budgets(tasks[run['task_id']], sessions.get(run['session_id']))
+            return {'team': team, 'agents': self.all('SELECT id,role,name,config,retired FROM agents WHERE team_id=?', (team['id'],)),
+                    'sessions': list(sessions.values()),
+                    'tasks': list(tasks.values()),
+                    'runs': runs,
                     'issues': self.all('SELECT * FROM issues WHERE team_id=?', (team['id'],)),
                     'operations': self.all('SELECT * FROM operations WHERE team_id=?', (team['id'],)),
                     'resources': self.all('SELECT * FROM resources WHERE team_id=?', (team['id'],))}
+        if view == 'home':
+            return {'home': str(self.home), 'teams': self.all('SELECT id,objective,revision,epoch,state,max_workers FROM teams ORDER BY rowid')}
+        if view == 'usage':
+            clauses, values = ["team_id=?", "type='runner_usage'"], [actor['team_id']]
+            if filters.get('run_id'):
+                clauses.append('run_id=?')
+                values.append(filters['run_id'])
+            rows = self.all('SELECT run_id, body, created, sequence FROM events WHERE '+' AND '.join(clauses)+' ORDER BY sequence', values)
+            latest = {}
+            for row in rows:
+                latest[row['run_id']] = dict(json.loads(row['body']), run_id=row['run_id'], sequence=row['sequence'])
+            return list(latest.values()) if not filters.get('run_id') else latest.get(filters['run_id'])
         if view in ('history', 'bulletin'):
             clauses, values = ['team_id=?'], [actor['team_id']]
             if view == 'bulletin':

@@ -20,8 +20,9 @@ import threading
 import time
 import uuid
 
-from .adapters import build_command, parse_line
-from .resources import ProcessIdentity, control_tree
+from .adapters import build_command, build_interactive_command, harvest_tui_result, is_interactive, parse_line, tui_turn_idle
+from .resources import ProcessIdentity, TmuxManager, control_tree
+from .usage import envelope, fresh_baseline, prepare_grok_home, snapshot as usage_snapshot
 
 
 def durable_json(path: Path, data: dict) -> None:
@@ -201,7 +202,7 @@ class Runner:
             return
         desired = run['desired']
         action = {'paused': 'pause', 'running': 'resume', 'cancelled': 'cancel'}[desired]
-        if self.process is None:
+        if self.process is None and self.process_identity is None:
             result = {'outcome': 'confirmed', 'observed_state': desired,
                       'observed': [], 'reason': 'No provider process is executing'}
         else:
@@ -272,6 +273,9 @@ class Runner:
         config = decoded(state['session']['config'])
         spec = decoded(state['assignment']['body'])['spec']
         adapter = config['adapter']
+        if is_interactive(config):
+            self.launch_interactive(state, prompt, messages, config, spec)
+            return
         command = build_command(adapter, config.get('model', ''), config.get('effort', 'medium'),
                                 self.journal.get('external_id') or state['session'].get('external_id'),
                                 prompt, spec['cwd'])
@@ -383,6 +387,120 @@ class Runner:
         self.process_identity = None
         if exit_code == 0 and (not turn_completed or result is None):
             error = error or 'Provider exited without a terminal result'
+        self.journal.update(phase='between_turns', exit_code=exit_code, result=result, error=error)
+        self.save()
+
+    def grok_home(self):
+        return prepare_grok_home(self.home / 'providers' / 'grok')
+
+    def record_usage(self, session_id, cwd, fresh):
+        if not self.journal.get('usage_baseline'):
+            current = usage_snapshot(session_id, self.grok_home(), cwd)
+            self.journal['usage_baseline'] = fresh_baseline() if fresh else dict(current)
+            self.journal['usage_fresh'] = bool(fresh)
+            self.save()
+        current = usage_snapshot(session_id, self.grok_home(), cwd)
+        body = envelope(session_id, self.journal.get('usage_fresh'), self.journal['usage_baseline'], current)
+        path = self.directory / 'usage.json'
+        durable_json(path, body)
+        if body != self.journal.get('usage_last'):
+            self.journal['usage_last'] = body
+            self.save()
+            self.observe('usage', **body)
+        return body
+
+    def launch_interactive(self, state, prompt, messages, config, spec):
+        pane = state.get('pane')
+        if not pane or not pane.get('socket') or not pane.get('pane'):
+            self.journal.update(phase='between_turns', exit_code=1, result=None,
+                                error='interactive grok requires a registered tmux pane')
+            self.save()
+            return
+        grok_home = self.grok_home()
+        existing = self.journal.get('external_id') or state['session'].get('external_id')
+        resume = bool(existing)
+        session_id = existing or str(uuid.uuid4())
+        command = build_interactive_command(config.get('model', 'grok-4.6'), config.get('effort', 'high'),
+                                            session_id, prompt, spec['cwd'], resume=resume)
+        self.journal.update(phase='launch_intent', turn=self.journal['turn'] + 1, provider_command=command,
+                            injected_messages=[m['id'] for m in messages], external_id=session_id,
+                            grok_home=str(grok_home), interactive=True)
+        self.save()
+        manager = TmuxManager(pane['socket'], pane['window'], pane['team'])
+        launched = manager.respawn(pane['pane'], command, extra_env={'GROK_HOME': str(grok_home)})
+        identity = ProcessIdentity.read(launched['pane_pid'])
+        self.process_identity = identity
+        self.children = {}
+        if identity:
+            self.children[identity['pid']] = identity
+        self.journal.update(phase='running', provider_identity=identity, children=list(self.children.values()),
+                            pane=launched)
+        self.save()
+        self.observe('started', pid=launched['pane_pid'],
+                     start_identity=(identity or {}).get('start_identity'), external_id=session_id)
+        self.observe('session', external_id=session_id)
+        self.record_usage(session_id, spec['cwd'], fresh=not resume)
+        self.run_interactive_turn(state, messages, session_id, spec['cwd'], manager, launched['pane'])
+
+    def run_interactive_turn(self, state, messages, session_id, cwd, manager, pane):
+        from .usage import session_dir
+        messages_acked = False
+        result, error = None, None
+        last_poll = 0
+        log_fd = os.open(self.directory / 'provider.log', os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
+        with os.fdopen(log_fd, 'a') as log:
+            while True:
+                if time.monotonic() - last_poll >= 0.3:
+                    self.flush()
+                    fresh = self.poll()
+                    if fresh:
+                        state = fresh
+                        self.apply_control(state)
+                    self.capture_children()
+                    body = self.record_usage(session_id, cwd, fresh=self.journal.get('usage_fresh'))
+                    directory = session_dir(self.journal.get('grok_home') or self.grok_home(), session_id, cwd)
+                    harvested = harvest_tui_result(directory) if directory else None
+                    idle = bool(directory and tui_turn_idle(directory))
+                    if harvested:
+                        result = harvested
+                        if not messages_acked:
+                            for message in messages:
+                                self.journal['acked_messages'].append(message['id'])
+                                self.observe('message_ack', delivery_id=message['id'])
+                            messages_acked = True
+                        log.write(harvested + '\n')
+                        log.flush()
+                    last_poll = time.monotonic()
+                    pid = (self.process_identity or {}).get('pid')
+                    start = (self.process_identity or {}).get('start_identity')
+                    alive = pid and ProcessIdentity.state(pid, start) not in ('exited', 'replaced', 'Z')
+                    turned = body.get('delta', {}).get('turn_count', 0) >= 1
+                    if result and idle and (turned or not alive):
+                        if alive:
+                            self.signal_provider('cancel')
+                        break
+                    if not alive:
+                        error = error or ('Provider exited without a terminal result' if not result else None)
+                        break
+                if self.stop_requested or self.desired(state) == 'cancelled':
+                    self.signal_provider('cancel')
+                time.sleep(0.05)
+            while self.live_children():
+                fresh = self.poll()
+                if fresh:
+                    state = fresh
+                    self.apply_control(state)
+                if self.stop_requested or self.desired(state) == 'cancelled':
+                    for child in self.live_children():
+                        control_tree(child['pid'], child['start_identity'], 'cancel')
+                time.sleep(0.1)
+            log.flush()
+            os.fsync(log.fileno())
+        self.process = None
+        self.process_identity = None
+        exit_code = 0 if result and not error else (self.journal.get('exit_code') or 1)
+        if self.desired(state) == 'cancelled':
+            exit_code = -15
         self.journal.update(phase='between_turns', exit_code=exit_code, result=result, error=error)
         self.save()
 

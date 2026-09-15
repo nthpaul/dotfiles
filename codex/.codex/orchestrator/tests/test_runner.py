@@ -203,6 +203,16 @@ print(json.dumps({'type':'turn.completed'}), flush=True)
         self.assertIn('This assignment is read-only', prompt)
         self.assertNotIn('test-token', prompt)
 
+    def test_interactive_grok_without_pane_does_not_exec(self):
+        daemon = FakeDaemon(self.home)
+        daemon.state['session']['config'] = json.dumps({'adapter': 'grok', 'model': 'grok-4.6', 'effort': 'high'})
+        with patch('orchestrator.runner.build_command') as exec_cmd:
+            self.assertEqual(self.runner(daemon).execute(), 0)
+            exec_cmd.assert_not_called()
+        finished = next(o for o in reversed(daemon.observations) if o['kind'] == 'finished')
+        self.assertIn('tmux pane', finished['body']['error'])
+        self.assertNotEqual(finished['body']['exit_code'], 0)
+
 
 if __name__ == '__main__':
     unittest.main()

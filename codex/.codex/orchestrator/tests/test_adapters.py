@@ -27,6 +27,25 @@ class AdapterTests(unittest.TestCase):
         self.assertIn("--no-subagents", command)
         self.assertIn("--always-approve", command)
         self.assertNotIn("dontAsk", command)
+        self.assertTrue(any(item.startswith("--single=") for item in command))
+
+    def test_interactive_grok_preallocates_uuid_without_single(self):
+        from orchestrator.adapters import build_interactive_command, capabilities, is_interactive
+        command = build_interactive_command("grok-4.6", "high", self.session, "do work", "/tmp/work")
+        self.assertEqual(command[0], "grok")
+        self.assertNotIn("--single", command)
+        self.assertFalse(any(item.startswith("--single=") or item.startswith("--prompt") for item in command))
+        self.assertEqual(command[command.index("--session-id") + 1], self.session)
+        self.assertEqual(command[-1], "do work")
+        resume = build_interactive_command("grok-4.6", "high", self.session, "again", "/tmp/work", resume=True)
+        self.assertEqual(resume[resume.index("--resume") + 1], self.session)
+        self.assertNotIn("--session-id", resume)
+        self.assertTrue(is_interactive({"adapter": "grok"}))
+        self.assertFalse(is_interactive({"adapter": "grok", "mode": "exec"}))
+        self.assertTrue(capabilities("grok")["visible_tui"])
+        self.assertFalse(capabilities("grok", "exec")["visible_tui"])
+        with self.assertRaises(ValueError):
+            build_interactive_command("grok-4.6", "high", "latest", "x", "/tmp")
 
     def test_wake_requires_uuid(self):
         self.assertEqual(build_wake_command(self.session, "wake"),

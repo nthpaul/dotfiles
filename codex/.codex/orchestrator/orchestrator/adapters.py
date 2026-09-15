@@ -5,6 +5,7 @@ set to the assignment worktree. Prompts are argv and therefore visible in ps.
 Results are candidates for review, never acceptance or delivery acknowledgment.
 """
 import json
+from pathlib import Path
 import sys
 import uuid
 
@@ -14,18 +15,30 @@ def _session(value: str) -> str:
     return str(uuid.UUID(value))
 
 
-def capabilities(adapter: str) -> dict:
+def is_interactive(config: dict) -> bool:
+    adapter = config.get("adapter")
+    mode = config.get("mode")
+    if mode == "exec":
+        return False
+    if mode == "interactive":
+        return True
+    return adapter == "grok"
+
+
+def capabilities(adapter: str, mode: str | None = None) -> dict:
     if adapter not in {"codex", "grok", "fake"}:
         raise ValueError(f"Unknown adapter: {adapter}")
+    interactive = is_interactive({"adapter": adapter, "mode": mode})
     return {
         "streaming": True,
-        "text_deltas": adapter == "grok",
+        "text_deltas": adapter == "grok" and not interactive,
         "explicit_resume": True,
         "live_steering": False,
         "protocol_ack": False,
         "cooperative_pause": False,
         "process_group_signals": True,
         "predetermined_session": adapter in {"grok", "fake"},
+        "visible_tui": interactive,
         "prompt_transport": "argv",
     }
 
@@ -50,6 +63,59 @@ def build_command(adapter: str, model: str, effort: str,
         return command + ["--single=" + prompt]
     return [sys.executable, "-m", "orchestrator.fake_worker",
             "--session-id", session or str(uuid.uuid4()), "--prompt=" + prompt]
+
+
+def build_interactive_command(model: str, effort: str, external_session_id: str,
+                              prompt: str, cwd: str, resume: bool = False) -> list[str]:
+    session = _session(external_session_id)
+    command = ["grok", "--cwd", cwd, "--fullscreen", "--no-subagents", "--always-approve",
+               "--model", model, "--reasoning-effort", effort]
+    command += ["--resume", session] if resume else ["--session-id", session]
+    return command + [prompt]
+
+
+def harvest_tui_result(session_directory) -> str | None:
+    path = Path(session_directory) / "updates.jsonl"
+    if not path.is_file():
+        return None
+    chunks = []
+    for line in path.read_text().splitlines():
+        try:
+            event = json.loads(line)
+        except ValueError:
+            continue
+        update = (event.get("params") or {}).get("update") or {}
+        if update.get("sessionUpdate") != "agent_message_chunk":
+            continue
+        content = update.get("content") or {}
+        if content.get("type") == "text" and isinstance(content.get("text"), str):
+            chunks.append(content["text"])
+    text = "".join(chunks).strip()
+    return text or None
+
+
+def tui_turn_idle(session_directory) -> bool:
+    path = Path(session_directory) / "updates.jsonl"
+    if not path.is_file():
+        return False
+    pending = False
+    saw_assistant = False
+    for line in path.read_text().splitlines():
+        try:
+            event = json.loads(line)
+        except ValueError:
+            continue
+        update = (event.get("params") or {}).get("update") or {}
+        kind = update.get("sessionUpdate")
+        status = str(update.get("status") or "").lower()
+        if kind in {"tool_call", "tool_call_update"}:
+            if status in {"pending", "in_progress", "running"}:
+                pending = True
+            elif status in {"completed", "failed", "cancelled"}:
+                pending = False
+        if kind == "agent_message_chunk":
+            saw_assistant = True
+    return saw_assistant and not pending
 
 
 def build_wake_command(thread_id: str, message: str) -> list[str]:
