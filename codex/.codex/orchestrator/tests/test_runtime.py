@@ -325,6 +325,77 @@ class RuntimeTests(unittest.TestCase):
                                    'external_effects_checked': True, 'reason': 'Inspected and restored checkout'})
         self.assertEqual(self.store.get('resources', 'integration-tree')['state'], 'idle')
 
+    def test_ci_watch_pending_then_timeout_never_success(self):
+        task = self.command('task', {'spec': {'objective': 'Watch CI', 'expected_output': 'green',
+                                             'cwd': self.temp.name}})['task_id']
+        watch = self.command('ci_watch', {'task_id': task, 'pr': 3, 'expected_head': 'c' * 40,
+                                          'interval_ms': 200, 'max_attempts': 2})
+        pending = {'passed': False, 'reason': 'no required checks, pending/failing checks, or changed head',
+                   'stack': [{'number': 3, 'state': 'OPEN', 'headRefOid': 'c' * 40,
+                              'checks': {'passed': False, 'checks': [], 'reason': 'no required checks'}}]}
+        with patch('orchestrator.daemon.verify_stack_ci', return_value=pending):
+            self.runtime.poll_ci_watch(self.store.get('operations', watch['operation_id']))
+            row = self.store.get('operations', watch['operation_id'])
+            self.assertEqual(row['state'], 'pending')
+            self.assertFalse(json.loads(row['outcome']).get('passed'))
+            intent = json.loads(row['intent'])
+            intent['next_retry_at'] = 0
+            with self.store.transaction():
+                self.store.update('operations', row['id'], intent=dump(intent))
+            self.runtime.poll_ci_watch(self.store.get('operations', watch['operation_id']))
+        row = self.store.get('operations', watch['operation_id'])
+        self.assertEqual(row['state'], 'failed')
+        self.assertTrue(any(i['coalescing_key'].startswith('ci:') and i['state'] == 'open'
+                            for i in self.store.all('SELECT * FROM issues')))
+
+    def test_ci_watch_head_drift_fails_immediately(self):
+        task = self.command('task', {'spec': {'objective': 'Watch CI', 'expected_output': 'green',
+                                             'cwd': self.temp.name}})['task_id']
+        watch = self.command('ci_watch', {'task_id': task, 'pr': 1, 'expected_head': 'a' * 40,
+                                          'interval_ms': 200, 'max_attempts': 8})
+        drift = {'passed': False, 'reason': 'PR is closed or head changed', 'stack': []}
+        with patch('orchestrator.daemon.verify_stack_ci', return_value=drift):
+            self.runtime.poll_ci_watch(self.store.get('operations', watch['operation_id']))
+        row = self.store.get('operations', watch['operation_id'])
+        self.assertEqual(row['state'], 'failed')
+        self.assertEqual(json.loads(row['outcome'])['disposition'], 'failed_drift')
+
+    def test_budget_exceed_holds_and_requests_cancel_without_claiming_stop(self):
+        run = self.assign()
+        assigned = self.store.get('runs', run['run_id'])
+        self.command('budget', {'scope': 'task', 'id': assigned['task_id'], 'budgets': {'model_calls': 1}})
+        with self.store.transaction():
+            self.store.event(self.runtime.actor_for(self.coordinator['session_id']), 'runner_usage',
+                             {'session_id': 'sid', 'fresh': True, 'baseline': {'model_calls': 0},
+                              'current': {'model_calls': 3}, 'delta': {'model_calls': 3}, 'unknown': []},
+                             task_id=assigned['task_id'], run_id=run['run_id'], source='runtime')
+        self.runtime.enforce_budgets()
+        row = self.store.get('runs', run['run_id'])
+        self.assertEqual(row['desired'], 'cancelled')
+        self.assertEqual(row['observed'], 'starting')
+        self.assertIn('budget:model_calls', json.loads(self.store.get('tasks', assigned['task_id'])['holds']))
+        self.assertEqual(row['confirmed_generation'], 0)
+
+    def test_preflight_reuses_fingerprint_and_misses_on_dirty(self):
+        code = Path(self.temp.name) / 'src'
+        code.mkdir()
+        (code / 'file.txt').write_text('ok')
+        task = self.command('task', {'spec': {'objective': 'Check', 'expected_output': 'ok',
+                                             'cwd': str(code)}})['task_id']
+        body = {'task_id': task, 'commands': [{'argv': ['true'], 'cwd': str(code)}], 'scope': ['file.txt']}
+        first = self.command('preflight', body)
+        self.runtime.execute_preflight(self.store.get('operations', first['operation_id']))
+        self.assertTrue(json.loads(self.store.get('operations', first['operation_id'])['outcome'])['passed'])
+        second = self.command('preflight', body)
+        self.runtime.execute_preflight(self.store.get('operations', second['operation_id']))
+        self.assertTrue(json.loads(self.store.get('operations', second['operation_id'])['outcome'])['reused'])
+        (code / 'file.txt').write_text('changed')
+        third = self.command('preflight', body)
+        self.runtime.execute_preflight(self.store.get('operations', third['operation_id']))
+        outcome = json.loads(self.store.get('operations', third['operation_id'])['outcome'])
+        self.assertFalse(outcome['reused'])
+        self.assertTrue(outcome['passed'])
+
 
 if __name__ == '__main__':
     unittest.main()

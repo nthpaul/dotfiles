@@ -210,7 +210,22 @@ class TmuxManager:
             self._tmux('set-option', '-p', '-t', pane, 'remain-on-exit', 'on')
             self._tmux('respawn-pane', '-k', '-t', pane, shlex.join(command))
         self._tmux('select-layout', '-t', self.window, 'tiled')
-        return dict(socket=self.socket, window=self.window, pane=pane, team=self.team, agent=agent, purpose=purpose)
+        pid = int(self._tmux('display-message', '-p', '-t', pane, '#{pane_pid}'))
+        return dict(socket=self.socket, window=self.window, pane=pane, pane_pid=pid,
+                    team=self.team, agent=agent, purpose=purpose)
+
+    def respawn(self, pane, command, extra_env=None):
+        if not isinstance(command, list) or not command:
+            raise ValueError('command argv required')
+        args = ['respawn-pane', '-k', '-t', pane]
+        for key, value in (extra_env or {}).items():
+            args += ['-e', f'{key}={value}']
+        self._tmux(*args, shlex.join(command))
+        pid = int(self._tmux('display-message', '-p', '-t', pane, '#{pane_pid}'))
+        return dict(socket=self.socket, window=self.window, pane=pane, pane_pid=pid)
+
+    def pane_pid(self, pane):
+        return int(self._tmux('display-message', '-p', '-t', pane, '#{pane_pid}'))
 
     def cleanup(self, pane, agent):
         matches = [p for p in self._panes() if p[0] == pane and p[1:4] == [self.team, agent, 'worker']]
@@ -319,3 +334,40 @@ def verify_stack_ci(repo, pr, expected_head):
         if current['headRefOid'] != item['headRefOid'] or current['baseRefName'] != item['baseRefName'] or current['state'] != 'OPEN':
             return {'passed':False, 'reason':'Stack changed during verification', 'stack':stack}
     return {'passed':True, 'head':expected_head, 'stack':stack, 'reason':''}
+
+
+def ci_watch_disposition(result):
+    """Pending provisioning is not success. Head drift fails immediately."""
+    if result.get('passed') is True:
+        return 'succeeded'
+    reason = str(result.get('reason') or '')
+    if reason in ('PR is closed or head changed', 'Stack changed during verification',
+                  'PR head differs from expected commit'):
+        return 'failed_drift'
+    pending = False
+    failed = False
+    for item in result.get('stack') or []:
+        if item.get('state') not in (None, 'OPEN'):
+            return 'failed_drift'
+        check = item.get('checks') or {}
+        if isinstance(check, dict) and check.get('reason') == 'PR head differs from expected commit':
+            return 'failed_drift'
+        rows = check.get('checks') if isinstance(check, dict) else None
+        if rows is None and isinstance(check, list):
+            rows = check
+        if not rows:
+            pending = True
+            continue
+        for row in rows:
+            bucket = (row or {}).get('bucket')
+            if bucket == 'pass':
+                continue
+            if bucket in (None, 'pending'):
+                pending = True
+            else:
+                failed = True
+    if failed:
+        return 'failed'
+    if pending or 'unavailable' in reason.lower() or 'no required checks' in reason.lower():
+        return 'pending'
+    return 'failed'

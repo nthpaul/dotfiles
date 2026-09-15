@@ -154,6 +154,23 @@ class GitTests(unittest.TestCase):
         with patch('orchestrator.resources.run', side_effect=['{"headRefOid":"a"}', '[{"bucket":"pass"}]', '{"headRefOid":"a"}']):
             self.assertTrue(IntegrationManager.verify_ci('.', 1, 'a')['passed'])
 
+    def test_ci_watch_disposition_pending_vs_drift(self):
+        from orchestrator.resources import ci_watch_disposition
+        self.assertEqual(ci_watch_disposition({'passed': True}), 'succeeded')
+        self.assertEqual(ci_watch_disposition({'passed': False, 'reason': 'PR is closed or head changed'}), 'failed_drift')
+        self.assertEqual(ci_watch_disposition({
+            'passed': False, 'reason': 'no required checks, pending/failing checks, or changed head',
+            'stack': [{'state': 'OPEN', 'checks': {'checks': [], 'reason': 'no required checks'}}]
+        }), 'pending')
+        self.assertEqual(ci_watch_disposition({
+            'passed': False, 'reason': 'no required checks, pending/failing checks, or changed head',
+            'stack': [{'state': 'OPEN', 'checks': {'checks': [{'bucket': 'pending'}]}}]
+        }), 'pending')
+        self.assertEqual(ci_watch_disposition({
+            'passed': False, 'reason': 'required checks failed or unavailable',
+            'stack': [{'state': 'OPEN', 'checks': {'checks': [{'bucket': 'fail'}]}}]
+        }), 'failed')
+
 
 if __name__ == '__main__':
     unittest.main()

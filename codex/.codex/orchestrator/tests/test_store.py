@@ -479,6 +479,30 @@ class StoreTests(unittest.TestCase):
         self.assertEqual(json.loads(self.store.get('events', response['event_id'])['body'])['reviewed_commits'],
                          ['a' * 40, 'b' * 64])
 
+    def test_register_without_adapter_is_grok_high(self):
+        worker = self.call('register', {'name': 'personal'})
+        config = json.loads(self.store.get('agents', worker['agent_id'])['config'])
+        self.assertEqual((config['adapter'], config['model'], config['effort']), ('grok', 'grok-4.6', 'high'))
+        self.assertNotIn('mode', config)
+        explicit = self.call('register', {'name': 'codex-worker', 'adapter': 'codex'})
+        other = json.loads(self.store.get('agents', explicit['agent_id'])['config'])
+        self.assertEqual((other['adapter'], other['model'], other['effort']), ('codex', 'gpt-6-astra', 'medium'))
+
+    def test_budget_validation_and_status_usage_unknown(self):
+        task = self.task()
+        with self.assertRaises(Invalid):
+            self.call('budget', {'scope': 'task', 'id': task, 'budgets': {'model_calls': 0}})
+        self.call('budget', {'scope': 'task', 'id': task, 'budgets': {'model_calls': 3}})
+        run = self.assign(task)
+        status = self.store.read(self.coordinator['token'], 'status')
+        row = next(r for r in status['runs'] if r['id'] == run['run_id'])
+        self.assertIsNone(row['usage'])
+        self.assertEqual(row['budgets']['model_calls'], 3)
+        home = self.store.read(self.coordinator['token'], 'home')
+        self.assertEqual(home['teams'][0]['id'], self.coordinator['team_id'])
+        self.assertNotIn('token', home)
+        self.assertIsNone(self.store.read(self.coordinator['token'], 'usage', {'run_id': run['run_id']}))
+
 
 if __name__ == '__main__':
     unittest.main()
