@@ -9,8 +9,9 @@ Astra stays in native Codex and owns planning, handoffs, review, and next steps.
 five `grok_bridge` MCP tools, or the equivalent `grok-bridge` CLI when the current client
 has not loaded MCP. Read the [bridge guide](../../orchestrator/docs/grok-bridge.md) for
 schemas, setup, records, limits, and the [PDF baseline](../../orchestrator/docs/astra-grok-plan.pdf).
-Check the [rollout status](../../orchestrator/docs/grok-pilot.md) before treating the bridge
-as the default. For an explicitly requested existing team/board, use
+For this machine, read `~/.codex/grok-bridge/ACTIVATION.json` when present: it records
+activation and live verification after the [historical pilot](../../orchestrator/docs/grok-pilot.md).
+When activation is verified and merge_sync_pending is false, use the bridge for new delegated work. For an explicitly requested existing team/board, use
 [legacy instructions](references/legacy.md); preserve its records.
 
 ## Choose useful delegation

@@ -2,70 +2,79 @@
   "version": 1,
   "skills": {
     "create-hook": {
-      "lastSyncedAt": 1789405796286
+      "lastSyncedAt": 1789438426655
     },
     "create-rule": {
-      "lastSyncedAt": 1789405796286
+      "lastSyncedAt": 1789438426655
     },
     "create-skill": {
-      "lastSyncedAt": 1789405796286
+      "lastSyncedAt": 1789438426655
     },
     "create-subagent": {
-      "lastSyncedAt": 1789405796286
+      "lastSyncedAt": 1789438426655
     },
     "migrate-to-skills": {
-      "lastSyncedAt": 1789405796286
+      "lastSyncedAt": 1789438426655
     },
     "shell": {
-      "lastSyncedAt": 1789405796286
+      "lastSyncedAt": 1789438426655
     },
     "statusline": {
-      "lastSyncedAt": 1789405796286
+      "lastSyncedAt": 1789438426655
     },
     "update-cli-config": {
-      "lastSyncedAt": 1789405796286
+      "lastSyncedAt": 1789438426655
     },
     "update-cursor-settings": {
-      "lastSyncedAt": 1789405796286
+      "lastSyncedAt": 1789438426655
     },
     "canvas": {
-      "lastSyncedAt": 1789405796286
+      "lastSyncedAt": 1789438426655
     },
     "split-to-prs": {
-      "lastSyncedAt": 1789405796286
+      "lastSyncedAt": 1789438426655
     },
     "sdk": {
-      "lastSyncedAt": 1789405796286
+      "lastSyncedAt": 1789438426655
     },
     "loop": {
-      "lastSyncedAt": 1789405796286
+      "lastSyncedAt": 1789438426655
     },
     "review": {
-      "lastSyncedAt": 1789405796286
+      "lastSyncedAt": 1789438426655
     },
     "review-bugbot": {
-      "lastSyncedAt": 1789405796286
+      "lastSyncedAt": 1789438426655
     },
     "review-security": {
-      "lastSyncedAt": 1789405796286
+      "lastSyncedAt": 1789438426655
     },
     "rename-chat": {
-      "lastSyncedAt": 1789405796286
+      "lastSyncedAt": 1789438426655
     },
     "new-repo": {
-      "lastSyncedAt": 1789405796286
+      "lastSyncedAt": 1789438426655
     },
     "origin": {
-      "lastSyncedAt": 1789405796286
+      "lastSyncedAt": 1789438426655
     },
     "share": {
-      "lastSyncedAt": 1789405796286
+      "lastSyncedAt": 1789438426655
     },
     "goal": {
-      "lastSyncedAt": 1789405796286
+      "lastSyncedAt": 1789438426655
     },
     "autopilot": {
-      "lastSyncedAt": 1789405796286
+      "lastSyncedAt": 1789438426655
+    },
+    "automate": {
+      "lastSyncedAt": 1789438426655
+    },
+    "deploy-with-vercel": {
+      "lastSyncedAt": 1789438426655
+    },
+    "onboard": {
+      "lastSyncedAt": 1789438426655
     }
   },
   "lastInventoryAt": 1789392608678

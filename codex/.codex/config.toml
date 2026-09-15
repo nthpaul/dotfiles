@@ -148,6 +148,9 @@ trust_level = "trusted"
 [projects."/Users/ple/projects/the-matrix"]
 trust_level = "trusted"
 
+[projects."/Users/ple/Documents/Codex/2026-09-14/ify"]
+trust_level = "trusted"
+
 [notice]
 hide_full_access_warning = true
 
@@ -286,3 +289,10 @@ skill = "#8160d8"
 
 [shell_environment_policy.set]
 NODE_REPL_TRUSTED_BROWSER_CLIENT_SHA256S = "028a14b6eaa6d98dac2aae00764345ab9f244801ed8493d42b9af3be5575006e,f204d340535055781952b10ed396de20b842f00a19e430852f7e121ad1ce91f6"
+
+[mcp_servers.grok_bridge]
+command = "/Users/ple/.local/bin/grok-bridge"
+args = ["mcp"]
+
+[mcp_servers.grok_bridge.env]
+PATH = "/Users/ple/.grok/bin:/Users/ple/.local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
