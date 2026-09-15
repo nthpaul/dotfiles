@@ -1,6 +1,7 @@
 name: Local orchestrator
 
 on:
+  workflow_dispatch:
   push:
     paths:
       - 'codex/.codex/orchestrator/**'
