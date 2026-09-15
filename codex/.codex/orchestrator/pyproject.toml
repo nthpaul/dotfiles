@@ -9,8 +9,12 @@ description = "Local durable coordinator and worker runtime"
 requires-python = ">=3.11"
 dependencies = []
 
+[project.optional-dependencies]
+mcp = ["mcp>=1.29,<2"]
+
 [project.scripts]
 codex-orch = "orchestrator.cli:main"
+grok-bridge = "orchestrator.grok_api:main"
 
 [tool.setuptools.package-data]
 orchestrator = ["schema.sql"]

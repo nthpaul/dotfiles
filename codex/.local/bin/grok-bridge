@@ -1,0 +1,13 @@
+#!/usr/bin/env python3
+"""Run the dotfiles orchestration package without installing it."""
+import os
+from pathlib import Path
+import sys
+
+# Resolve stow symlinks before deriving the package location.
+package = Path(__file__).resolve().parents[2] / '.codex' / 'orchestrator'
+sys.path.insert(0, str(package))
+os.environ['PYTHONPATH'] = str(package) + (os.pathsep + os.environ['PYTHONPATH'] if os.environ.get('PYTHONPATH') else '')
+from orchestrator.grok_api import main
+
+raise SystemExit(main())
