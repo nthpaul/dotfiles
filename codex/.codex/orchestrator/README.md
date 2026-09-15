@@ -1,6 +1,6 @@
 # Local orchestration runtime
 
-`codex-orch` runs a local SQLite daemon, bounded worker processes, and durable coordinator inboxes. Astra owns assignments, plan revisions, routing, and acceptance. Workers report through the daemon. The default real worker is Codex with `gpt-6-astra` and medium reasoning; `--adapter fake` runs the deterministic offline fixture. Grok workers default to `grok-4.6`; choose another model with `--model`. Codex workers inherit your Codex approval and sandbox configuration.
+`codex-orch` runs a local SQLite daemon, bounded worker processes, and durable coordinator inboxes. Astra owns assignments, plan revisions, routing, and acceptance. Workers report through the daemon. `register` defaults to Grok `grok-4.6` with high reasoning in the owned worker pane. Explicit `--adapter codex` keeps Codex `gpt-6-astra` / medium. `--adapter fake` is the deterministic offline fixture. `--mode exec` keeps the current `codex exec` / `grok --single` / fake JSONL path. Codex workers inherit your Codex approval and sandbox configuration.
 
 This directory documents the implemented runtime. Architecture proposals under `../plans/` describe broader designs and do not establish executable capabilities or completed validation gates.
 
@@ -24,9 +24,12 @@ Initialize a team:
 ```sh
 codex-orch init 'Deliver the scoped objective'
 codex-orch register implementer
+codex-orch board
 codex-orch status
 codex-orch inbox --priority urgent
 ```
+
+`board` is the full-screen TUI over every team in `--home`, plus extra homes from repeated `--homes`. Non-TTY stdout and `--snapshot` print a deterministic layout for QA (`--width` / `--height`). Keyboard: `tab` or `1-9` sections, `j`/`k` rows, `t` team, `n` home, `/` filter, `a` attach the exact owned live tmux pane, `p`/`r`/`x` pause/resume/cancel, `h` hold. Controls go through the authenticated daemon API only. The status line labels **requested** desired state separately from **observed** run/pane/operation state. Missing, dead, stale, and unknown panes are named as such and are not focused. Usage prints stored `runner_usage` / `runs/<id>/usage.json` keys; a missing key stays absent (`usage unknown` when there is no object). Existing `status`, `history`, `inbox`, `bulletin`, and pane `display.py` stay.
 
 The default state directory is `~/.codex/orchestration`; `--home` works before or after the subcommand. State includes `state.sqlite3`, artifacts, execution logs, and credential files. Credentials are written with mode 0600. Initialization saves coordinator credentials to `HOME/coordinator.json`; registration saves worker credentials under `HOME/workers/`. Output shows the credential path without revealing the token. Use `--credentials PATH` to select another session. Keep this state outside the source repository.
 
@@ -95,6 +98,9 @@ orch shutdown
 | `retry_delivery` | `delivery_id`, `reason`, `not_accepted_confirmed: true`; retries the original message only after checking recipient acceptance |
 | `control` | `run_id`, `action`: `pause`, `resume`, or `cancel` |
 | `hold` | `task_id`, `reason`, optional `clear: true` |
+| `budget` | `scope` `team`/`agent`/`task`/`run` plus `id` and `budgets`, or `task_id` and `budgets`. Empty keys mean unlimited. |
+| `preflight` | `task_id`, `commands` argv list, optional `scope` paths and `environment` |
+| `ci_watch` | `task_id`, `pr`, `expected_head`, optional `interval_ms` and `max_attempts` |
 | `replan` | `reason`, `tasks` mapping task IDs to complete replacement specs |
 | `artifact` | `path` to a file to finalize |
 | `report` | Worker credentials; `run_id`, `type`, `text`, `artifact_ids`, optional `priority` |

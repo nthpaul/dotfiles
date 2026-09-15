@@ -76,6 +76,16 @@ class CLITests(unittest.TestCase):
                     except ProcessLookupError:
                         pass
 
+    def test_register_personal_default_is_grok_high_without_mode(self):
+        from orchestrator.cli import parser, register_body
+        self.assertEqual(register_body(parser().parse_args(['register', 'w'])),
+                         {'name': 'w', 'adapter': 'grok', 'model': 'grok-4.6', 'effort': 'high'})
+        self.assertEqual(register_body(parser().parse_args(['register', 'w', '--adapter', 'codex'])),
+                         {'name': 'w', 'adapter': 'codex'})
+        self.assertEqual(register_body(parser().parse_args(['register', 'w', '--adapter', 'fake'])),
+                         {'name': 'w', 'adapter': 'fake'})
+        self.assertEqual(register_body(parser().parse_args(['register', 'w', '--mode', 'exec']))['mode'], 'exec')
+
 
 if __name__ == '__main__':
     unittest.main()
