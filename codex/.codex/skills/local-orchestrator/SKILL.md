@@ -1,22 +1,58 @@
 ---
 name: local-orchestrator
-description: Operate the local codex-orch daemon and full-screen board for durable Astra-led worker assignments, inbox routing, process controls, and evidence-based review. Use when the user requests this local orchestration runtime, its board, or work on its active team.
+description: Coordinate bounded headless Grok workers from native Codex through the local Grok bridge; inspect results, resume exact sessions, and handle recovery. Also supports explicitly requested legacy codex-orch teams and board.
 ---
 
-# Local orchestrator
+# Local orchestration
 
-Use `codex-orch` for runtime mutations and reads. Use `codex-orch board` for the multi-team TUI. Read the [runtime guide](../../orchestrator/README.md) for startup, command schemas, credential handling, the board, and the offline exercise. The daemon owns SQLite, delivery, resource bookkeeping, and execution logs; edit state through its API. For board keys, attach rules, and requested-versus-observed display, read [references/board.md](references/board.md).
+Astra stays in native Codex and owns planning, handoffs, review, and next steps. Use the
+five `grok_bridge` MCP tools, or the equivalent `grok-bridge` CLI when the current client
+has not loaded MCP. Read the [bridge guide](../../orchestrator/docs/grok-bridge.md) for
+schemas, setup, records, limits, and the [PDF baseline](../../orchestrator/docs/astra-grok-plan.pdf).
+Check the [rollout status](../../orchestrator/docs/grok-pilot.md) before treating the bridge
+as the default. For an explicitly requested existing team/board, use
+[legacy instructions](references/legacy.md); preserve its records.
 
-Astra owns planning, assignments, mediated routing, revisions, and acceptance. The coordinator delegates implementation, review, and integration as separate assignments and reviews compact evidence artifacts, not source trees. Automation owns monitoring (`ci_watch`, usage ticks, inbox polling). The integration worker owns CI fixes. Workers execute their assignment and report to the coordinator; they do not spawn nested workers or send worker-to-worker instructions.
+## Choose useful delegation
 
-`register` defaults to Grok `grok-4.6` high in the owned pane. Do not send `mode` unless the assignment requires `--mode exec`. Explicit `--adapter codex` or `--adapter fake` keep those transports. Budget, preflight, and CI watch use generic `request KIND --body`; do not invent extra CLI verbs.
+Do small or tightly dependent work directly. Delegate substantial independent work when
+it lets Astra make useful progress in parallel. Default Grok medium; use high for difficult
+implementation/debugging or review. Try Grok xhigh before escalating exceptional complexity
+to a native **Astra high** subagent. Native Codex subagents remain available; do not globally
+disable them. Grok workers have one delegation level and must not spawn subagents.
 
-Write each assignment with its objective, relevant context, expected output, acceptance criteria, dependencies, exclusive write scope, and optional `budgets`. Concurrent writers need registered isolated worktrees. Reuse a worker session for related follow-up work; use a fresh session for unrelated work. Keep the coordinator available for user steering while the daemon records routine progress quietly. Assignment handoffs stay bounded: one worker, one write scope, report back.
+At most three active Grok workers per bridge store. Every writer needs a separate linked
+git worktree and explicit write scope. Empty scope means read-only by worker instruction;
+it is not an OS sandbox. Do not delegate overlapping writers into the same worktree.
 
-Inspect urgent unresolved inbox entries before normal results. Route worker proposals by publishing their original artifact references to explicitly selected recipients. A stored receipt, delivery, acknowledgment, resolution, and accepted result are distinct facts; advance each only with its own evidence.
+## Handoff and loop
 
-Hold affected dispatch before urgent replanning. Request process controls through the runtime and inspect their observed outcome. Treat uncertainty as unresolved; do not infer that a tool stopped from the requested state. Preserve old-revision results and assess changed dependencies explicitly before accepting them.
+Give each worker a concrete objective, relevant context and paths, constraints and scope,
+observable completion criteria, and expected evidence. Include commands or reproduction
+steps when known. Do not dump the whole conversation or require a plan/acceptance ceremony.
 
-Review finalized result artifacts and criterion-specific validation after execution has been released. A successful exit or worker completion claim alone cannot accept a task. Request a revision when evidence is incomplete. Assign one integration worker to assemble accepted changes; publish through Graphite within the user's authorization, then verify required CI for every exact PR head before accepting the integration task.
+After `spawn`, retain run/session IDs and do useful work or `wait`. Pending means keep
+working/waiting. On a terminal result, read both execution state and report outcome, review
+its evidence, and verify important behavior. Successful execution does not establish task
+correctness; a valid report can say blocked or partial.
 
-On recovery, read team state, resource identities, unresolved deliveries, and incomplete operations before new dispatch. Verify process birth identity and exact tmux ownership. Reuse request IDs when retrying identical commands; inspect ambiguous external effects before retrying them. Takeover rotates the coordinator credential and ownership epoch. Report unsupported live transport or control capabilities plainly and use the documented inbox/status polling path when automatic wake is unproven.
+Use `inspect` for bounded message/tool history. Ask the same session to fix defects or
+provide missing evidence via `resume`; use a fresh session for unrelated work. If a report
+is malformed, request the required JSON without rerunning the original task. Final reports
+contain outcome, summary, changes/findings, validation, unresolved issues, and artifacts.
+
+The coordinator may read code and make small dependent changes. Integrate accepted work,
+run appropriate combined validation, and use Graphite within the user's authorization.
+Every PR remains atomic and must pass CI at its exact head. Do not end merely because
+workers have returned; finish the user's outcome or report the actual blocker.
+
+## Recovery
+
+Retry an identical operation with the original request ID; new work gets a new ID. Never
+blindly relaunch after interruption. Inspect saved history, worktree, and external effects
+before setting `recovery_checked` on resume. Cancellation is a durable request; inspect
+observed cleanup. It does not undo edits or remote effects.
+
+Use a fixed run set for each wait cursor, or start at zero after changing the set. Results
+remain inspectable after client reconnect. No automatic wake of an idle/exited coordinator
+or native subagent UI integration is promised; keep the coordinating turn active.

@@ -1,3 +1,7 @@
+> Headless Grok bridge implementation and rollout: [guide](docs/grok-bridge.md),
+> [acceptance evidence](docs/grok-pilot.md), [PDF baseline](docs/astra-grok-plan.pdf).
+> The legacy runtime below remains available; cutover is gated by the pilot record.
+
 # Local orchestration runtime
 
 `codex-orch` runs a local SQLite daemon, bounded worker processes, and durable coordinator inboxes. Astra owns assignments, plan revisions, routing, and acceptance. Workers report through the daemon. `register` defaults to Grok `grok-4.6` with high reasoning in the owned worker pane. Explicit `--adapter codex` keeps Codex `gpt-6-astra` / medium. `--adapter fake` is the deterministic offline fixture. `--mode exec` keeps the current `codex exec` / `grok --single` / fake JSONL path. Codex workers inherit your Codex approval and sandbox configuration.
