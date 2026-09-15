@@ -1,0 +1,376 @@
+{
+  "date": "2026-09-14",
+  "provider": "grok",
+  "model": "grok-4.6",
+  "effort": "medium",
+  "run_id": "run-3a3595c6cd4c4826a32440ec42e7c244",
+  "tool_identity": {
+    "pid": 91511,
+    "start_identity": "darwin:{ sec = 1786973547, usec = 568306 } Mon Aug 17 09:32:27 2026:1789425885:239943",
+    "ppid": 91506,
+    "state": "R"
+  },
+  "pause_stopped_file": true,
+  "resume_restarted_file": true,
+  "cancel_stopped_file": true,
+  "final_tool_state": "exited",
+  "final_heartbeat_lines": 17,
+  "no_manual_tool_signals": true,
+  "permission_flag": "--always-approve",
+  "gate_result": "observed_local_controls_passed",
+  "scenario": "Runtime-created isolated git worktree; Grok foreground Python shell tool; 150 flushed file ticks at 0.2-second intervals; pause/resume/cancel through daemon API",
+  "observed_process_identities": [
+    {
+      "pid": 90338,
+      "ppid": 90334,
+      "start_identity": "darwin:{ sec = 1786973547, usec = 568306 } Mon Aug 17 09:32:27 2026:1789425871:957550",
+      "state": "R"
+    },
+    {
+      "pid": 90372,
+      "ppid": 90338,
+      "start_identity": "darwin:{ sec = 1786973547, usec = 568306 } Mon Aug 17 09:32:27 2026:1789425872:361476",
+      "state": "R"
+    },
+    {
+      "pid": 90375,
+      "ppid": 90338,
+      "start_identity": "darwin:{ sec = 1786973547, usec = 568306 } Mon Aug 17 09:32:27 2026:1789425872:368550",
+      "state": "R"
+    },
+    {
+      "pid": 90378,
+      "ppid": 90338,
+      "start_identity": "darwin:{ sec = 1786973547, usec = 568306 } Mon Aug 17 09:32:27 2026:1789425872:371198",
+      "state": "R"
+    },
+    {
+      "pid": 90382,
+      "ppid": 90338,
+      "start_identity": "darwin:{ sec = 1786973547, usec = 568306 } Mon Aug 17 09:32:27 2026:1789425872:375945",
+      "state": "R"
+    },
+    {
+      "pid": 90383,
+      "ppid": 90338,
+      "start_identity": "darwin:{ sec = 1786973547, usec = 568306 } Mon Aug 17 09:32:27 2026:1789425872:378303",
+      "state": "R"
+    },
+    {
+      "pid": 90386,
+      "ppid": 90338,
+      "start_identity": "darwin:{ sec = 1786973547, usec = 568306 } Mon Aug 17 09:32:27 2026:1789425872:380319",
+      "state": "R"
+    },
+    {
+      "pid": 90391,
+      "ppid": 90338,
+      "start_identity": "darwin:{ sec = 1786973547, usec = 568306 } Mon Aug 17 09:32:27 2026:1789425872:382581",
+      "state": "R"
+    },
+    {
+      "pid": 91383,
+      "ppid": 90338,
+      "start_identity": "darwin:{ sec = 1786973547, usec = 568306 } Mon Aug 17 09:32:27 2026:1789425884:560542",
+      "state": "R"
+    },
+    {
+      "pid": 91506,
+      "ppid": 90338,
+      "start_identity": "darwin:{ sec = 1786973547, usec = 568306 } Mon Aug 17 09:32:27 2026:1789425885:112472",
+      "state": "R"
+    },
+    {
+      "pid": 90486,
+      "ppid": 90378,
+      "start_identity": "darwin:{ sec = 1786973547, usec = 568306 } Mon Aug 17 09:32:27 2026:1789425872:779892",
+      "state": "R"
+    },
+    {
+      "pid": 90514,
+      "ppid": 90382,
+      "start_identity": "darwin:{ sec = 1786973547, usec = 568306 } Mon Aug 17 09:32:27 2026:1789425872:980692",
+      "state": "R"
+    },
+    {
+      "pid": 90515,
+      "ppid": 90375,
+      "start_identity": "darwin:{ sec = 1786973547, usec = 568306 } Mon Aug 17 09:32:27 2026:1789425872:982362",
+      "state": "R"
+    },
+    {
+      "pid": 90516,
+      "ppid": 90386,
+      "start_identity": "darwin:{ sec = 1786973547, usec = 568306 } Mon Aug 17 09:32:27 2026:1789425872:983003",
+      "state": "R"
+    },
+    {
+      "pid": 90517,
+      "ppid": 90383,
+      "start_identity": "darwin:{ sec = 1786973547, usec = 568306 } Mon Aug 17 09:32:27 2026:1789425872:983195",
+      "state": "R"
+    },
+    {
+      "pid": 90678,
+      "ppid": 90372,
+      "start_identity": "darwin:{ sec = 1786973547, usec = 568306 } Mon Aug 17 09:32:27 2026:1789425875:410109",
+      "state": "R"
+    },
+    {
+      "pid": 90698,
+      "ppid": 90391,
+      "start_identity": "darwin:{ sec = 1786973547, usec = 568306 } Mon Aug 17 09:32:27 2026:1789425875:438685",
+      "state": "R"
+    },
+    {
+      "pid": 91472,
+      "ppid": 91383,
+      "start_identity": "darwin:{ sec = 1786973547, usec = 568306 } Mon Aug 17 09:32:27 2026:1789425884:768422",
+      "state": "R"
+    },
+    {
+      "pid": 91511,
+      "ppid": 91506,
+      "start_identity": "darwin:{ sec = 1786973547, usec = 568306 } Mon Aug 17 09:32:27 2026:1789425885:239943",
+      "state": "R"
+    },
+    {
+      "pid": 90519,
+      "ppid": 90516,
+      "start_identity": "darwin:{ sec = 1786973547, usec = 568306 } Mon Aug 17 09:32:27 2026:1789425873:170105",
+      "state": "R"
+    },
+    {
+      "pid": 90522,
+      "ppid": 90515,
+      "start_identity": "darwin:{ sec = 1786973547, usec = 568306 } Mon Aug 17 09:32:27 2026:1789425873:188439",
+      "state": "R"
+    },
+    {
+      "pid": 90523,
+      "ppid": 90517,
+      "start_identity": "darwin:{ sec = 1786973547, usec = 568306 } Mon Aug 17 09:32:27 2026:1789425873:191236",
+      "state": "R"
+    },
+    {
+      "pid": 90555,
+      "ppid": 90514,
+      "start_identity": "darwin:{ sec = 1786973547, usec = 568306 } Mon Aug 17 09:32:27 2026:1789425873:491907",
+      "state": "R"
+    },
+    {
+      "pid": 90659,
+      "ppid": 90486,
+      "start_identity": "darwin:{ sec = 1786973547, usec = 568306 } Mon Aug 17 09:32:27 2026:1789425875:382452",
+      "state": "R"
+    },
+    {
+      "pid": 90520,
+      "ppid": 90519,
+      "start_identity": "darwin:{ sec = 1786973547, usec = 568306 } Mon Aug 17 09:32:27 2026:1789425873:180037",
+      "state": "R"
+    },
+    {
+      "pid": 90524,
+      "ppid": 90522,
+      "start_identity": "darwin:{ sec = 1786973547, usec = 568306 } Mon Aug 17 09:32:27 2026:1789425873:199213",
+      "state": "R"
+    },
+    {
+      "pid": 90730,
+      "ppid": 90523,
+      "start_identity": "darwin:{ sec = 1786973547, usec = 568306 } Mon Aug 17 09:32:27 2026:1789425875:546049",
+      "state": "R"
+    },
+    {
+      "pid": 90775,
+      "ppid": 90555,
+      "start_identity": "darwin:{ sec = 1786973547, usec = 568306 } Mon Aug 17 09:32:27 2026:1789425875:608091",
+      "state": "R"
+    },
+    {
+      "pid": 90745,
+      "ppid": 90524,
+      "start_identity": "darwin:{ sec = 1786973547, usec = 568306 } Mon Aug 17 09:32:27 2026:1789425875:581294",
+      "state": "R"
+    },
+    {
+      "pid": 90760,
+      "ppid": 90520,
+      "start_identity": "darwin:{ sec = 1786973547, usec = 568306 } Mon Aug 17 09:32:27 2026:1789425875:591984",
+      "state": "R"
+    }
+  ],
+  "final_observed_process_states": {
+    "90338": "exited",
+    "90372": "exited",
+    "90375": "exited",
+    "90378": "exited",
+    "90382": "exited",
+    "90383": "exited",
+    "90386": "exited",
+    "90391": "exited",
+    "91383": "exited",
+    "91506": "exited",
+    "90486": "exited",
+    "90514": "exited",
+    "90515": "exited",
+    "90516": "exited",
+    "90517": "exited",
+    "90678": "exited",
+    "90698": "exited",
+    "91472": "exited",
+    "91511": "exited",
+    "90519": "exited",
+    "90522": "exited",
+    "90523": "exited",
+    "90555": "exited",
+    "90659": "exited",
+    "90520": "exited",
+    "90524": "exited",
+    "90730": "exited",
+    "90775": "exited",
+    "90745": "exited",
+    "90760": "exited"
+  },
+  "controls": {
+    "pause": {
+      "generation": 1,
+      "epoch": 1,
+      "requested": "paused",
+      "observed": "paused",
+      "outcome": "uncertain",
+      "reason": "macOS lacks identity-bound signaling; PID check/signal race cannot be excluded",
+      "process_states": {
+        "90338": "T",
+        "90372": "T",
+        "90375": "T",
+        "90378": "T",
+        "90382": "T",
+        "90383": "T",
+        "90386": "T",
+        "90391": "T",
+        "90486": "T",
+        "90514": "T",
+        "90515": "T",
+        "90516": "T",
+        "90517": "T",
+        "90519": "T",
+        "90520": "T",
+        "90522": "T",
+        "90523": "T",
+        "90524": "T",
+        "90555": "T",
+        "90659": "T",
+        "90678": "T",
+        "90698": "T",
+        "90730": "T",
+        "90745": "T",
+        "90760": "T",
+        "90775": "T",
+        "91383": "T",
+        "91472": "T",
+        "91506": "T",
+        "91511": "T"
+      },
+      "heartbeat_at_observation": 8,
+      "heartbeat_after_1_2_seconds": 8,
+      "actual_tool_state": "T"
+    },
+    "resume": {
+      "generation": 2,
+      "epoch": 1,
+      "requested": "running",
+      "observed": "running",
+      "outcome": "uncertain",
+      "reason": "macOS lacks identity-bound signaling; PID check/signal race cannot be excluded",
+      "process_states": {
+        "90338": "R",
+        "90372": "R",
+        "90375": "R",
+        "90378": "R",
+        "90382": "R",
+        "90383": "R",
+        "90386": "R",
+        "90391": "R",
+        "90486": "R",
+        "90514": "R",
+        "90515": "R",
+        "90516": "R",
+        "90517": "R",
+        "90519": "R",
+        "90520": "R",
+        "90522": "R",
+        "90523": "R",
+        "90524": "R",
+        "90555": "R",
+        "90659": "R",
+        "90678": "R",
+        "90698": "R",
+        "90730": "R",
+        "90745": "R",
+        "90760": "R",
+        "90775": "R",
+        "91383": "R",
+        "91472": "R",
+        "91506": "R",
+        "91511": "R"
+      },
+      "heartbeat_at_observation": 10,
+      "heartbeat_after_1_2_seconds": 16,
+      "actual_tool_state": "R"
+    },
+    "cancel": {
+      "generation": 3,
+      "epoch": 1,
+      "requested": "cancelled",
+      "observed": "cancelled",
+      "outcome": "uncertain",
+      "reason": "macOS lacks identity-bound signaling; PID check/signal race cannot be excluded",
+      "process_states": {
+        "90338": "exited",
+        "90372": "exited",
+        "90375": "exited",
+        "90378": "exited",
+        "90382": "exited",
+        "90383": "exited",
+        "90386": "exited",
+        "90391": "exited",
+        "90486": "exited",
+        "90514": "exited",
+        "90515": "exited",
+        "90516": "exited",
+        "90517": "exited",
+        "90519": "exited",
+        "90520": "exited",
+        "90522": "exited",
+        "90523": "exited",
+        "90524": "exited",
+        "90555": "exited",
+        "90659": "exited",
+        "90678": "exited",
+        "90698": "exited",
+        "90730": "exited",
+        "90745": "exited",
+        "90760": "exited",
+        "90775": "exited",
+        "91506": "exited",
+        "91511": "exited"
+      },
+      "heartbeat_at_observation": 17,
+      "heartbeat_after_1_2_seconds": 17,
+      "actual_tool_state": "exited"
+    }
+  },
+  "final_run": {
+    "outcome": "cancelled",
+    "released": 1,
+    "observed": "exited",
+    "health": "exited",
+    "control_generation": 3,
+    "confirmed_generation": 3,
+    "result_event": null
+  },
+  "scope_limit": "Observed local descendants only; macOS identity validation and PID signaling are not atomic. No claim of rollback or remote effects cancellation.",
+  "cleanup": "Daemon stopped; exact observed provider/tool birth identities all exited; no manual or unknown-PID signals."
+}

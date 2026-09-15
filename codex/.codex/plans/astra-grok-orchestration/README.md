@@ -1,12 +1,12 @@
 # Astra and Grok orchestration plan
 
-Proposed architecture, 13 September 2026. This records the design; it does not install an orchestration runtime or change existing skills.
+Original architecture proposal, 13 September 2026. The [implemented local runtime](../../orchestrator/README.md) uses the reduced 12-table design, with executable worker control and recovery tests. The documents below preserve the original proposal and expanded storage exploration.
 
 Read [the six-page PDF](astra-grok-plan.pdf) for five vector diagrams covering services, data structures, normal assignments, mediated broadcasts, and urgent replanning. The plan also defines delivery and recovery contracts, tmux ownership, implementation stages, and validation gates.
 
 [The state map](state-map.md) expands the design into independent state machines, transition guards, failure/recovery cases, and implementation gates. It distinguishes the original plan's states from proposed additions.
 
-[The model-agnostic SQLite design](sqlite/README.md) provides complete executable DDL, a populated example database, and constraint tests. Coordinator/worker roles are independent of provider, model, adapter, and session identity. This is a storage proposal; live runtime guarantees remain unverified.
+[The expanded model-agnostic SQLite design](sqlite/README.md) provides the earlier 43-table proposal, a populated example database, and constraint tests. The runtime's actual [12-table schema](../../orchestrator/orchestrator/schema.sql) is separate; it stores versioned plans, reviews, and routing decisions as typed events. See the runtime's [transport evidence](../../orchestrator/docs/transport-evidence.md) for observed live capabilities and limitations.
 
 ## Editable sources and rebuild
 

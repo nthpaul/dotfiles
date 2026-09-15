@@ -1,0 +1,35 @@
+{
+  "date": "2026-09-14",
+  "provider": "grok",
+  "model": "grok-4.6",
+  "effort": "medium",
+  "permission_mode": "dontAsk",
+  "scenario": "Runtime-created isolated git worktree; authorized foreground Python heartbeat shell tool; intended pause/resume/cancel",
+  "run_id": "run-c09dc92bd795458988dab73e4783a31f",
+  "external_session_id": "92df5a69-beda-449f-9a6b-c94a12e5e897",
+  "tool_name": "run_terminal_command",
+  "tool_result": "User cancelled the execution for tool `run_terminal_command`",
+  "provider_final": {
+    "subtype": "error_during_execution",
+    "is_error": true,
+    "stop_reason": "cancelled",
+    "errors": [
+      "cancelled"
+    ],
+    "num_turns": 1
+  },
+  "heartbeat_file_created": false,
+  "coordinator_controls_sent": [],
+  "manual_signals_to_provider_or_tool": false,
+  "final_run": {
+    "outcome": "failed",
+    "released": 1,
+    "health": "exited",
+    "observed": "exited",
+    "result_event": null,
+    "control_generation": 0
+  },
+  "gate_result": "blocked_before_tool_start",
+  "limitation": "Foreground tool was cancelled before any heartbeat. This probe establishes no Grok pause/resume/cancel capability. The adapter uses dontAsk; permission denial is a plausible inference, not an explicit reason in the provider trace. No permission bypass attempted.",
+  "cleanup": "Daemon stopped after failed run released; temporary fixture retained."
+}

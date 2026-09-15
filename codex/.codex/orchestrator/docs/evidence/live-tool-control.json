@@ -1,0 +1,127 @@
+{
+  "date": "2026-09-14",
+  "provider": "codex",
+  "model": "gpt-6-astra",
+  "effort": "medium",
+  "run_id": "run-87d8862044834801b3c7e98297335ae6",
+  "tool_identity": {
+    "pid": 78684,
+    "start_identity": "darwin:{ sec = 1786973547, usec = 568306 } Mon Aug 17 09:32:27 2026:1789425251:269898",
+    "ppid": 78418,
+    "state": "R"
+  },
+  "pause_stopped_file": true,
+  "resume_restarted_file": true,
+  "cancel_stopped_file": true,
+  "final_tool_state": "exited",
+  "final_heartbeat_lines": 14,
+  "no_manual_tool_signals": true,
+  "scenario": "Runtime-created isolated git worktree; Astra foreground Python shell tool, 150 flushed file ticks at 0.2-second intervals; pause, resume, cancel through daemon API",
+  "observed_process_identities": [
+    {
+      "pid": 78418,
+      "ppid": 78414,
+      "start_identity": "darwin:{ sec = 1786973547, usec = 568306 } Mon Aug 17 09:32:27 2026:1789425243:295277",
+      "state": "R"
+    },
+    {
+      "pid": 78475,
+      "ppid": 78418,
+      "start_identity": "darwin:{ sec = 1786973547, usec = 568306 } Mon Aug 17 09:32:27 2026:1789425243:482401",
+      "state": "R"
+    },
+    {
+      "pid": 78476,
+      "ppid": 78418,
+      "start_identity": "darwin:{ sec = 1786973547, usec = 568306 } Mon Aug 17 09:32:27 2026:1789425243:482466",
+      "state": "R"
+    },
+    {
+      "pid": 78683,
+      "ppid": 78418,
+      "start_identity": "darwin:{ sec = 1786973547, usec = 568306 } Mon Aug 17 09:32:27 2026:1789425251:199092",
+      "state": "R"
+    },
+    {
+      "pid": 78684,
+      "ppid": 78418,
+      "start_identity": "darwin:{ sec = 1786973547, usec = 568306 } Mon Aug 17 09:32:27 2026:1789425251:269898",
+      "state": "R"
+    },
+    {
+      "pid": 78524,
+      "ppid": 78475,
+      "start_identity": "darwin:{ sec = 1786973547, usec = 568306 } Mon Aug 17 09:32:27 2026:1789425243:535846",
+      "state": "R"
+    }
+  ],
+  "controls": {
+    "pause": {
+      "generation": 1,
+      "epoch": 1,
+      "requested": "paused",
+      "observed": "paused",
+      "outcome": "uncertain",
+      "reason": "macOS lacks identity-bound signaling; PID check/signal race cannot be excluded",
+      "process_states": {
+        "78418": "T",
+        "78475": "T",
+        "78476": "T",
+        "78524": "T",
+        "78683": "T",
+        "78684": "T"
+      },
+      "heartbeat_at_observation": 6,
+      "heartbeat_after_1_2_seconds": 6,
+      "actual_tool_state": "T"
+    },
+    "resume": {
+      "generation": 2,
+      "epoch": 1,
+      "requested": "running",
+      "observed": "running",
+      "outcome": "uncertain",
+      "reason": "macOS lacks identity-bound signaling; PID check/signal race cannot be excluded",
+      "process_states": {
+        "78418": "R",
+        "78475": "R",
+        "78476": "R",
+        "78524": "R",
+        "78683": "R",
+        "78684": "R"
+      },
+      "heartbeat_at_observation": 7,
+      "heartbeat_after_1_2_seconds": 13,
+      "actual_tool_state": "R"
+    },
+    "cancel": {
+      "generation": 3,
+      "epoch": 1,
+      "requested": "cancelled",
+      "observed": "cancelled",
+      "outcome": "uncertain",
+      "reason": "macOS lacks identity-bound signaling; PID check/signal race cannot be excluded",
+      "process_states": {
+        "78418": "exited",
+        "78475": "exited",
+        "78476": "exited",
+        "78524": "exited",
+        "78683": "exited",
+        "78684": "exited"
+      },
+      "heartbeat_at_observation": 14,
+      "heartbeat_after_1_2_seconds": 14,
+      "actual_tool_state": "exited"
+    }
+  },
+  "final_run": {
+    "outcome": "cancelled",
+    "released": 1,
+    "observed": "exited",
+    "health": "exited",
+    "control_generation": 3,
+    "confirmed_generation": 3,
+    "result_event": null
+  },
+  "scope_limit": "Observed local descendants only. macOS signal identity check is not atomic; paused/resumed observations do not become confirmed generations. No claim of rollback or remote tool cancellation."
+}

@@ -1,0 +1,39 @@
+name: Local orchestrator
+
+on:
+  push:
+    paths:
+      - 'codex/.codex/orchestrator/**'
+      - 'codex/.local/bin/codex-orch'
+      - '.github/workflows/orchestrator.yml'
+  pull_request:
+    paths:
+      - 'codex/.codex/orchestrator/**'
+      - 'codex/.local/bin/codex-orch'
+      - '.github/workflows/orchestrator.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install tmux on Linux
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y tmux
+      - name: Install tmux on macOS
+        if: runner.os == 'macOS'
+        run: command -v tmux || brew install tmux
+      - name: Test storage, transport fixtures, processes, panes, and recovery
+        working-directory: codex/.codex/orchestrator
+        run: python -m unittest discover -s tests -v

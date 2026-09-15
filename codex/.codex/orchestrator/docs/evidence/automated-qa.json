@@ -1,0 +1,26 @@
+{
+  "python": "3.14.6",
+  "sqlite": "3.53.4",
+  "tables": [
+    "agents",
+    "artifacts",
+    "command_requests",
+    "deliveries",
+    "events",
+    "issues",
+    "operations",
+    "resources",
+    "runs",
+    "sessions",
+    "tasks",
+    "teams"
+  ],
+  "integrity_check": "ok",
+  "foreign_key_violations": 0,
+  "date": "2026-09-14",
+  "platform": "Darwin",
+  "tests": 111,
+  "duration_seconds": 35.303,
+  "result": "passed",
+  "command": "python3 -m unittest discover -s tests -v"
+}

@@ -1,0 +1,55 @@
+{
+  "observations": [
+    {
+      "adapter": "codex",
+      "run_id": "run-3a788b8080e446a4903e6d830f6dcd51",
+      "outcome": "succeeded",
+      "result": "ACK amber-heron-914"
+    },
+    {
+      "adapter": "grok",
+      "run_id": "run-d6308b2edb2941a6a7a5cfd53f96ea62",
+      "outcome": "succeeded",
+      "result": "ACK teal-fox-914"
+    },
+    {
+      "adapter": "codex",
+      "revision": true,
+      "run_id": "run-9a55695b5fb04bcb888255ea2e7d9379",
+      "outcome": "succeeded",
+      "result": "amber-heron-914 revised",
+      "same_external_session": true,
+      "external_session_id": "01a0a207-caf1-7590-8572-87788a8bcab4"
+    }
+  ],
+  "date": "2026-09-14",
+  "models": {
+    "codex": "gpt-6-astra",
+    "grok": "grok-4.6"
+  },
+  "effort": "medium",
+  "validation": "Actual Unix-socket daemon and runner processes; real provider CLIs; no model tools requested",
+  "acceptance": "Results finalized and tasks awaiting coordinator review; no self-acceptance",
+  "task_states": [
+    {
+      "id": "task-fe48769da77749228f0c62d10c884d91",
+      "state": "awaiting_review"
+    },
+    {
+      "id": "task-f73ee2a68db642ef894e25ce1d1f1ca2",
+      "state": "awaiting_review"
+    }
+  ],
+  "run_release_count": 3,
+  "artifact_count": 3,
+  "provider_sessions": [
+    {
+      "external_id": "01a0a207-caf1-7590-8572-87788a8bcab4",
+      "config": "{\"adapter\":\"codex\",\"effort\":\"medium\",\"model\":\"gpt-6-astra\"}"
+    },
+    {
+      "external_id": "60ff6881-e1fd-44b8-80a0-e7b615e30504",
+      "config": "{\"adapter\":\"grok\",\"effort\":\"medium\",\"model\":\"grok-4.6\"}"
+    }
+  ]
+}

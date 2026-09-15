@@ -30,7 +30,7 @@ Stow creates relative symlinks so the repo stays portable across machines.
 - macOS: `hammerspoon/`
 - Dev tools: `asdf/`, `graphite/`, `opencode/`, `github-copilot/`
 - Git/GitHub: `git/` (.gitconfig, global gitignore), `gh/` (CLI config; `hosts.yml` stays local)
-- Codex: `codex/` (`config.toml`, `AGENTS.md`, `rules/`, `skills/`, `plans/`; auth, sessions, sqlite, and caches stay local)
+- Codex: `codex/` (`config.toml`, `AGENTS.md`, `rules/`, `skills/`, `plans/`, and the [local orchestrator](codex/.codex/orchestrator/README.md) exposed as `codex-orch`; auth, sessions, sqlite, and caches stay local)
 - Claude Code: `claude/` (`settings.json`; `skills/` symlinked to `codex/.codex/skills`)
 - Grok: `grok/` (`config.toml`, `skills/`; auth, sessions, MCP credentials, and caches stay local)
 

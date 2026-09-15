@@ -1,0 +1,14 @@
+{
+  "date": "2026-09-14",
+  "cli": "codex-cli 0.154.0",
+  "model": "gpt-6-astra",
+  "effort": "medium",
+  "sandbox": "read-only",
+  "target_thread_id": "01a0a205-ec8b-7c73-bb1e-511cd39c1127",
+  "queued_message_id": "01a0a206-6770-79a2-90df-586d50340b5b",
+  "latency_seconds": 5.85,
+  "assistant_timestamp": "2026-09-14T22:25:29.436Z",
+  "assistant_final_text": "INTERACTIVE WAKE ACK 914",
+  "isolated_tmux_server": "orch-wake-spike",
+  "probe_cleanup": "TUI exited and isolated tmux server closed"
+}
