@@ -4,7 +4,7 @@ import subprocess
 import tempfile
 import unittest
 import uuid
-from orchestrator.grok_transport import Result, command, prompt, report
+from orchestrator.grok_transport import Result, command, prompt, report, parse_report
 
 
 class GrokTransportTests(unittest.TestCase):
@@ -41,6 +41,38 @@ class GrokTransportTests(unittest.TestCase):
         for value in ['done', '[]', json.dumps({'outcome': 'completed'}), json.dumps({**self.report, 'changes': 'file'})]:
             with self.subTest(value=value), self.assertRaises(ValueError):
                 report(value)
+
+    def test_unambiguous_wrappers_are_normalized_without_changing_report(self):
+        raw = json.dumps(self.report)
+        self.assertEqual(parse_report(raw), (self.report, False))
+        for text in [f'Findings follow.\n{raw}', f'```json\n{raw}\n```', raw + '\n}',
+                     f'Code: {{ ok: true }} and {{ ... }}\n{raw}',
+                     f'PASS with notes.\n```json\n{raw}\n```']:
+            with self.subTest(text=text):
+                result = Result(self.sid)
+                result.consume(json.dumps({'type': 'result', 'subtype': 'success', 'result': text}))
+                done = result.finish(0)
+                self.assertEqual(done['report'], self.report)
+                self.assertTrue(done['report_normalized'])
+                self.assertEqual(result.text, text)
+                self.assertEqual(result.finish(1)['state'], 'failed')
+
+    def test_ambiguous_and_incomplete_reports_remain_invalid(self):
+        raw = json.dumps(self.report)
+        for text in [raw + raw, raw + '\nActually, this failed.', raw[:-1], raw + '}}',
+                     '[' + raw + ']', '[' + raw, '{' + raw, '{"nested":' + raw + '}',
+                     raw.replace('"outcome": "completed"', '"outcome":"blocked","outcome":"completed"'),
+                     'Findings: {"broken":\n' + raw]:
+            with self.subTest(text=text), self.assertRaises(ValueError):
+                report(text)
+
+    def test_terminal_usage_and_metrics_are_per_invocation(self):
+        result = Result(self.sid)
+        usage = {'input_tokens': 100, 'cache_read_input_tokens': 400, 'output_tokens': 20}
+        result.consume(self.result(usage=usage, num_turns=2, total_cost_usd=.01, duration_ms=500))
+        done = result.finish(0)
+        self.assertEqual(done['usage'], usage)
+        self.assertEqual(done['metrics'], {'num_turns': 2, 'total_cost_usd': .01, 'duration_ms': 500})
 
     def test_command_exact_resume_and_prompt_file(self):
         cmd = command('/tmp/a b', self.sid, Path('/tmp/prompt file'), 'xhigh', True)

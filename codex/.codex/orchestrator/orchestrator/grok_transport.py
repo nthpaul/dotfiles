@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import re
 import subprocess
 import sys
 import uuid
@@ -19,6 +20,7 @@ def prompt(task, write_scope):
             'empty scope means read-only. Do not publish changes, contact others, or resolve '
             'review threads unless explicitly authorized in the task.\n'
             f'Write scope relative to cwd: {json.dumps(write_scope)}\n'
+            'Keep the summary brief; put detailed evidence in artifacts. '
             'Return a final JSON object without markdown fences: '
             '{"outcome":"completed|blocked|partial","summary":"result",'
             '"changes":["findings or edits"],"validation":["checks and outcomes"],'
@@ -40,8 +42,31 @@ def command(cwd, session_id, prompt_path, effort='medium', resume=False, adapter
             '--resume' if resume else '--session-id', session_id, '--prompt-file', str(prompt_path)]
 
 
-def report(text):
-    value = json.loads(text)
+def unique_keys(pairs):
+    value = {}
+    for key, item in pairs:
+        if key in value:
+            raise ValueError(f'duplicate report key: {key}')
+        value[key] = item
+    return value
+
+
+def parse_report(text):
+    decoder = json.JSONDecoder(object_pairs_hook=unique_keys)
+    normalized = False
+    try:
+        value = decoder.decode(text)
+    except json.JSONDecodeError:
+        candidate = re.search(r'\{\s*(?:"|})', text)
+        if candidate is None:
+            raise ValueError('report requires a JSON object')
+        if text[:candidate.start()].lstrip().startswith(('[', '{', '"')):
+            raise ValueError('incomplete JSON wrapper')
+        value, end = decoder.raw_decode(text, candidate.start())
+        suffix = text[end:].strip()
+        if not re.fullmatch(r'(?:}\s*)?(?:```)?', suffix):
+            raise ValueError('ambiguous or truncated report suffix')
+        normalized = True
     if not isinstance(value, dict) or value.get('outcome') not in ('completed', 'blocked', 'partial'):
         raise ValueError('report requires outcome completed, blocked, or partial')
     if not isinstance(value.get('summary'), str) or not value['summary'].strip():
@@ -49,7 +74,11 @@ def report(text):
     for field in LIST_FIELDS:
         if not isinstance(value.get(field), list) or not all(isinstance(v, str) for v in value[field]):
             raise ValueError(f'report requires {field} as a list of strings')
-    return {key: value[key] for key in ('outcome', 'summary', *LIST_FIELDS)}
+    return {key: value[key] for key in ('outcome', 'summary', *LIST_FIELDS)}, normalized
+
+
+def report(text):
+    return parse_report(text)[0]
 
 
 class Result:
@@ -59,6 +88,7 @@ class Result:
         self.text = None
         self.error = None
         self.usage = None
+        self.metrics = None
 
     def consume(self, line):
         event = parse_line('grok', line)
@@ -79,6 +109,8 @@ class Result:
             self.text = event.get('result')
             if isinstance(raw.get('usage'), dict):
                 self.usage = raw['usage']
+            self.metrics = {key: raw[key] for key in (
+                'num_turns', 'duration_ms', 'duration_api_ms', 'total_cost_usd') if key in raw}
         return {'text': event['text']} if 'text' in event else {}
 
     def finish(self, exit_code):
@@ -88,13 +120,15 @@ class Result:
         if not self.terminal or self.text is None:
             error = error or 'Provider exited without a successful terminal result'
         parsed = None
+        normalized = False
         if not error:
             try:
-                parsed = report(self.text)
+                parsed, normalized = parse_report(self.text)
             except (ValueError, TypeError) as failure:
                 error = 'Invalid worker report: ' + str(failure)
         return {'state': 'failed' if error else 'completed', 'report': parsed,
-                'error': error, 'usage': self.usage}
+                'error': error, 'usage': self.usage, 'metrics': self.metrics,
+                'report_normalized': normalized}
 
 
 def main():
