@@ -4,7 +4,22 @@ Baseline: [unchanged implementation-plan PDF](astra-grok-plan.pdf), 14 September
 Evidence directory on Paul's machine: `/Users/ple/Documents/Codex/astra-grok-pilot/`.
 This is a directional pilot, not a statistically reliable harness ranking.
 
-## What the pilot establishes
+## Running the current pilot
+
+`benchmarks/grok_pilot.py` compares direct work with a coordinator allowed to delegate
+selectively. It does not force worker calls, history inspection, or a recall follow-up.
+Both modes have the same fixture tasks and independent verifier. Run both against the
+same `--revision`, using a Python environment with the MCP dependency installed.
+`metrics.json` records wall time, verifier results, raw coordinator turn usage, worker
+counter totals with coverage, and worker execution states. The two small algorithm fixtures
+can check the decision to keep work local; they do not establish savings on substantial
+investigations or implementation tasks. Use representative work before claiming those gains.
+
+The results and rollout status below describe the original 14 September pilot, which
+forced delegation and included extra transport exercises. They are historical evidence,
+not measurements of the current selective workflow.
+
+## What the original pilot establishes
 
 - Two headless live Groks can run concurrently and return separate validated reports.
 - A related follow-up resumes the exact session. In the read/recall test, the source file

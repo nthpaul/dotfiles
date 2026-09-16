@@ -7,7 +7,33 @@ import argparse
 import json
 from pathlib import Path
 import subprocess
+import sys
 import time
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from orchestrator.grok_usage import summarize_runs
+
+
+def collect_usage(root):
+    coordinator = []
+    for line in (root / 'events.jsonl').read_text().splitlines():
+        try:
+            event = json.loads(line)
+        except ValueError:
+            continue
+        if event.get('type') == 'turn.completed' and isinstance(event.get('usage'), dict):
+            coordinator.append(event['usage'])
+    workers = []
+    for directory in sorted((root / 'bridge' / 'runs').glob('*')):
+        result_path = directory / 'result.json'
+        result = json.loads(result_path.read_text()) if result_path.exists() else {}
+        workers.append(result)
+    return {'coordinator_turn_usage': coordinator, 'worker_usage': summarize_runs(workers),
+            'worker_states': {state: sum(r.get('state', 'unknown') == state for r in workers)
+                              for state in sorted({r.get('state', 'unknown') for r in workers})},
+            'note': 'Provider counters retain their own semantics. Missing usage is unknown. '
+                    'Coordinator usage excludes worker tokens; fixture validation is local Python.'}
+
 
 SPECS = {
     'intervals': '''Implement merge_intervals(intervals) in intervals.py. Return sorted merged
@@ -90,21 +116,21 @@ def main():
         prompt += '\nDo these tasks yourself; do not delegate or spawn subagents.'
     else:
         wrapper=repository/'codex/.local/bin/grok-bridge'
-        command += ['-c','mcp_servers.grok_bridge.command='+json.dumps(str(wrapper)),
-                    '-c','mcp_servers.grok_bridge.args='+json.dumps(['--home',str(root/'bridge'),'mcp']),
+        command += ['-c','mcp_servers.grok_bridge.command='+json.dumps(sys.executable),
+                    '-c','mcp_servers.grok_bridge.args='+json.dumps([str(wrapper),'--home',str(root/'bridge'),'mcp']),
                     '-c','mcp_servers.grok_bridge.tool_timeout_sec=45']
-        prompt += f'''\nThis is an explicit orchestration integration test. Use grok_bridge MCP to
-spawn exactly two independent workers before waiting, at {args.mode} effort. Assign intervals
-in cwd {paths['intervals']} with write_scope ["intervals.py"], and ordering in cwd
-{paths['ordering']} with write_scope ["ordering.py"]. Give each its full task specification,
-context, scope and completion criteria. Request relevant tests, allowing the other starter's
-test to fail because it belongs to the other worker. While they run, inspect the supplied tests.
-Wait for both terminal results, inspect one worker's message/tool history, review the code,
-and copy the two implementations into your combined cwd. Run combined tests. Resume one
-worker's exact session to ask it to recall its original task and explain a relevant edge case
-without editing files. Collect that report too. Fix any real defects with same-session follow-up.
-Keep working until verified or explicitly blocked. Do not spawn native Codex subagents.
-In the final report state results, retry count, defects found, and unresolved issues.'''
+        prompt += f"""\nYou may use grok_bridge MCP for substantial independent work at {args.mode}
+effort when it lets you advance a different concern. Keep small or tightly dependent work
+local. Choose whether delegation is worthwhile for these tasks; do not force worker calls.
+Available isolated writer fixtures: intervals in {paths['intervals']} with write_scope
+["intervals.py"], ordering in {paths['ordering']} with write_scope ["ordering.py"].
+If delegating, give the worker its task, relevant context, scope, and completion criteria.
+Workers run focused tests. Read terminal reports and usage first; inspect history only for
+missing evidence. Copy accepted implementations into your combined cwd and run combined
+tests. Resume only when concrete defects or missing evidence need accumulated investigation;
+handle small dependent corrections locally. No recall exercise or extra review ceremony.
+Do not spawn native Codex subagents. Report whether you delegated and why, results,
+retry count, defects found, and unresolved issues."""
     (root/'prompt.txt').write_text(prompt)
     started = time.monotonic()
     with (root/'events.jsonl').open('w') as out, (root/'stderr.log').open('w') as err:
@@ -112,7 +138,7 @@ In the final report state results, retry count, defects found, and unresolved is
     verified = subprocess.run(['python3','-c',HOLDOUT],cwd=paths['combined'],text=True,capture_output=True)
     result={'mode':args.mode,'revision':revision,'elapsed_seconds':time.monotonic()-started,
             'codex_exit':run.returncode,'holdout_exit':verified.returncode,'holdout_output':verified.stdout+verified.stderr,
-            'paths':paths}
+            'paths':paths, **collect_usage(root)}
     (root/'metrics.json').write_text(json.dumps(result,indent=2))
     print(json.dumps(result),flush=True)
 

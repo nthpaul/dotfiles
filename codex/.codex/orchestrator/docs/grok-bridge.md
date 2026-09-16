@@ -48,22 +48,29 @@ The `fake` adapter is an explicit CLI/Python testing seam, never a Grok fallback
 
 ## Coordinator loop
 
-1. Decide whether delegation saves useful work. Handle tiny or tightly coupled tasks
-   directly. For a substantial independent task, provide its objective, relevant paths
-   and context, constraints, write scope, and observable completion criteria.
-2. Start at most three Grok workers in one bridge store. Default to medium; choose high
-   for difficult debugging/review. Try xhigh before escalating exceptional complexity
-   to native Astra high. Effort labels are provider-specific, not interchangeable.
-3. Continue useful work or call `wait` (0–30 seconds). Pending means keep working/waiting.
-4. Assess **both** execution state and worker `report.outcome`. `completed` execution
-   can carry a `blocked` or `partial` task report. Check evidence and relevant tests.
-5. Use `inspect` for message/tool history. Resume the exact session for related fixes,
-   missing evidence, or report formatting. Use a fresh session for unrelated work.
-6. Integrate and verify combined behavior. The coordinator handles Graphite and CI under
-   the user's authorization. Do not end the task merely because a worker exited.
+1. Keep small corrections, prioritization, routine CI triage, and tightly coupled work
+   local. Delegate substantial independent outcomes while the coordinator advances a
+   different concern, or for valuable/explicit independent review. Do not duplicate the
+   worker's investigation in parallel.
+2. Start at most three workers per store, with isolated worktrees for writers. Assign one
+   owner for dependency installs and heavyweight combined builds/evals; workers run focused
+   checks. Default medium; use high for difficult work, xhigh before exceptional Astra high.
+3. Continue useful work or `wait` (0–30 seconds). Read terminal reports and usage first;
+   inspect history only for missing evidence or diagnosis. Pending is not completion.
+4. Assess both execution state and `report.outcome`. Review at meaningful completion
+   checkpoints; verify evidence and handle small dependent corrections locally.
+5. Resume the exact session when concrete defects or missing evidence need its accumulated
+   investigation. Independent work gets a fresh session with relevant paths and facts.
+   A related topic alone does not justify replaying a large history. Resumes carry execution
+   metadata and an artifact pointer, not a duplicate of the prior report.
+6. Integrate and verify combined behavior. Publish within the user's authorization.
 
-Malformed JSON is a failed report, with provider output retained. Ask that same worker
-to return the required JSON only; do not automatically rerun its underlying task.
+The parser accepts one schema-valid JSON object with a prose/Markdown prefix, an optional
+closing Markdown fence, or one stray trailing closing brace. Ambiguous suffixes, multiple
+objects, duplicate keys, and invalid schemas still fail. Raw output is retained and
+`report_normalized` records normalization; execution and cleanup must still succeed.
+For remaining failures, inspect saved output before a formatting-only follow-up. Never
+rerun underlying work just to fix formatting.
 
 ## Interface and records
 
@@ -74,6 +81,20 @@ to return the required JSON only; do not automatically rerun its underlying task
 | `inspect` | No ID lists runs; `session_id` lists that conversation; `run_id` returns report and message/tool history, paged by `after` and `limit` (1–200). |
 | `resume` | `session_id`, `task`, `request_id`, optional effort; a distinct run in the same Grok conversation and worktree. `recovery_checked` acknowledges investigation after interruption. |
 | `cancel` | `run_id`; durable termination request. Wait/inspect until observed settlement or explicit interruption. |
+
+`wait` includes per-run `usage`, `metrics`, and `report_normalized`, plus session totals.
+`inspect` includes session totals for a run or session (across all its runs, regardless of
+history/list pagination). `totals` sums per-invocation counters; `measured_runs` records
+coverage for each key. Missing counters remain absent. Cached input is separate from other
+input. Provider cost is reported rather than independently billed; summed provider durations
+are not parallel wall time. Coordinator and application-eval usage are outside these totals.
+Old records stay readable; new metrics are not fabricated for them.
+
+Before a new launch, free space on the store and worktree volumes must meet
+`GROK_BRIDGE_MIN_FREE_BYTES` (default 1 GiB, `0` disables). Request replay returns the original
+run even if space is now low. This guard does not reserve disk or prevent OOM. Descendant
+inspection errors are recorded as `observation_error` and retried; unknown owned-process
+state continues to fence completion and recovery. No automatic relaunch is performed.
 
 SQLite is authoritative for run ownership and events. Each run directory retains immutable
 request/prompt, any prior-run handoff, normalized history, raw provider JSONL, stderr,

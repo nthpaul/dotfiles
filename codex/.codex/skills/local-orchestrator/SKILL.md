@@ -1,30 +1,30 @@
 ---
 name: local-orchestrator
-description: Coordinate bounded headless Grok workers from native Codex through the local Grok bridge; inspect results, resume exact sessions, and handle recovery. Also supports explicitly requested legacy codex-orch teams and board.
+description: Delegate substantial independent work or independent review to headless Grok workers from native Codex; inspect results, resume exact sessions, and handle recovery. Also supports explicitly requested legacy codex-orch teams and board.
 ---
 
 # Local orchestration
 
 Astra stays in native Codex and owns planning, handoffs, review, and next steps. Use the
 five `grok_bridge` MCP tools, or the equivalent `grok-bridge` CLI when the current client
-has not loaded MCP. Read the [bridge guide](../../orchestrator/docs/grok-bridge.md) for
-schemas, setup, records, limits, and the [PDF baseline](../../orchestrator/docs/astra-grok-plan.pdf).
-For this machine, read `~/.codex/grok-bridge/ACTIVATION.json` when present: it records
-activation and live verification after the [historical pilot](../../orchestrator/docs/grok-pilot.md).
-When activation is verified and merge_sync_pending is false, use the bridge for new delegated work. For an explicitly requested existing team/board, use
-[legacy instructions](references/legacy.md); preserve its records.
+has not loaded MCP. Read the [bridge guide](../../orchestrator/docs/grok-bridge.md) when
+you need schemas, setup, or recovery details. For an explicitly requested existing team/board,
+use [legacy instructions](references/legacy.md); preserve its records.
 
 ## Choose useful delegation
 
-Do small or tightly dependent work directly. Delegate substantial independent work when
-it lets Astra make useful progress in parallel. Default Grok medium; use high for difficult
-implementation/debugging or review. Try Grok xhigh before escalating exceptional complexity
-to a native **Astra high** subagent. Native Codex subagents remain available; do not globally
-disable them. Grok workers have one delegation level and must not spawn subagents.
+Keep small fixes, prioritization, routine CI triage, and tightly dependent work in the
+coordinator. Delegate a substantial independent outcome when the coordinator can advance a
+different concern, or when independent review is valuable or explicitly requested. Do not
+investigate the worker's assigned problem in parallel; verify its evidence when it returns.
+Default Grok medium; use high for difficult implementation/debugging or review. Try xhigh
+before exceptional escalation to a native **Astra high** subagent. Grok workers must not
+spawn subagents.
 
 At most three active Grok workers per bridge store. Every writer needs a separate linked
 git worktree and explicit write scope. Empty scope means read-only by worker instruction;
-it is not an OS sandbox. Do not delegate overlapping writers into the same worktree.
+it is not an OS sandbox. Assign one owner for dependency installation and heavyweight
+combined builds/evals; workers run the focused checks their assignment needs.
 
 ## Handoff and loop
 
@@ -37,10 +37,17 @@ working/waiting. On a terminal result, read both execution state and report outc
 its evidence, and verify important behavior. Successful execution does not establish task
 correctness; a valid report can say blocked or partial.
 
-Use `inspect` for bounded message/tool history. Ask the same session to fix defects or
-provide missing evidence via `resume`; use a fresh session for unrelated work. If a report
-is malformed, request the required JSON without rerunning the original task. Final reports
-contain outcome, summary, changes/findings, validation, unresolved issues, and artifacts.
+Read terminal reports and usage totals first; use `inspect` history only for missing evidence
+or diagnosis. Keep reports concise and put detailed evidence in artifacts. Review at a
+meaningful completion checkpoint, then handle small dependent corrections locally. Resume
+the exact session when a concrete defect or missing evidence needs its accumulated
+investigation. For an independent task, use a fresh session with relevant paths and facts;
+a related topic alone does not justify replaying a large history.
+
+The bridge normalizes unambiguous report wrappers without a model call. If parsing still
+fails, inspect the retained output before requesting a formatting-only correction; never
+rerun the underlying task for formatting. Use measured session totals to assess further
+delegation; absent usage is unknown, and cached input is separate from other input.
 
 The coordinator may read code and make small dependent changes. Integrate accepted work,
 run appropriate combined validation, and use Graphite within the user's authorization.

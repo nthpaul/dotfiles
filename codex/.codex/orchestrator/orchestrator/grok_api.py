@@ -10,14 +10,23 @@ from typing import Literal
 
 from .grok_bridge import Bridge
 
-INSTRUCTIONS = '''Astra owns planning, review, and next steps. Delegate bounded tasks to Grok.
+INSTRUCTIONS = '''Astra owns planning, review, and next steps. Keep small corrections, prioritization, routine
+CI triage, and tightly dependent work local. Delegate substantial independent outcomes while
+the coordinator advances a different concern, or for valuable/explicit independent review.
+Do not duplicate the worker's investigation in parallel.
 Include objective, relevant context and paths, constraints, and observable completion criteria
 in task. Empty write_scope means read-only; writers require separate linked worktrees.
 Default Grok medium; choose high for difficult work, xhigh before escalating the hardest
 problems to a native Astra high subagent. Grok workers must not spawn subagents.
 After spawn/resume, do useful work or wait until terminal. Pending is not completion.
 Review the worker report and evidence; execution completed does not prove correctness.
-Use inspect for tool history, and resume the exact session for related fixes or missing evidence.
+Read terminal reports and usage first; inspect history only for missing evidence or diagnosis.
+Review at completion checkpoints; handle small dependent corrections locally. Resume when a
+concrete defect or missing evidence needs accumulated investigation, not just a related topic.
+Use fresh sessions with bounded context for independent tasks. Assign one owner for dependency
+installs and heavyweight combined builds/evals. Keep reports concise; detailed evidence goes
+in artifacts. Unambiguous JSON wrappers are normalized locally; inspect other parse failures
+before requesting a formatting-only correction. Missing usage is unknown; cache reads are separate.
 Use a fresh request ID for new work; retry identical requests with the original ID.
 After an interrupted run, inspect worktree/history and external effects before recovery_checked.
 Wait cursors apply to a fixed run set; start at zero for a new set. Results remain inspectable.
