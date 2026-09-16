@@ -181,3 +181,6 @@ if [[ -f "$HOME/.cursor/skills/orch/completions/_orch" ]]; then
 fi
 
 export PATH="$HOME/.relay/bin:$PATH"
+
+# opencode
+export PATH=/Users/ple/.opencode/bin:$PATH
