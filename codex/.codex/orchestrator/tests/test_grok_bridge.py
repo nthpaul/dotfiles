@@ -3,6 +3,8 @@ import json
 import os
 from pathlib import Path
 import signal
+import subprocess
+import sys
 import tempfile
 import time
 import unittest
@@ -72,7 +74,9 @@ class GrokBridgeTests(unittest.TestCase):
             self.bridge.spawn('different', str(self.root), 'same', adapter='fake')
 
     def test_busy_resume_then_continuation(self):
-        first = self.spawn(delay=.5)
+        prior_report = {'outcome': 'completed', 'summary': 'unique prior investigation',
+                        'changes': ['x' * 10000], 'validation': [], 'unresolved': [], 'artifacts': []}
+        first = self.spawn(delay=.5, report=prior_report)
         with self.assertRaisesRegex(ValueError, 'busy'):
             self.bridge.resume(first['session_id'], 'next', 'next')
         self.finish(first)
@@ -81,6 +85,83 @@ class GrokBridgeTests(unittest.TestCase):
         self.assertNotEqual(second['run_id'], first['run_id'])
         self.assertEqual(self.finish(second)['state'], 'completed')
         self.assertTrue(json.loads(self.bridge.row(second['run_id'])['data'])['resume'])
+        prompt = (self.bridge.directory(second['run_id']) / 'prompt.txt').read_text()
+        self.assertNotIn(prior_report['summary'], prompt)
+        self.assertNotIn(prior_report['changes'][0], prompt)
+        self.assertIn(first['run_id'], prompt)
+        self.assertEqual(self.bridge.inspect(first['run_id'])['report'], prior_report)
+
+    def test_session_totals_cover_all_runs_and_wait_exposes_usage(self):
+        first = self.spawn()
+        self.finish(first)
+        self.bridge.update(first['run_id'], usage={'input_tokens': 100}, metrics={'num_turns': 2})
+        second = self.bridge.resume(first['session_id'], 'next', 'next')
+        self.finish(second)
+        self.bridge.update(second['run_id'], usage={'input_tokens': 20, 'cache_read_input_tokens': 300})
+        session = self.bridge.inspect(session_id=first['session_id'], limit=1)
+        self.assertEqual(len(session['runs']), 1)
+        self.assertEqual(session['session_totals']['totals'],
+                         {'input_tokens': 120, 'cache_read_input_tokens': 300, 'num_turns': 2})
+        result = self.bridge.wait([first['run_id'], second['run_id']], timeout=0)
+        self.assertEqual(result['results'][0]['usage'], {'input_tokens': 100})
+        self.assertEqual(result['session_totals'][first['session_id']], session['session_totals'])
+        self.assertEqual(self.bridge.wait([first['run_id'], second['run_id']],
+                         after=result['cursor'], timeout=0)['results'], [])
+
+    def test_low_disk_rejects_new_launch_but_not_idempotent_replay(self):
+        first = self.spawn()
+        self.finish(first)
+        with patch('orchestrator.grok_bridge.shutil.disk_usage') as disk:
+            disk.return_value.free = 0
+            with self.assertRaisesRegex(ValueError, 'Insufficient disk'):
+                self.spawn()
+            same = self.bridge.spawn('FAKE_SCRIPT={}', str(self.root), '1', adapter='fake')
+            self.assertEqual(same['run_id'], first['run_id'])
+        self.assertEqual(len(self.bridge.inspect()['runs']), 1)
+
+    def test_disk_guard_checks_worktree_volume_and_can_be_disabled(self):
+        from types import SimpleNamespace
+        with patch('orchestrator.grok_bridge.shutil.disk_usage',
+                   side_effect=[SimpleNamespace(free=2**40), SimpleNamespace(free=0)]):
+            with self.assertRaisesRegex(ValueError, 'Insufficient disk'):
+                self.spawn()
+        self.bridge.min_free_bytes = 0
+        with patch('orchestrator.grok_bridge.shutil.disk_usage', return_value=SimpleNamespace(free=0)):
+            self.assertEqual(self.finish(self.spawn())['state'], 'completed')
+
+    def test_permission_error_during_descendant_scan_does_not_abort_provider(self):
+        with patch.object(self.bridge, 'launch'):
+            run = self.spawn(delay=.3)
+        script = '''from unittest.mock import patch
+from orchestrator.grok_bridge import Bridge, execute
+import sys
+with patch('orchestrator.grok_bridge._snapshot', side_effect=PermissionError(1, 'proc_pidinfo could not establish identity')):
+    execute(Bridge(sys.argv[1]), sys.argv[2])
+'''
+        child = subprocess.run([sys.executable, '-c', script, str(self.bridge.home), run['run_id']],
+                               capture_output=True, text=True, timeout=15)
+        self.assertEqual(child.returncode, 0, child.stderr)
+        result = self.bridge.inspect(run['run_id'])
+        self.assertEqual(result['state'], 'completed')
+        self.assertIn('proc_pidinfo', result['observation_error'])
+
+    def test_unknown_owned_identity_still_fences_recovery(self):
+        with patch('orchestrator.grok_bridge.ProcessIdentity.state', side_effect=PermissionError):
+            self.assertTrue(alive({'pid': 42, 'start_identity': 'unreadable'}))
+
+    def test_cancel_cannot_release_an_unobservable_owned_process(self):
+        with patch.object(self.bridge, 'launch'):
+            run = self.spawn()
+        self.bridge.update(run['run_id'], provider={'pid': 42, 'start_identity': 'unreadable'})
+        with self.bridge.transaction() as db:
+            db.execute("UPDATE runs SET state='interrupted' WHERE id=?", (run['run_id'],))
+        with patch('orchestrator.grok_bridge.ProcessIdentity.state', side_effect=PermissionError), \
+             patch('orchestrator.grok_bridge.control_tree', side_effect=PermissionError('cannot inspect')):
+            self.bridge.cancel_interrupted(self.bridge.row(run['run_id']))
+        row = self.bridge.row(run['run_id'])
+        self.assertEqual(row['released'], 0)
+        self.assertEqual(json.loads(row['data'])['observation_error'], 'cannot inspect')
+        self.bridge.update(run['run_id'], provider=None)
 
     def test_invalid_report_missing_terminal_and_provider_failure(self):
         for spec in ({'report': 'bad'}, {'missing_result': True}, {'exit_code': 1}, {'error': 'provider unavailable'}):

@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import queue
 import signal
+import shutil
 import sqlite3
 import subprocess
 import sys
@@ -16,6 +17,7 @@ import time
 import uuid
 
 from .grok_transport import EFFORTS, Result, command, prompt
+from .grok_usage import summarize_runs
 from .resources import ProcessIdentity, _snapshot, control_tree
 from .runner import durable_json
 
@@ -23,8 +25,13 @@ TERMINAL = ('completed', 'failed', 'cancelled', 'interrupted')
 
 
 def alive(identity):
-    return bool(identity and ProcessIdentity.state(identity['pid'], identity['start_identity'])
-                not in ('exited', 'replaced', 'Z'))
+    if not identity:
+        return False
+    try:
+        return ProcessIdentity.state(identity['pid'], identity['start_identity']) not in ('exited', 'replaced', 'Z')
+    except OSError:
+        # Unobservable ownership must continue to fence recovery and completion.
+        return True
 
 
 def history_records(line):
@@ -55,8 +62,12 @@ def history_records(line):
 
 
 class Bridge:
-    def __init__(self, home=None):
+    def __init__(self, home=None, min_free_bytes=None):
         self.home = Path(home or '~/.codex/grok-bridge').expanduser().resolve()
+        self.min_free_bytes = int(os.environ.get('GROK_BRIDGE_MIN_FREE_BYTES', 1024 ** 3)
+                                  if min_free_bytes is None else min_free_bytes)
+        if self.min_free_bytes < 0:
+            raise ValueError('min_free_bytes must be nonnegative')
         self.home.mkdir(parents=True, exist_ok=True, mode=0o700)
         self.database = self.home / 'bridge.sqlite3'
         with closing(self.connect()) as db:
@@ -217,6 +228,11 @@ class Bridge:
         for scope in write_scope:
             if not isinstance(scope, str) or not scope or not (Path(cwd) / scope).resolve().is_relative_to(cwd):
                 raise ValueError('write_scope must stay within cwd')
+        for path in (self.home, Path(cwd)):
+            free = shutil.disk_usage(path).free
+            if free < self.min_free_bytes:
+                raise ValueError(f'Insufficient disk space at {path}: {free} bytes free; '
+                                 f'{self.min_free_bytes} required. Free space before retrying.')
         git = subprocess.run(['git', 'rev-parse', '--absolute-git-dir', '--git-common-dir'],
                              cwd=cwd, text=True, capture_output=True)
         gitdir, common = git.stdout.splitlines() if git.returncode == 0 else (None, None)
@@ -274,10 +290,10 @@ class Bridge:
                 previous = db.execute('SELECT * FROM runs WHERE session_id=? ORDER BY created DESC LIMIT 1', (session_id,)).fetchone()
                 prior_data = json.loads(previous['data'])
                 context = {'previous_run': previous['id'], 'execution_state': previous['state'],
-                           'report': prior_data.get('report'), 'error': prior_data.get('error'),
+                           'error': prior_data.get('error'),
                            'artifacts_directory': str(self.directory(previous['id']))}
                 durable_json(directory / 'handoff.json', context)
-                handoff = '\n\nPrevious bridge evidence (execution state is distinct from task correctness):\n' + json.dumps(context)
+                handoff = '\n\nPrevious execution metadata; conversation history is already retained. Read artifacts only if needed:\n' + json.dumps(context)
             (directory / 'prompt.txt').write_text(prompt(task, write_scope) + handoff)
             os.chmod(directory / 'prompt.txt', 0o600)
             data = {'resume': not fresh}
@@ -310,7 +326,10 @@ class Bridge:
             with closing(self.connect()) as db:
                 rows = db.execute('SELECT id,session_id,state,created,released FROM runs WHERE (? IS NULL OR session_id=?) ORDER BY created DESC LIMIT ?',
                                   (session_id, session_id, limit)).fetchall()
-            return {'runs': [dict(r) for r in rows]}
+            result = {'runs': [dict(r) for r in rows]}
+            if session_id is not None:
+                result['session_totals'] = self.session_totals(session_id)
+            return result
         row = self.row(run_id)
         data = json.loads(row['data'])
         history = []
@@ -337,9 +356,17 @@ class Bridge:
         return {'run_id': run_id, 'session_id': row['session_id'], 'state': row['state'],
                 'cancel_requested': bool(row['cancelled']), 'released': bool(row['released']),
                 'report': data.get('report'), 'error': data.get('error'), 'usage': data.get('usage'),
+                'metrics': data.get('metrics'), 'report_normalized': data.get('report_normalized', False),
+                'observation_error': data.get('observation_error'),
+                'session_totals': self.session_totals(row['session_id']),
                 'task': json.loads(row['request'])['task'],
                 'created': row['created'], 'finished': data.get('finished'),
                 'artifacts_directory': str(self.directory(run_id)), 'history': history, 'cursor': next_cursor}
+
+    def session_totals(self, session_id):
+        with closing(self.connect()) as db:
+            rows = db.execute('SELECT data FROM runs WHERE session_id=?', (session_id,)).fetchall()
+        return summarize_runs(json.loads(row['data']) for row in rows)
 
     def wait(self, run_ids, after=0, timeout=30):
         if not isinstance(run_ids, list) or not run_ids or not all(isinstance(i, str) for i in run_ids):
@@ -356,10 +383,14 @@ class Bridge:
                 rows = db.execute(f'SELECT * FROM events WHERE sequence>? AND run_id IN ({placeholders}) ORDER BY sequence',
                                   (after, *run_ids)).fetchall()
             matches = [dict(json.loads(row['body']), sequence=row['sequence']) for row in rows if row['run_id'] in run_ids]
+            for match in matches:
+                data = json.loads(self.row(match['run_id'])['data'])
+                match.update({key: data.get(key) for key in ('usage', 'metrics', 'report_normalized', 'observation_error')})
             states = {i: self.row(i)['state'] for i in run_ids}
             if matches or all(s in TERMINAL for s in states.values()) or time.monotonic() >= deadline:
                 return {'results': matches, 'cursor': rows[-1]['sequence'] if rows else after,
-                        'pending': [i for i, state in states.items() if state not in TERMINAL], 'states': states}
+                        'pending': [i for i, state in states.items() if state not in TERMINAL], 'states': states,
+                        'session_totals': {m['session_id']: self.session_totals(m['session_id']) for m in matches}}
             time.sleep(0.2)
 
     def cancel(self, run_id):
@@ -377,7 +408,10 @@ class Bridge:
         data = json.loads(row['data'])
         for identity in [data.get('provider'), *data.get('children', [])]:
             if alive(identity):
-                control_tree(identity['pid'], identity['start_identity'], 'cancel')
+                try:
+                    control_tree(identity['pid'], identity['start_identity'], 'cancel')
+                except OSError as error:
+                    self.update(row['id'], observation_error=str(error))
         identities = [data.get('worker'), data.get('provider'), *data.get('children', [])]
         if not any(alive(i) for i in identities):
             with self.transaction() as db:
@@ -420,7 +454,14 @@ def execute(bridge, run_id):
                 events.put((source, None))
 
         def capture():
-            additions = _snapshot({pid: i for pid, i in children.items() if alive(i)})
+            provider = json.loads(bridge.row(run_id)['data']).get('provider')
+            if provider:
+                children[provider['pid']] = provider
+            try:
+                additions = _snapshot({pid: i for pid, i in children.items() if alive(i)})
+            except OSError as error:
+                bridge.update(run_id, observation_error=str(error))
+                return
             changed = False
             for pid, identity in additions.items():
                 if children.get(pid) != identity:
@@ -432,7 +473,11 @@ def execute(bridge, run_id):
         def stop():
             for identity in list(children.values()):
                 if alive(identity):
-                    observation = control_tree(identity['pid'], identity['start_identity'], 'cancel')
+                    try:
+                        observation = control_tree(identity['pid'], identity['start_identity'], 'cancel')
+                    except OSError as error:
+                        bridge.update(run_id, observation_error=str(error))
+                        continue
                     for item in observation.get('observed', []):
                         children[item['pid']] = item
             bridge.update(run_id, children=list(children.values()))
@@ -443,10 +488,14 @@ def execute(bridge, run_id):
                                       '--home', str(bridge.home), '--run', run_id, '--provider'],
                                      cwd=body['cwd'], stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
                                      stderr=subprocess.PIPE, text=True, start_new_session=True)
-            identity = ProcessIdentity.read(child.pid)
+            try:
+                identity = ProcessIdentity.read(child.pid)
+            except OSError as error:
+                bridge.update(run_id, observation_error=str(error))
+                identity = None
             if identity:
                 children[child.pid] = identity
-            bridge.update(run_id, provider=identity, children=list(children.values()))
+                bridge.update(run_id, provider=identity, children=list(children.values()))
             for source, stream in [('stdout', child.stdout), ('stderr', child.stderr)]:
                 threading.Thread(target=drain, args=(source, stream), daemon=True).start()
             closed = set()
