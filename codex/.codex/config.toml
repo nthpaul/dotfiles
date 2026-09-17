@@ -151,6 +151,9 @@ trust_level = "trusted"
 [projects."/Users/ple/Documents/Codex/2026-09-14/ify"]
 trust_level = "trusted"
 
+[projects."/Users/ple/Documents/Codex/2026-09-16/notes"]
+trust_level = "trusted"
+
 [notice]
 hide_full_access_warning = true
 

@@ -20,3 +20,9 @@ permission_mode = "ask"
 
 [privacy]
 privacy_banner_acked = "2026-08-18T16:34:32Z"
+
+[plugins]
+enabled = [
+    "pstack",
+    "ponytail",
+]
