@@ -2,80 +2,83 @@
   "version": 1,
   "skills": {
     "create-hook": {
-      "lastSyncedAt": 1789610829687
+      "lastSyncedAt": 1789877971622
     },
     "create-rule": {
-      "lastSyncedAt": 1789610829687
+      "lastSyncedAt": 1789877971622
     },
     "create-skill": {
-      "lastSyncedAt": 1789610829687
+      "lastSyncedAt": 1789877971622
     },
     "create-subagent": {
-      "lastSyncedAt": 1789610829687
+      "lastSyncedAt": 1789877971622
     },
     "migrate-to-skills": {
-      "lastSyncedAt": 1789610829687
+      "lastSyncedAt": 1789877971622
     },
     "shell": {
-      "lastSyncedAt": 1789610829687
+      "lastSyncedAt": 1789877971622
     },
     "statusline": {
-      "lastSyncedAt": 1789610829687
+      "lastSyncedAt": 1789877971622
     },
     "update-cli-config": {
-      "lastSyncedAt": 1789610829687
+      "lastSyncedAt": 1789877971622
     },
     "update-cursor-settings": {
-      "lastSyncedAt": 1789610829687
+      "lastSyncedAt": 1789877971622
     },
     "canvas": {
-      "lastSyncedAt": 1789610829687
+      "lastSyncedAt": 1789877971622
     },
     "split-to-prs": {
-      "lastSyncedAt": 1789610829687
+      "lastSyncedAt": 1789877971622
     },
     "sdk": {
-      "lastSyncedAt": 1789610829687
+      "lastSyncedAt": 1789877971622
     },
     "loop": {
-      "lastSyncedAt": 1789610829687
+      "lastSyncedAt": 1789877971622
     },
     "review": {
-      "lastSyncedAt": 1789610829687
+      "lastSyncedAt": 1789877971622
     },
     "review-bugbot": {
-      "lastSyncedAt": 1789610829687
+      "lastSyncedAt": 1789877971622
     },
     "review-security": {
-      "lastSyncedAt": 1789610829687
+      "lastSyncedAt": 1789877971622
     },
     "rename-chat": {
-      "lastSyncedAt": 1789610829687
+      "lastSyncedAt": 1789877971622
     },
     "new-repo": {
-      "lastSyncedAt": 1789610829687
+      "lastSyncedAt": 1789877971622
     },
     "origin": {
-      "lastSyncedAt": 1789610829687
+      "lastSyncedAt": 1789877971622
     },
     "share": {
-      "lastSyncedAt": 1789610829687
+      "lastSyncedAt": 1789877971622
     },
     "goal": {
-      "lastSyncedAt": 1789610829687
+      "lastSyncedAt": 1789877971622
     },
     "autopilot": {
-      "lastSyncedAt": 1789610829687
+      "lastSyncedAt": 1789877971622
     },
     "automate": {
-      "lastSyncedAt": 1789610829687
+      "lastSyncedAt": 1789877971622
     },
     "deploy-with-vercel": {
-      "lastSyncedAt": 1789610829687
+      "lastSyncedAt": 1789877971622
     },
     "onboard": {
-      "lastSyncedAt": 1789610829687
+      "lastSyncedAt": 1789877971622
+    },
+    "visualize": {
+      "lastSyncedAt": 1789877971622
     }
   },
-  "lastInventoryAt": 1789609029471
+  "lastInventoryAt": 1789873695667
 }
