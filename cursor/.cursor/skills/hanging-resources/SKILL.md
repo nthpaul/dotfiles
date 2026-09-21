@@ -4,16 +4,19 @@ description: >-
   Identify hanging local resources and list them: idle and headless
   cursor-agent / Claude / Grok / Codex processes (including grok -p,
   cursor-agent -p, claude -p, codex exec, orch wrappers), stuck Hermes
-  gateway restarts, leftover git worktrees under ~/.traba/worktrees, and
-  Docker leftovers. Use when the user asks about hanging resources, hanging
-  items, leftover agents/worktrees, or wants a cleanup inventory. Prefer the
-  hanging-resources CLI — do not re-scan by hand.
+  gateway restarts, Docker leftovers, and git worktrees. Stale worktrees
+  (no live process cwd inside) are removed, not listed for later. Use when
+  the user asks about hanging resources, leftover agents/worktrees, or disk
+  from old checkouts. Prefer the hanging-resources CLI — do not re-scan by hand.
 ---
 
 # Hanging resources
 
 Scan the machine for leftover agent/dev resources and **list** them.
-Do **not** kill or remove anything unless the user explicitly asks.
+Do **not** kill processes or remove Docker containers unless the user explicitly asks.
+
+Stale worktrees are the exception: every run of this skill removes them before the report.
+Run `hanging-resources clean worktrees --stale`. Do not ask which worktrees to remove.
 
 ## Command
 
@@ -43,7 +46,7 @@ If the command is missing, the script is:
 
 (`scripts/scan.sh` is a thin wrapper around `hanging-resources scan`.)
 
-Cleanup (only when the user names targets, or `--all` for that type):
+Cleanup:
 
 ```bash
 hanging-resources clean agents 30526
@@ -56,9 +59,9 @@ hanging-resources clean orch --all
 hanging-resources clean hermes --all
 hanging-resources clean codex 1234
 
-hanging-resources clean worktrees ple-eng-23589-adjust-empty-break-clear
-hanging-resources clean worktrees traba/ple-eng-23593-ops-failure-kind-stamp
-hanging-resources clean worktrees --all --dry-run
+hanging-resources clean worktrees                  # stale checkouts; this is the run
+hanging-resources clean worktrees --stale --dry-run
+hanging-resources clean worktrees some-slug --force # in-use checkout, only when named
 
 hanging-resources clean docker kafka
 hanging-resources clean docker cc37134712fe
@@ -83,7 +86,7 @@ hanging-resources clean docker postgres_local --force
 | **Stuck Hermes gateway** | `hermes_cli.main gateway restart` still running (any age). |
 | **Idle Codex** | Interactive Codex CLI (`codex` / `codex.js`), plus `codex sandbox` / `node_repl` (sandbox idle after ~1h). Skip the Codex app. |
 | **Headless Codex** | `codex exec` (alias `e`). Listed at any age / CPU. |
-| **Leftover worktrees** | Entries under `$TRABA_WORKTREES_ROOT` (default `~/.traba/worktrees`) registered via `git worktree list` on known repos (`traba`, `the-matrix` if present). Main checkouts are not hanging. |
+| **Stale worktree** | A directory under a worktree root that has a `.git` file or directory, and no live process has its cwd inside it. Roots: `$TRABA_WORKTREES_ROOT` (default `~/.traba/worktrees`), `~/projects/worktrees`, `~/.grok/worktrees`, `~/.cursor/worktrees`, `~/.claude/worktrees`, one or two levels down. Main repos under `~/projects/<repo>` are not worktrees. |
 | **Docker leftovers** | `docker ps -a` when the daemon is up. If the daemon is down, say so once — do not invent containers. |
 
 Expected / not hanging by default:
@@ -99,16 +102,16 @@ Expected / not hanging by default:
 Lead with the CLI verdict (`clean` or `N hanging item(s)`).
 
 Then a table (or tight bullets) of findings only. Group by category. Skip empty categories.
-Each item includes listen ports (`ports 3000, 8787` or `ports none`). Process rows include child listeners. Docker uses published ports. Worktrees include listeners whose cwd is in that tree.
+Each item includes listen ports (`ports 3000, 8787` or `ports none`). Process rows include child listeners. Docker uses published ports. Worktrees are tagged `stale` or `in-use`, and include listeners whose cwd is in that tree.
 
-End with: ask which items to kill/remove. Do not act until they say so.
+For processes and Docker, end by asking which items to kill or remove. Do not act on those until they say so. Worktrees are already removed by the stale pass; report what went and which checkouts stayed because they are in use.
 
-## Cleanup (only when asked)
+## Cleanup
 
+- **Worktrees:** `hanging-resources clean worktrees --stale` on every run. In-use checkouts stay. A named in-use checkout needs `--force`. `--all` without `--force` is the stale set. Large `node_modules` trees are slow. Do not use `lsof +D`.
 - **cursor-agent / claude / grok / orch / hermes / codex:** `hanging-resources clean agents|claude|grok|orch|hermes|codex <pid>` (add `--kill-9` if TERM is not enough).
-- **Worktrees:** `hanging-resources clean worktrees <path|repo/slug|slug>`. Large `node_modules` trees are slow — say so; do not use `lsof +D` (too slow).
 - **Docker:** `hanging-resources clean docker <id|name>`. Running containers need `--force`.
-- Prefer removing only the paths/pids the user named. If they say “all”, `hanging-resources clean <type> --all` (show `--dry-run` first if they might not want the whole set).
+- For processes and Docker, remove only the paths or pids the user named. If they say “all”, `hanging-resources clean <type> --all` (show `--dry-run` first if they might not want the whole set).
 
 ## Notes
 

@@ -57,7 +57,7 @@ _hanging-resources() {
           ;;
         worktrees)
           _alternative \
-            'flags:flag:((--all --dry-run))' \
+            'flags:flag:((--all --stale --dry-run --force))' \
             'trees:worktree:_hr_ids worktrees'
           ;;
         docker)

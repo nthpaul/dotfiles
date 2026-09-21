@@ -1,19 +1,25 @@
 #!/usr/bin/env bash
 # List or clean hanging local agent/dev resources.
-# Clean only acts on ids you pass, or --all for that type.
+# Process and docker cleanup acts on ids you pass, or --all.
+# "clean worktrees" with no targets removes stale checkouts.
 set -euo pipefail
 
 AGENT_IDLE_MIN=30
 ONLY=""
 WORKTREES_ROOT="${TRABA_WORKTREES_ROOT:-$HOME/.traba/worktrees}"
-KNOWN_REPOS=(
-  "$HOME/projects/traba/traba"
-  "$HOME/projects/traba/the-matrix"
+# Agent checkouts. A directory under one of these, with its own .git, is a worktree.
+WORKTREE_ROOTS=(
+  "$WORKTREES_ROOT"
+  "$HOME/projects/worktrees"
+  "$HOME/.grok/worktrees"
+  "$HOME/.cursor/worktrees"
+  "$HOME/.claude/worktrees"
 )
 SELF_PIDS=""
 KILL9=0
 FORCE=0
 DRY_RUN=0
+STALE=0
 
 usage() {
   cat <<'EOF'
@@ -21,17 +27,22 @@ Usage:
   hanging-resources [scan] [--only agents|claude|grok|codex|orch|worktrees|hermes|docker|headless] [--agent-idle-min N]
 
   hanging-resources clean agents|claude|grok|codex|orch|hermes [--all] [--dry-run] [--kill-9] [PID...]
-  hanging-resources clean worktrees [--all] [--dry-run] [PATH|repo/slug|slug...]
+  hanging-resources clean worktrees [--stale|--all] [--dry-run] [--force] [PATH|repo/slug|slug...]
   hanging-resources clean docker [--all] [--dry-run] [--force] [ID|NAME...]
 
-scan (default) lists leftovers. clean never guesses: pass targets or --all.
+scan lists leftovers. "clean worktrees" with no targets removes stale checkouts.
+Other types never guess: pass targets or --all.
 
   --only headless   grok -p, cursor-agent -p, claude -p, codex exec, orch wrap
                     (any age / CPU — these are background leftovers)
   --all             every item the scan would report for that type
+                    worktrees: stale checkouts only, unless --force
+  --stale           worktrees with no live process cwd inside them
+                    (also the default for "clean worktrees" with no targets)
   --dry-run         print what would be removed; do not act
   --kill-9          after TERM, SIGKILL if the pid is still up
   --force           docker: allow removing a running container
+                    worktrees: allow removing an in-use checkout
                     (docker --all skips running containers unless --force)
 
 Shorthand (same as clean):
@@ -109,6 +120,50 @@ load_listen_cwds() {
       n*) [[ -n "$pid" ]] && LISTEN_PID_CWD[$pid]="${line#n}" ;;
     esac
   done < <(lsof -a -d cwd -p "$csv" -F pn 2>/dev/null || true)
+}
+
+# Every live process cwd. A checkout is in use when one of these is inside it.
+declare -a PROCESS_CWDS=()
+PROCESS_CWDS_LOADED=0
+
+load_process_cwds() {
+  (( PROCESS_CWDS_LOADED == 1 )) && return 0
+  PROCESS_CWDS_LOADED=1
+  local pid=""
+  while IFS= read -r line; do
+    case "$line" in
+      p*) pid="${line#p}" ;;
+      n*)
+        [[ -z "$pid" ]] && continue
+        PROCESS_CWDS+=("${line#n}")
+        ;;
+    esac
+  done < <(lsof -d cwd -F pn 2>/dev/null || true)
+}
+
+# True when cwd is the tree or a descendant. "foo" does not match "foo-bar".
+cwd_uses_tree() {
+  local tree="$1" cwd="$2"
+  [[ -n "$tree" && -n "$cwd" ]] || return 1
+  [[ "$cwd" == "$tree" || "$cwd" == "$tree"/* ]]
+}
+
+path_under_worktree_root() {
+  local path="$1" root
+  for root in "${WORKTREE_ROOTS[@]}"; do
+    [[ -n "$root" && "$path" == "$root"/* ]] && return 0
+  done
+  return 1
+}
+
+worktree_in_use() {
+  load_process_cwds
+  local tree="$1" cwd
+  [[ ${#PROCESS_CWDS[@]} -eq 0 ]] && return 1
+  for cwd in "${PROCESS_CWDS[@]}"; do
+    cwd_uses_tree "$tree" "$cwd" && return 0
+  done
+  return 1
 }
 
 collect_descendants() {
@@ -407,28 +462,31 @@ list_hermes_pids() {
   return 0
 }
 
+# Checkouts under the worktree roots. Depth 1 is ~/.claude/worktrees/<slug>.
+# Depth 2 is <root>/<repo>/<slug>, including Grok copies that are not registered
+# with the main repo. A parent that only holds other checkouts has no .git.
 list_worktree_paths() {
   declare -A seen=()
-  local repo wt_line path
-  for repo in "${KNOWN_REPOS[@]}"; do
-    [[ -d "$repo/.git" || -f "$repo/.git" ]] || continue
-    while IFS= read -r wt_line; do
-      [[ -z "$wt_line" ]] && continue
-      path=$(awk '{print $1}' <<<"$wt_line")
-      [[ "$path" == "$repo" ]] && continue
-      [[ -n "${seen[$path]+x}" ]] && continue
+  local root path
+  for root in "${WORKTREE_ROOTS[@]}"; do
+    [[ -d "$root" ]] || continue
+    while IFS= read -r path; do
+      [[ -z "$path" || -n "${seen[$path]+x}" ]] && continue
+      [[ -e "$path/.git" ]] || continue
       seen[$path]=1
       printf '%s\n' "$path"
-    done < <(git -C "$repo" worktree list 2>/dev/null || true)
+    done < <(find "$root" -mindepth 1 -maxdepth 2 \( -type d -o -type l \) 2>/dev/null || true)
   done
-  if [[ -d "$WORKTREES_ROOT" ]]; then
-    while IFS= read -r path; do
-      [[ -z "$path" ]] && continue
-      [[ -n "${seen[$path]+x}" ]] && continue
-      printf '%s\n' "$path"
-    done < <(find "$WORKTREES_ROOT" -mindepth 2 -maxdepth 2 -type d 2>/dev/null || true)
-  fi
   return 0
+}
+
+list_stale_worktree_paths() {
+  local path
+  while IFS= read -r path; do
+    [[ -z "$path" ]] && continue
+    worktree_in_use "$path" && continue
+    printf '%s\n' "$path"
+  done < <(list_worktree_paths)
 }
 
 list_docker_rows() {
@@ -604,30 +662,21 @@ cmd_scan() {
   fi
 
   if want worktrees; then
-    section "Leftover worktrees"
+    section "Worktrees"
     found=0
-    declare -A seen=()
-    for repo in "${KNOWN_REPOS[@]}"; do
-      [[ -d "$repo/.git" || -f "$repo/.git" ]] || continue
-      while IFS= read -r wt_line; do
-        [[ -z "$wt_line" ]] && continue
-        path=$(awk '{print $1}' <<<"$wt_line")
-        [[ "$path" == "$repo" ]] && continue
-        [[ -n "${seen[$path]+x}" ]] && continue
-        seen[$path]=1
-        branch=$(sed -n 's/.*\[\([^]]*\)\].*/\1/p' <<<"$wt_line")
-        emit "- $path${branch:+ · [$branch]} · ports $(ports_for_worktree "$path") · from $(basename "$repo")"
-        found=1
-      done < <(git -C "$repo" worktree list 2>/dev/null || true)
-    done
-    if [[ -d "$WORKTREES_ROOT" ]]; then
-      while IFS= read -r path; do
-        [[ -z "$path" ]] && continue
-        [[ -n "${seen[$path]+x}" ]] && continue
-        emit "- $path · ports $(ports_for_worktree "$path") · (dir present, not in git worktree list)"
-        found=1
-      done < <(find "$WORKTREES_ROOT" -mindepth 2 -maxdepth 2 -type d 2>/dev/null || true)
-    fi
+    local path branch state
+    while IFS= read -r path; do
+      [[ -z "$path" ]] && continue
+      branch=$(git -C "$path" rev-parse --abbrev-ref HEAD 2>/dev/null || true)
+      [[ "$branch" == "HEAD" ]] && branch="(detached)"
+      if worktree_in_use "$path"; then
+        state="in-use"
+      else
+        state="stale"
+      fi
+      emit "- $path${branch:+ · [$branch]} · $state · ports $(ports_for_worktree "$path")"
+      found=1
+    done < <(list_worktree_paths)
     if (( found == 0 )); then
       echo "(none)"
     fi
@@ -749,11 +798,22 @@ resolve_worktrees() {
   printf '%s\n' "${matches[@]}"
 }
 
+rm_checkout() {
+  local path="$1"
+  # uchg files make rm return "Operation not permitted" and leave the directory.
+  chflags -R nouchg "$path" 2>/dev/null || true
+  rm -rf "$path"
+}
+
 remove_worktree() {
   local path="$1"
-  local common repo rel
+  local common repo err
   if [[ ! -e "$path" ]]; then
     echo "missing: $path" >&2
+    return 1
+  fi
+  if ! path_under_worktree_root "$path"; then
+    echo "refusing to remove outside worktree roots: $path" >&2
     return 1
   fi
   if (( DRY_RUN == 1 )); then
@@ -761,21 +821,29 @@ remove_worktree() {
     return 0
   fi
   common=$(git -C "$path" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)
-  if [[ -n "$common" ]]; then
+  # A linked worktree's common dir lives in the main repo. A copied checkout's
+  # common dir is inside itself; git worktree remove refuses that.
+  if [[ -n "$common" && "$common" != "$path/.git" && "$common" != "$path"/* ]]; then
     repo="${common%.git}"
     repo="${repo%/}"
-    git -C "$repo" worktree remove --force "$path"
-    git -C "$repo" worktree prune
+    if err=$(git -C "$repo" worktree remove --force "$path" 2>&1); then
+      git -C "$repo" worktree prune 2>/dev/null || true
+      echo "removed worktree: $path"
+      return 0
+    fi
+  fi
+  if rm_checkout "$path"; then
+    if [[ -n "${repo:-}" && -e "$repo" ]]; then
+      git -C "$repo" worktree prune 2>/dev/null || true
+    fi
+    if [[ -e "$path" ]]; then
+      echo "failed to remove: $path${err:+ ($err)}" >&2
+      return 1
+    fi
     echo "removed worktree: $path"
     return 0
   fi
-  rel="${path#"$WORKTREES_ROOT"/}"
-  if [[ "$path" == "$WORKTREES_ROOT"/* && "$rel" != */*/* && "$rel" == */* ]]; then
-    rm -rf "$path"
-    echo "removed leftover dir: $path"
-    return 0
-  fi
-  echo "not a git worktree and not under $WORKTREES_ROOT/<repo>/<slug>: $path" >&2
+  echo "failed to remove: $path" >&2
   return 1
 }
 
@@ -832,6 +900,7 @@ cmd_clean() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --all) all=1; shift ;;
+      --stale) STALE=1; shift ;;
       --dry-run) DRY_RUN=1; shift ;;
       --kill-9) KILL9=1; shift ;;
       --force) FORCE=1; shift ;;
@@ -850,12 +919,20 @@ cmd_clean() {
       ;;
   esac
 
-  if (( all == 0 )) && [[ ${#targets[@]} -eq 0 ]]; then
+  if (( STALE == 1 )) && [[ "$kind" != "worktrees" ]]; then
+    echo "clean $kind: --stale is only for worktrees" >&2
+    exit 2
+  fi
+  # Worktrees with no targets means "the stale ones". Other types still require a target.
+  if [[ "$kind" == "worktrees" && ${#targets[@]} -eq 0 ]]; then
+    STALE=1
+  fi
+  if [[ "$kind" != "worktrees" ]] && (( all == 0 && STALE == 0 )) && [[ ${#targets[@]} -eq 0 ]]; then
     echo "clean $kind: pass PIDs/paths/names, or --all" >&2
     exit 2
   fi
-  if (( all == 1 )) && [[ ${#targets[@]} -gt 0 ]]; then
-    echo "clean $kind: use --all or targets, not both" >&2
+  if (( all == 1 || STALE == 1 )) && [[ ${#targets[@]} -gt 0 ]]; then
+    echo "clean $kind: use --stale/--all or targets, not both" >&2
     exit 2
   fi
 
@@ -880,23 +957,45 @@ cmd_clean() {
       kill_pids "$kind" "${ids[@]}"
       ;;
     worktrees)
-      if (( all == 1 )); then
-        mapfile -t ids < <(list_worktree_paths)
-        if [[ ${#ids[@]} -eq 0 ]]; then
-          echo "clean worktrees: nothing to remove"
-          return 0
+      if (( STALE == 1 || all == 1 )); then
+        if (( FORCE == 1 && all == 1 )); then
+          mapfile -t ids < <(list_worktree_paths)
+        else
+          mapfile -t ids < <(list_stale_worktree_paths)
         fi
-        echo "clean worktrees --all: ${#ids[@]} path(s) (node_modules can make this slow)"
+        if (( FORCE == 1 && all == 1 )); then
+          if [[ ${#ids[@]} -eq 0 ]]; then
+            echo "clean worktrees: nothing to remove"
+            return 0
+          fi
+          echo "clean worktrees --all --force: ${#ids[@]} path(s) (node_modules can make this slow)"
+        else
+          while IFS= read -r path; do
+            [[ -z "$path" ]] && continue
+            worktree_in_use "$path" || continue
+            echo "keep in-use: $path"
+          done < <(list_worktree_paths)
+          if [[ ${#ids[@]} -eq 0 ]]; then
+            echo "clean worktrees: nothing stale"
+            return 0
+          fi
+          echo "clean worktrees: ${#ids[@]} stale path(s) (node_modules can make this slow)"
+        fi
       else
         ids=()
         for spec in "${targets[@]}"; do
           while IFS= read -r path; do
+            if worktree_in_use "$path" && (( FORCE == 0 )); then
+              echo "skip in-use worktree (pass --force): $path" >&2
+              continue
+            fi
             ids+=("$path")
           done < <(resolve_worktrees "$spec")
         done
       fi
-      for path in "${ids[@]}"; do
-        remove_worktree "$path"
+      for path in "${ids[@]+"${ids[@]}"}"; do
+        [[ -z "$path" ]] && continue
+        remove_worktree "$path" || true
       done
       ;;
     docker)
@@ -1053,6 +1152,13 @@ cmd_self_test() {
   expect_headless codex "codex exec fix it" 1
   expect_headless codex "codex" 0
   expect_headless orch "python3 /x/orch __wrap --team t --id w1" 1
+
+  if cwd_uses_tree /tmp/wt /tmp/wt; then expect "cwd exact" 1 1; else expect "cwd exact" 0 1; fi
+  if cwd_uses_tree /tmp/wt /tmp/wt/src; then expect "cwd child" 1 1; else expect "cwd child" 0 1; fi
+  if cwd_uses_tree /tmp/wt /tmp/wt-other; then expect "cwd sibling-prefix" 1 0; else expect "cwd sibling-prefix" 0 0; fi
+  if cwd_uses_tree /tmp/wt /tmp/other; then expect "cwd other" 1 0; else expect "cwd other" 0 0; fi
+  if path_under_worktree_root "$HOME/projects/traba"; then expect "main repo is a worktree root" 1 0; else expect "main repo is a worktree root" 0 0; fi
+  if path_under_worktree_root "$HOME/projects/worktrees/traba/some-branch"; then expect "projects worktree root" 1 1; else expect "projects worktree root" 0 1; fi
 
   if (( fails > 0 )); then
     echo "self-test: $fails failed" >&2
