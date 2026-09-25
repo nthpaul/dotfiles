@@ -154,6 +154,9 @@ trust_level = "trusted"
 [projects."/Users/ple/Documents/Codex/2026-09-16/notes"]
 trust_level = "trusted"
 
+[projects."/Users/ple/Documents/Codex/2026-09-25/realtime-voice-chat"]
+trust_level = "trusted"
+
 [notice]
 hide_full_access_warning = true
 
@@ -270,13 +273,14 @@ js_repl = false
 followUpQueueMode = "queue"
 dock-icon-preference = "app-default"
 appearanceLightCodeThemeId = "linear"
-selected-avatar-id = "codex"
+selected-avatar-id = "null-signal"
 avatar-overlay-mascot-width-px = 224
 conversationDetailMode = "STEPS_COMMANDS"
 appearanceTheme = "system"
 usePointerCursors = false
 show-context-window-usage = true
 keepRemoteControlAwakeWhilePluggedIn = true
+avatar-overlay-pet-visible = false
 
 [desktop.appearanceLightChromeTheme]
 accent = "#5e6ad2"
