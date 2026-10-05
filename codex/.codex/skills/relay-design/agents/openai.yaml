@@ -1,0 +1,4 @@
+interface:
+  display_name: "Relay Design"
+  short_description: "Create clear Relay documents and review revisions"
+  default_prompt: "Use $relay-design to draft and publish this document in my Relay library."
