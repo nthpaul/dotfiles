@@ -1,0 +1,4 @@
+interface:
+  display_name: "Relay review replies"
+  short_description: "Edit Relay replies in place, in Paul’s lowercase style"
+  default_prompt: "Use $relay-review-replies to assess these comments and edit my replies in place, matching my latest lowercase reply."
