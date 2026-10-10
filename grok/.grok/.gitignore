@@ -33,6 +33,7 @@ relocations/
 bundled/
 docs/
 *.lock
+!skills/poteto-mode/scripts/bun.lock
 *.db
 *.sqlite
 CHANGELOG.md
