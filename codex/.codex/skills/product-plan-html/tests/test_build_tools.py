@@ -5,6 +5,7 @@ import hashlib
 import json
 import re
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -14,7 +15,7 @@ import xml.etree.ElementTree as ET
 PACKAGE = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PACKAGE / "scripts"))
 from build import build, resolve_node
-from validate import validate
+from validate import check_plan, validate
 
 
 class BuildToolsTests(unittest.TestCase):
@@ -112,6 +113,67 @@ class BuildToolsTests(unittest.TestCase):
         mermaid = (self.out / "diagrams/model-full.mmd").read_text()
         self.assertIn('unknown id "existing · referenced columns"', mermaid)
         self.assertNotIn("unknown id PK", mermaid)
+
+    def test_table_extensions_render_existing_storage_and_correct_counts(self):
+        self.plan["tables"][0]["storage"] = "extension"
+        for new_count in (0, 1):
+            with self.subTest(new_tables=new_count):
+                if new_count:
+                    self.plan["tables"].append({"name": "events", "purpose": "New event log.",
+                        "fields": [{"name": "id", "type": "uuid PK", "rule": "Stable event ID.", "relation": ""}],
+                        "constraints": [], "relationships": ""})
+                self.save_plan()
+                result = self.build()
+                self.assertEqual(result["counts"]["newTables"], new_count)
+                self.assertEqual(result["counts"]["extendedTables"], 1)
+                for diagram_id in ("model", "model-full"):
+                    dot = (self.out / f"diagrams/{diagram_id}.dot").read_text()
+                    self.assertIn('BGCOLOR="#edf8f3">requests · existing · proposed extension', dot)
+                    self.assertNotIn("requests · new", dot)
+                    mermaid = (self.out / f"diagrams/{diagram_id}.mmd").read_text()
+                    self.assertIn("requests: existing · proposed extension", mermaid)
+                    svg = (self.out / f"diagrams/{diagram_id}.svg").read_text()
+                    self.assertIn("requests · existing · proposed extension", svg)
+                manifest = json.loads((self.out / "diagrams/manifest.json").read_text())
+                self.assertIn(f"{new_count} new {'table' if new_count == 1 else 'tables'} and 1 extended existing table", manifest[0]["description"])
+                self.assertIn("Existing table · proposed extension.", (self.out / "build-plan.md").read_text())
+                script = r"""
+const fs = require('node:fs');
+const vm = require('node:vm');
+const assert = require('node:assert/strict');
+const elements = new Map();
+const context = {
+  PLAN: JSON.parse(fs.readFileSync(process.argv[1], 'utf8')), DIAGRAMS: [],
+  location: {hash: ''}, history: {replaceState() {}},
+  document: {
+    documentElement: {dataset: {}}, addEventListener() {},
+    querySelector(selector) {
+      if (!elements.has(selector)) elements.set(selector, {innerHTML:'',addEventListener(){},querySelectorAll(){return [];}});
+      return elements.get(selector);
+    }
+  }, addEventListener() {}, scrollTo() {}
+};
+context.window = context;
+vm.createContext(context);
+vm.runInContext(fs.readFileSync(process.argv[2], 'utf8'), context);
+assert.ok(elements.get('#app').innerHTML.includes(`<div class="metric">${process.argv[3]}</div><h3>new tables</h3>`));
+assert.ok(elements.get('#app').innerHTML.includes('<p>1 existing table extended</p>'));
+context.PlanDocument.setView('model');
+assert.ok(elements.get('#app').innerHTML.includes('<span class="badge green">Existing · proposed extension</span>'));
+"""
+                subprocess.run([self.node, "-e", script, str(self.out / "data-model.json"),
+                                str(self.out / "viewer.js"), str(new_count)], check=True, capture_output=True, text=True)
+
+    def test_table_storage_defaults_new_and_rejects_unknown_values(self):
+        report = check_plan(self.plan)
+        self.assertEqual(report["counts"]["newTables"], 1)
+        self.assertEqual(report["counts"]["extendedTables"], 0)
+        for value in ("existing", None, ["extension"]):
+            with self.subTest(storage=value):
+                self.plan["tables"][0]["storage"] = value
+                report = check_plan(self.plan)
+                self.assertFalse(report["ok"])
+                self.assertIn("requests.storage must be new or extension", report["errors"])
 
     def test_certification_captions_and_authored_markdown(self):
         self.plan = json.loads((PACKAGE / "tests/fixtures/equipment-certification-plan.json").read_text())

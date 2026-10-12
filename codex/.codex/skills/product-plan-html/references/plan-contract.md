@@ -12,7 +12,7 @@ the project. The build reads `plan.json`, optional `diagrams.json` and optional
 | --- | --- |
 | `document` | `title`, `pageTitle`, `subtitle`, `date`, `brand`, `eyebrow`, `sampleLabel`; `sourceUrl` and `revision` record the input and inspected checkout |
 | `summary` | `decision`, `nextAction` and `evidence` are strings; `reuse`, `netNew` and `buildSequence` are arrays of strings |
-| `tables` | Array of proposed table definitions shown below |
+| `tables` | Array of proposed new tables or extensions to existing tables, defined below |
 | `referenceTables` | Existing FK targets, each `{name, fields:[{name,type}]}`. Include the actual referenced columns; these are declarations of inspected targets, not proposed full schemas |
 | `existing` | Array of `{name, change, why}` describing existing tables/services to reuse or extend |
 | `flows` | Array of `{id, title, summary, steps}` with the five-column step format below |
@@ -27,6 +27,11 @@ ownership or invariants. `relation` is `table.column`, or `""` for no FK. Give n
 and composite foreign keys their enforcement rules in constraints. `constraints` is
 an array of strings; `relationships` describes cardinality and cross-table behavior.
 Use existing ID types rather than assuming UUID.
+
+Set optional table `storage` to `"extension"` for proposed changes to an existing
+table. Omitted `storage` defaults to `"new"`; these are the only accepted values.
+Include the proposed fields and any existing columns needed to explain relationships.
+The viewer labels extensions as existing and counts them separately from new tables.
 
 Each flow step is exactly five strings:
 

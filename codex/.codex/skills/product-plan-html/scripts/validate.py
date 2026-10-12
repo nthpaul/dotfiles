@@ -41,7 +41,7 @@ def existing_tables(plan: dict) -> dict[str, set[str] | None]:
 
 def check_plan(plan: object) -> dict:
     errors: list[str] = []
-    counts = {"tables": 0, "fields": 0, "relations": 0, "flows": 0, "steps": 0}
+    counts = {"tables": 0, "newTables": 0, "extendedTables": 0, "fields": 0, "relations": 0, "flows": 0, "steps": 0}
     if not isinstance(plan, dict):
         return {"ok": False, "errors": ["plan.json must contain an object"], "counts": counts}
     for key in ("tables", "existing", "flows", "decisions", "questions", "sources"):
@@ -62,6 +62,11 @@ def check_plan(plan: object) -> dict:
             continue
         if name in tables:
             errors.append(f"Duplicate table: {name}")
+        storage = table.get("storage", "new")
+        if storage not in ("new", "extension"):
+            errors.append(f"{name}.storage must be new or extension")
+        else:
+            counts["extendedTables" if storage == "extension" else "newTables"] += 1
         fields = table.get("fields")
         if not isinstance(fields, list) or not fields:
             errors.append(f"{name}.fields must be a nonempty array")

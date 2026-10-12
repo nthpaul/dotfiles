@@ -5,6 +5,8 @@
   const prototype = window.PROTOTYPE;
   const meta = PLAN.document || {};
   const surfaces = prototype?.surfaces || [];
+  const extendedTables = PLAN.tables.filter(t => t.storage === 'extension').length;
+  const newTables = PLAN.tables.length - extendedTables;
   const tabs = [{id:'overview',label:'Overview'},{id:'model',label:'Data model'},{id:'flow',label:'Logic & data flow'},{id:'diagrams',label:'Diagrams'}, ...surfaces];
   let view = tabs.some(t => t.id === location.hash.slice(1)) ? location.hash.slice(1) : 'overview';
   let flowId = PLAN.flows[0]?.id;
@@ -14,10 +16,10 @@
   function overviewView() {
     if (prototype?.overview) return prototype.overview();
     const summary = PLAN.summary || {};
-    const metrics = [[PLAN.tables.length,'new tables','model'],[PLAN.flows.length,'complete flows','flow']];
+    const metrics = [[newTables,'new tables','model'],[PLAN.flows.length,'complete flows','flow']];
     if (surfaces.length) metrics.push([surfaces.length,'preview surfaces',surfaces[0].id]);
     return `<div class="container"><div class="section-head"><div><h2>${esc(summary.decision || meta.title || 'Product plan')}</h2><p>${esc(summary.nextAction || meta.subtitle)}</p></div>${badge('Architecture proposal')}</div>
-      <div class="cards">${metrics.map(([n,label,id]) => `<div class="card"><div class="metric">${n}</div><h3>${esc(label)}</h3><button class="space-top" data-view="${esc(id)}">Explore →</button></div>`).join('')}</div>
+      <div class="cards">${metrics.map(([n,label,id]) => `<div class="card"><div class="metric">${n}</div><h3>${esc(label)}</h3>${id === 'model' && extendedTables ? `<p>${extendedTables} existing ${extendedTables === 1 ? 'table' : 'tables'} extended</p>` : ''}<button class="space-top" data-view="${esc(id)}">Explore →</button></div>`).join('')}</div>
       <div class="split space-top"><div class="card"><h3>Reuse</h3>${list(summary.reuse)}</div><div class="card"><h3>Net new</h3>${list(summary.netNew)}</div></div>
       <div class="split space-top"><div class="card"><h3>Architecture choices</h3>${list(PLAN.decisions)}</div><div class="card"><h3>Decisions to settle</h3>${list(PLAN.questions)}</div></div>
       <div class="card space-top"><h3>Build sequence</h3>${list(summary.buildSequence)}</div>
@@ -29,7 +31,7 @@
     return `<div class="container"><div class="section-head"><div><h2>The full data model</h2><p>Table names, every field, foreign keys, constraints and existing-table changes. Open any table to inspect it.</p></div><a href="data-model.json" download>Download JSON ↗</a></div>
       ${diagramPanel('model')}
       <div class="tint blue" style="margin-bottom:20px"><h3>${esc(meta.modelConventionsTitle || 'Data conventions')}</h3><p>${esc(intro)}</p></div>
-      ${PLAN.tables.map((t,i) => `<details class="model-table" ${i === 0 ? 'open' : ''}><summary><div><h3>${esc(t.name)}</h3><p>${esc(t.purpose)}</p></div>${badge(`${t.fields.length} fields`,'blue')}</summary><div class="table-wrap"><table class="field-table"><thead><tr><th>Field</th><th>Type</th><th>How it works</th><th>References</th></tr></thead><tbody>${t.fields.map(f => `<tr><td><code>${esc(f.name)}</code></td><td>${esc(f.type)}</td><td>${esc(f.rule)}</td><td>${esc(f.relation || '—')}</td></tr>`).join('')}</tbody></table></div><div class="model-notes"><p><strong>Relationships</strong> · ${esc(t.relationships || '')}</p>${list(t.constraints)}</div></details>`).join('')}
+      ${PLAN.tables.map((t,i) => `<details class="model-table" ${i === 0 ? 'open' : ''}><summary><div><h3>${esc(t.name)}</h3><p>${esc(t.purpose)}</p>${t.storage === 'extension' ? badge('Existing · proposed extension','green') : ''}</div>${badge(`${t.fields.length} fields`,'blue')}</summary><div class="table-wrap"><table class="field-table"><thead><tr><th>Field</th><th>Type</th><th>How it works</th><th>References</th></tr></thead><tbody>${t.fields.map(f => `<tr><td><code>${esc(f.name)}</code></td><td>${esc(f.type)}</td><td>${esc(f.rule)}</td><td>${esc(f.relation || '—')}</td></tr>`).join('')}</tbody></table></div><div class="model-notes"><p><strong>Relationships</strong> · ${esc(t.relationships || '')}</p>${list(t.constraints)}</div></details>`).join('')}
       <div class="section-head space-top"><h2>Existing tables and services</h2>${badge('Reuse / extend','green')}</div><div class="table-wrap card" style="padding:0"><table><thead><tr><th>Table / service</th><th>Change</th><th>Why</th></tr></thead><tbody>${(PLAN.existing || []).map(t => `<tr><td><strong>${esc(t.name)}</strong></td><td>${esc(t.change)}</td><td>${esc(t.why)}</td></tr>`).join('')}</tbody></table></div>
       ${meta.notStored ? `<div class="card space-top"><h3>What is intentionally not stored</h3><p>${esc(meta.notStored)}</p></div>` : ''}</div>`;
   }

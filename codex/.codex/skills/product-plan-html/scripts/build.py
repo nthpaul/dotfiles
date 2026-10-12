@@ -140,8 +140,10 @@ def markdown_plan(plan: dict, diagrams: list[dict]) -> str:
         lines += ["### " + str(authored.get("modelConventionsTitle", "Storage and state conventions")), "",
                   str(authored["modelIntro"]), ""]
     for table in plan["tables"]:
-        lines += ["### " + table["name"], "", table.get("purpose", ""), "",
-                  "| Field | Type | Rule | Foreign key |", "| --- | --- | --- | --- |"]
+        lines += ["### " + table["name"], "", table.get("purpose", ""), ""]
+        if table.get("storage", "new") == "extension":
+            lines += ["Existing table · proposed extension.", ""]
+        lines += ["| Field | Type | Rule | Foreign key |", "| --- | --- | --- | --- |"]
         for field in table["fields"]:
             lines.append("| " + " | ".join(md_cell(field.get(k, "")) for k in ("name", "type", "rule", "relation")) + " |")
         lines += ["", "Relationships: " + table.get("relationships", ""), ""]
@@ -226,13 +228,14 @@ def schema_cell_width(text: str) -> int:
     return math.ceil(width * 12 / units) + 20
 
 
-def schema_table_label(name: str, fields: list[dict], existing: bool = False) -> str:
-    caption = name + (" · existing · referenced columns" if existing else " · new")
+def schema_table_label(name: str, fields: list[dict], existing: bool = False, storage: str = "new") -> str:
+    caption = name + (" · existing · referenced columns" if existing else
+                      " · existing · proposed extension" if storage == "extension" else " · new")
     name_width = max(schema_cell_width(field["name"]) for field in fields)
     type_width = max(schema_cell_width(field["type"]) for field in fields)
     rows = "".join(f'<TR><TD WIDTH="{name_width}" ALIGN="LEFT">{escape(field["name"])}</TD>'
                    f'<TD WIDTH="{type_width}" ALIGN="LEFT">{escape(field["type"])}</TD></TR>' for field in fields)
-    border, fill = ("#a8d9c2", "#edf8f3") if existing else ("#e2e5e9", "#e6ccff")
+    border, fill = ("#a8d9c2", "#edf8f3") if existing or storage == "extension" else ("#e2e5e9", "#e6ccff")
     return f'<<TABLE BORDER="1" COLOR="{border}" BGCOLOR="white" CELLBORDER="0" CELLSPACING="0" CELLPADDING="6"><TR><TD WIDTH="{schema_cell_width(caption)}" COLSPAN="2" ALIGN="LEFT" BGCOLOR="{fill}">{escape(caption)}</TD></TR>{rows}</TABLE>>'
 
 
@@ -276,8 +279,11 @@ def schema_diagram(plan: dict, full: bool) -> dict:
             selected = [field for field in fields if " PK" in field["type"] or field.get("relation")]
             fields = selected or fields[:5]
         name = table["name"]
-        label = schema_table_label(name, fields)
+        storage = table.get("storage", "new")
+        label = schema_table_label(name, fields, storage=storage)
         lines.append(f'{dot_quote(name)} [shape=plain,label={label}];')
+        if storage == "extension":
+            mermaid.append(f"    %% {name}: existing · proposed extension")
         mermaid.append(f"    {name} {{")
         for field in fields:
             kind = re.sub(r"[^A-Za-z0-9_\[\]-]", "_", field["type"].split()[0])
@@ -300,10 +306,14 @@ def schema_diagram(plan: dict, full: bool) -> dict:
             mermaid.append(f'    {parent} {parent_symbol}--{child_symbol} {table["name"]} : "{field["name"]}"')
     lines.append("}")
     count = sum(len(table["fields"]) for table in tables.values())
+    extended_count = sum(table.get("storage", "new") == "extension" for table in tables.values())
+    new_count = len(tables) - extended_count
+    table_description = (f"{new_count} new {'table' if new_count == 1 else 'tables'} and {extended_count} extended existing {'table' if extended_count == 1 else 'tables'}"
+                         if extended_count else f"{len(tables)} proposed tables")
     return {
         "id": "model-full" if full else "model",
         "title": "Every field & foreign key" if full else "Table relationships",
-        "description": f"{count} fields across {len(tables)} proposed tables. Violet means new; green means existing. Nullable relationships are marked 0..1.",
+        "description": f"{count} fields across {table_description}. Violet means new; green means existing. Nullable relationships are marked 0..1.",
         "dot": "\n".join(lines) + "\n", "mermaid": "\n".join(mermaid) + "\n",
         "canonical": "plan.json",
     }
