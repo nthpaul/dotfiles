@@ -1,0 +1,3 @@
+# Preserve upstream vendor bytes and license text.
+assets/vendor/* -whitespace
+assets/viewer/fonts/OFL.txt -whitespace

@@ -1,0 +1,6 @@
+interface:
+  display_name: "Product plan HTML"
+  short_description: "Build product plans with diagrams and connected previews"
+  default_prompt: "Use $product-plan-html to inspect this feature's requirements and existing code, then create a full data model, logic and data-flow diagrams, and an interactive HTML plan with previews for every relevant app."
+policy:
+  allow_implicit_invocation: true

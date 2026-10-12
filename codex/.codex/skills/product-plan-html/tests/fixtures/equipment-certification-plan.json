@@ -1,0 +1,263 @@
+{
+  "document": {
+    "title": "Equipment certification review",
+    "pageTitle": "Product plan \u00b7 Equipment certification review",
+    "subtitle": "Fictional equipment review feature used to test a portable authoring package.",
+    "date": "2026-10-12",
+    "brand": "traba",
+    "eyebrow": "PRODUCT PLAN TEST",
+    "sampleLabel": "Fictional sample data \u00b7 in-memory simulation",
+    "sourceUrl": "requirements.md",
+    "revision": "b9a12863c8053cce58c979fc7f45ec533b0e5d67",
+    "modelIntro": "One submission owns the current decision. Immutable review events retain history across rejection and resubmission.",
+    "modelConventionsTitle": "Storage and state conventions",
+    "notStored": "Equipment validity derives from APPROVED plus a future expiry date. Upload failures stay in client state. General booking eligibility is outside this sample.",
+    "flowContract": "worker submit \u2192 certification service \u2192 atomic submission and event writes \u2192 worker and Ops projections",
+    "diagramNote": "Worker identity reuse is source-backed. Certification service, permission and app layouts are proposed. Actions simulate the contract without backend calls.",
+    "flowNotes": [
+      {
+        "title": "One retry identity",
+        "text": "A unique command request ID returns a committed result without a duplicate event.",
+        "tone": "blue"
+      }
+    ]
+  },
+  "summary": {
+    "decision": "Keep certification review on one submission with an append-only history.",
+    "nextAction": "Confirm expiry and permission policy before building the certification service.",
+    "reuse": [
+      "Reference the existing Worker identity using its text ID."
+    ],
+    "netNew": [
+      "Two certification tables and atomic review commands.",
+      "Worker submission and Ops review screens."
+    ],
+    "buildSequence": [
+      "Confirm policy and permission.",
+      "Create tables and idempotent commands.",
+      "Connect projections; verify rejection, expiry and retry paths."
+    ],
+    "evidence": "Worker.id inspected at schema.prisma:2133 on revision b9a12863c8053cce58c979fc7f45ec533b0e5d67. All certification behavior is proposed and uses fictional data."
+  },
+  "referenceTables": [
+    {
+      "name": "Worker",
+      "fields": [
+        {
+          "name": "id",
+          "type": "text PK"
+        }
+      ]
+    }
+  ],
+  "existing": [
+    {
+      "name": "Worker",
+      "change": "Reference Worker.id. Add no certification flag.",
+      "why": "Identity exists; certification state belongs to the new submission."
+    }
+  ],
+  "decisions": [
+    "The proposed certification service owns mutation commands.",
+    "Approval grants equipment validity only. Booking permission is evaluated separately.",
+    "Permission denial and expired certificates leave state unchanged.",
+    "Upload failure is visible and retryable; no event exists until successful submit."
+  ],
+  "questions": [
+    "Should certificates expiring today remain valid through the facility-local day? This test requires a later date.",
+    "Which Ops role receives certification-review permission?",
+    "Which storage and retention policy should hold the certificate document?"
+  ],
+  "sources": [
+    [
+      "Fictional test requirements",
+      "requirements.md"
+    ],
+    [
+      "Observed Worker ID schema",
+      "apps/traba-server-node/prisma/schema.prisma:2133"
+    ],
+    [
+      "Source evidence and limitations",
+      "source-notes.md"
+    ]
+  ],
+  "flows": [
+    {
+      "id": "certification-review",
+      "title": "Submit, review and return a certificate",
+      "summary": "A submission reaches Ops. A decision reaches the worker; rejection permits edit and resubmission.",
+      "steps": [
+        [
+          "Prepare",
+          "Worker enters number and expiry",
+          "Require complete fields and future facility-local expiry",
+          "No write until upload and submit succeed",
+          "Ready state or visible validation error"
+        ],
+        [
+          "Submit",
+          "Worker sends content, request ID and revision",
+          "Authenticate owner; require DRAFT; check retry key",
+          "PENDING plus SUBMITTED event atomically",
+          "Ops sees the same certificate; worker sees Pending"
+        ],
+        [
+          "Decide",
+          "Ops sends decision, reason, request ID and reviewed revision",
+          "Require permission, PENDING and matching revision; approval requires future expiry",
+          "APPROVED or REJECTED plus decision event atomically",
+          "Worker sees validity or rejection reason"
+        ],
+        [
+          "Return or retry",
+          "Rejected worker edits; failed upload retries",
+          "Only REJECTED may edit; repeated committed request ID returns prior result",
+          "Edit returns DRAFT plus EDITED event; next successful submit owns its event",
+          "Worker resubmits; Ops sees new pending revision"
+        ]
+      ]
+    }
+  ],
+  "tables": [
+    {
+      "name": "equipment_certification_submissions",
+      "purpose": "Current content and review state for one worker and equipment type.",
+      "fields": [
+        {
+          "name": "id",
+          "type": "text PK",
+          "rule": "UUID-shaped application string, matching existing text ID storage.",
+          "relation": ""
+        },
+        {
+          "name": "workerId",
+          "type": "text FK",
+          "rule": "Immutable submission owner.",
+          "relation": "Worker.id"
+        },
+        {
+          "name": "equipmentType",
+          "type": "text",
+          "rule": "FORKLIFT in this test; backend enum owns supported values.",
+          "relation": ""
+        },
+        {
+          "name": "certificateNumber",
+          "type": "text",
+          "rule": "Required on submit; worker-owned certificate identifier.",
+          "relation": ""
+        },
+        {
+          "name": "expiresOn",
+          "type": "date",
+          "rule": "Local date; approval requires after the facility-local current date.",
+          "relation": ""
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "rule": "DRAFT, PENDING, APPROVED or REJECTED. Backend owns transitions.",
+          "relation": ""
+        },
+        {
+          "name": "revision",
+          "type": "integer",
+          "rule": "Starts at 1; increments on edit; review compares current revision.",
+          "relation": ""
+        },
+        {
+          "name": "rejectionReason",
+          "type": "text nullable",
+          "rule": "Required when REJECTED; null after edit.",
+          "relation": ""
+        },
+        {
+          "name": "submittedAt",
+          "type": "timestamptz nullable",
+          "rule": "Latest successful submit instant; null for an unsubmitted draft.",
+          "relation": ""
+        },
+        {
+          "name": "createdAt",
+          "type": "timestamptz",
+          "rule": "Creation instant.",
+          "relation": ""
+        },
+        {
+          "name": "updatedAt",
+          "type": "timestamptz",
+          "rule": "Latest content or state mutation instant.",
+          "relation": ""
+        }
+      ],
+      "constraints": [
+        "UNIQUE(workerId, equipmentType) allows one current submission per type.",
+        "Only DRAFT submits, only PENDING decides, and only REJECTED returns to DRAFT.",
+        "Status and event commit atomically after revision and current-state comparison.",
+        "REJECTED requires a nonempty rejectionReason; other states require null."
+      ],
+      "relationships": "Worker 1 \u2192 many submissions. Submission 1 \u2192 many events. Worker deletion follows existing retention policy; no cascade proposed."
+    },
+    {
+      "name": "equipment_certification_review_events",
+      "purpose": "Immutable history with one retry key per command.",
+      "fields": [
+        {
+          "name": "id",
+          "type": "text PK",
+          "rule": "Stable event identity.",
+          "relation": ""
+        },
+        {
+          "name": "submissionId",
+          "type": "text FK",
+          "rule": "Submission changed by this command.",
+          "relation": "equipment_certification_submissions.id"
+        },
+        {
+          "name": "requestId",
+          "type": "text",
+          "rule": "Unique retry identity; repeating it returns original result.",
+          "relation": ""
+        },
+        {
+          "name": "actorSubject",
+          "type": "text",
+          "rule": "Authenticated subject snapshot; permission resolves before writing. No uninspected actor table assumed.",
+          "relation": ""
+        },
+        {
+          "name": "action",
+          "type": "text",
+          "rule": "SUBMITTED, APPROVED, REJECTED or EDITED.",
+          "relation": ""
+        },
+        {
+          "name": "submissionRevision",
+          "type": "integer",
+          "rule": "Content revision submitted or reviewed.",
+          "relation": ""
+        },
+        {
+          "name": "reason",
+          "type": "text nullable",
+          "rule": "Required for rejection; otherwise null.",
+          "relation": ""
+        },
+        {
+          "name": "createdAt",
+          "type": "timestamptz",
+          "rule": "Committed command instant.",
+          "relation": ""
+        }
+      ],
+      "constraints": [
+        "UNIQUE(requestId) prevents duplicate command effects.",
+        "Events are immutable and retained with their submission.",
+        "REJECTED requires nonempty reason; other actions require null."
+      ],
+      "relationships": "Every event belongs to one submission; a submission has any number of events."
+    }
+  ]
+}

@@ -34,6 +34,11 @@ Stow creates relative symlinks so the repo stays portable across machines.
 - Claude Code: `claude/` (`settings.json`; `skills/` symlinked to `codex/.codex/skills`)
 - Grok: `grok/` (`config.toml`, `skills/`; auth, sessions, MCP credentials, and caches stay local)
 
+The [product-plan-html skill](codex/.codex/skills/product-plan-html/SKILL.md) is shared
+by Codex, Claude Code, Cursor and Grok. Claude uses the shared skills directory;
+Cursor and Grok link this skill to the canonical Codex folder. Its discovery command
+selects available pstack, Traba and Relay guidance, with bundled fallbacks.
+
 ## Adding new configs
 
 1. Create a new package folder at repo root.

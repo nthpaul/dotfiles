@@ -1,0 +1,84 @@
+{
+  "source": {
+    "documentTitle": "Traba \u00b7 Injury & return-to-work plan",
+    "originalHtmlSha256": "8c5c4f7c41070e8bcec01b7d2edb268d99e958d23b5132e31a67f7d0968eaffa",
+    "revision": "c60d232e91",
+    "capturedAt": "2026-10-08",
+    "portableCorePlanSha256": "c83b3f79a294565b372a77a255bf4dc3fc0de6fbb7b91efba4531c67e8a63fb5",
+    "canonicalDotSha256": {
+      "model": "95c9fb5c3ecd6b28389ba63771140cc032700a4fa2cccf292d6f9b9422452882",
+      "model-full": "e80ebc71d85be444171adaed0e10d338d1a012e050fa12e243d712b397078000",
+      "data-flow": "2e0c02993fdf4a1d03d36d24484a63700f271676f9e28389de8ba028cb5fdabc",
+      "injury": "d5ed897df9d63fff917b5b011b8c976d2c6d8915a89d031afba228eb651bdf0c",
+      "review": "9a2a83d218777d0aaaceed30737b0fe09e0fca02dcc297d6d4349dbcbe031387",
+      "illness": "43b5601b8f27340fd06b8064f56ec684ee187572caedc005e1ba8bc3685fbda2",
+      "exceptions": "4bdc89df511467439a634b56e83d124ddf73d2ecf9098ea0975ed50833385a38",
+      "lifecycle": "b03c9b84fc0478392656a0c87bc1619f63d95d2da046208517bc4e6895088786"
+    },
+    "provenance": "references/provenance.md"
+  },
+  "expected": {
+    "tables": 7,
+    "fields": 124,
+    "flows": 4,
+    "diagrams": 8,
+    "proposedForeignKeys": 28,
+    "fullSchemaNodes": 16,
+    "scenarios": 7,
+    "tableFieldCounts": {
+      "medical_cases": 24,
+      "medical_submissions": 25,
+      "medical_case_events": 12,
+      "medical_case_shifts": 12,
+      "medical_case_notices": 20,
+      "medical_document_consents": 9,
+      "medical_case_effects": 22
+    }
+  },
+  "scenarioAssertions": [
+    {
+      "scenario": "reported",
+      "bookingTone": "orange",
+      "statusLabel": "Waiting for medical clearance"
+    },
+    {
+      "scenario": "restricted",
+      "bookingTone": "orange",
+      "statusLabel": "Waiting for medical clearance"
+    },
+    {
+      "scenario": "review",
+      "bookingTone": "orange",
+      "statusLabel": "Waiting for medical clearance"
+    },
+    {
+      "scenario": "cleared",
+      "bookingTone": "green",
+      "statusLabel": "Booking available"
+    },
+    {
+      "scenario": "illness",
+      "bookingTone": "green",
+      "statusLabel": "Booking available"
+    },
+    {
+      "scenario": "multiple",
+      "bookingTone": "orange",
+      "statusLabel": "Another injury case is still open"
+    },
+    {
+      "scenario": "suspended",
+      "bookingTone": "orange",
+      "statusLabel": "Waiting for medical clearance"
+    }
+  ],
+  "interactionAssertions": [
+    "Sample injury note moves to Ops pending review",
+    "Approval alone produces no sent business notice",
+    "Explicit Send notice appears in business preview",
+    "Second injury or account restriction prevents clearance notice",
+    "Illness consent exposes one document; conversion revokes access",
+    "Approval releases pending future shifts but leaves confirmed cancellations unchanged"
+  ],
+  "diagramSources": "DOT is canonical render input. Mermaid exports are retained from the original; they are separately authored and must be kept consistent when edited."
+}
