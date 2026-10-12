@@ -36,12 +36,15 @@ See [platforms](platforms.md) for host differences. Inspect the actual bundle, t
    wrapping, graph zoom/scroll and downloaded sources.
    Include realistic long table names when checking summaries and SVG labels. Verify
    the Markdown export preserves the decision, evidence and optional explanatory prose.
-2. Run the main journey through the relevant apps. Verify a submitted input changes the
-   next app's projection and that explicit actions remain distinct from preparation.
-3. Exercise a rejected/failed path and applicable permission or eligibility restrictions.
-   Confirm the user has a visible return path. Reset and confirm state is restored.
+2. Check that preview tabs match the selected surfaces exactly, including arbitrary
+   IDs and labels. With no previews, confirm there is no preview metric, separator or
+   scenario toolbar, and that the document sections still work.
+3. When previews exist, run the main journey on those surfaces. If multiple surfaces
+   interact, verify an input changes the next surface's projection. Exercise applicable
+   rejected/failed paths and permission restrictions, and confirm a visible return path.
+   Test reset when supplied. Static previews need no scenario controls or reset.
 4. Check light, explicit dark and system theme behavior. Inspect a narrow window with
-   the app previews, diagrams and open dialogs. Save relevant screenshots and assertions.
+   diagrams and any selected previews or dialogs. Save relevant screenshots and assertions.
 
 Use UI actions for actual QA. An isolated prototype state test complements the browser;
 it does not replace rendered interaction checks. If the browser is unavailable, deliver

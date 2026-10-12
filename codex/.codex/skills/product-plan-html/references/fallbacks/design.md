@@ -19,8 +19,9 @@ visible, label controls and ensure disabled actions have a visible reason nearby
 
 Scope mock app frames separately from the document viewer. At narrow widths stack
 columns, hide the simulated desktop sidebar, keep tables and diagrams scrollable, and
-avoid clipped phone frames or dialogs. Use realistic fictional workers, facilities,
-roles and shifts, clearly labeled as sample data.
+avoid clipped phone frames or dialogs. Choose frames appropriate to the selected
+surfaces; omit app frames when there are no previews. Use realistic fictional actors
+and entities from the feature's domain, clearly labeled as sample data.
 
 These tokens guide standalone HTML as well as app components. Do not imply a vanilla
 HTML prototype imports production React components. Bundle local licensed font assets

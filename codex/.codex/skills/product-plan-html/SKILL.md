@@ -1,14 +1,14 @@
 ---
 name: product-plan-html
-description: Build a source-grounded product implementation plan as a portable interactive HTML document, with the full data model, logic and data flows, diagrams, reuse versus net-new analysis, and connected previews across worker, operations and business apps. Use for PRD-to-build plans or recreating this document format. Automatically use installed pstack, traba-design and relay-design guidance, with bundled fallbacks when unavailable.
-version: 1.0.0
+description: Build a source-grounded product implementation plan as a portable interactive HTML document, with the full data model, logic and data flows, diagrams, reuse versus net-new analysis, and optional previews for requested or relevant surfaces. Use for PRD-to-build plans or recreating this document format. Automatically use installed pstack, traba-design and relay-design guidance, with bundled fallbacks when unavailable.
+version: 1.0.1
 ---
 
 # Product plan HTML
 
-Produce a reviewable implementation plan and working illustrative previews. Start from
-the supplied requirements and inspected source. The finished document must explain
-what can be reused, what needs to be built, and how one input reaches every relevant app.
+Produce a reviewable implementation plan from the supplied requirements and inspected
+source. Explain what can be reused, what needs to be built, and how data moves through
+the system. Add illustrative previews when the request or feature calls for them.
 
 ## Discover guidance and tools
 
@@ -45,8 +45,9 @@ the current session. Report checks that could not run.
 Read the PRD through the user's requested browser or connected document tools. Prefer
 Codex's in-app browser when requested. Inspect the relevant repositories with `rg`,
 record revisions, and save source/input evidence with the project. Verify authoritative
-schema, service ownership, eligibility, cancellation, scheduling, notification and app
-patterns before asserting reuse. Label unavailable app source as proposed design.
+schema and service ownership before asserting reuse. Inspect eligibility, cancellation,
+scheduling, notifications and app patterns when relevant to the feature. Label unavailable
+source as proposed design.
 
 Reuse verified evidence from an earlier run when the user asks for reconstruction.
 Do not repeat research already established for the same source revision. Refresh facts
@@ -63,7 +64,17 @@ python3 <skill-dir>/scripts/plan.py scaffold <project-dir>
 ```
 
 For a recreation test, add `--example injury-rtw`. The example is an input fixture,
-not a prebuilt HTML snapshot. For a new feature, replace the starter contents.
+not a prebuilt HTML snapshot. Its three apps belong to that feature; they are not defaults.
+For a new feature, replace the starter contents.
+
+Choose preview surfaces from the current request and verified feature scope. Include
+surfaces explicitly requested by the user. When previews are requested without naming
+surfaces, infer only those affected by the feature. Support arbitrary apps, pages, tools,
+and roles with their own IDs and labels. Worker app, Ops console and Business console
+are examples, not required sections. A feature may need one surface, several, or none.
+For a data model, backend or workflow plan without a preview request or UI changes,
+omit `prototype.js` and all preview sections. Later requests can add or remove surfaces
+without rebuilding the document format. State any material assumptions about scope.
 
 Use three authored inputs:
 
@@ -72,8 +83,9 @@ Use three authored inputs:
 2. `diagrams.json` owns supplementary flow graphs. Structured nodes/edges generate
    both DOT/SVG and Mermaid. Table diagrams always derive from `plan.json`. Preserve
    legacy DOT/Mermaid only for faithful recreations; check their agreement explicitly.
-3. Optional `prototype.js` owns feature-specific state and actions. It exposes the
-   small viewer API and uses one shared state across relevant app previews. Start from
+3. Optional `prototype.js` declares only the selected preview surfaces and owns their
+   feature-specific state and actions. It exposes the small viewer API. When surfaces
+   interact, use one shared state across them. Start from
    user actions and legal transitions. Include failure, rejection, retry and return
    paths required by the feature. Browser actions are a simulation, not backend proof.
 
@@ -99,8 +111,11 @@ output directory; repeated builds must yield the same preview bytes for the same
 Follow [verification](references/verification.md). Open the actual `preview.html` using
 the user's chosen browser, otherwise prefer Codex's in-app browser when available or
 the host's browser tools. If the session has no browser tool, reuse a permitted existing
-local browser harness. Exercise a complete cross-app path, failure and
-eligibility cases, reset, diagrams/zoom, themes and narrow layout. Verify the downloaded
+local browser harness. Verify diagrams/zoom, themes, narrow layout and downloaded
+sources. When previews exist, exercise the selected surfaces, their main journey,
+applicable failure and permission cases, and reset when provided. Check cross-surface
+state only when that journey spans multiple surfaces. With no previews, confirm their
+tabs, metric and scenario controls are absent. Verify the downloaded
 plan/model reflect the same input. Fix root causes in authored inputs or package tools.
 For substantial designs, ask an independent reviewer to inspect the artifacts and
 check load-bearing claims. Preserve their findings and verification evidence alongside

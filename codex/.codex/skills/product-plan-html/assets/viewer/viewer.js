@@ -14,8 +14,10 @@
   function overviewView() {
     if (prototype?.overview) return prototype.overview();
     const summary = PLAN.summary || {};
+    const metrics = [[PLAN.tables.length,'new tables','model'],[PLAN.flows.length,'complete flows','flow']];
+    if (surfaces.length) metrics.push([surfaces.length,'preview surfaces',surfaces[0].id]);
     return `<div class="container"><div class="section-head"><div><h2>${esc(summary.decision || meta.title || 'Product plan')}</h2><p>${esc(summary.nextAction || meta.subtitle)}</p></div>${badge('Architecture proposal')}</div>
-      <div class="cards">${[[PLAN.tables.length,'new tables','model'],[PLAN.flows.length,'complete flows','flow'],[surfaces.length,'connected surfaces',surfaces[0]?.id || 'overview']].map(([n,label,id]) => `<div class="card"><div class="metric">${n}</div><h3>${esc(label)}</h3><button class="space-top" data-view="${esc(id)}">Explore →</button></div>`).join('')}</div>
+      <div class="cards">${metrics.map(([n,label,id]) => `<div class="card"><div class="metric">${n}</div><h3>${esc(label)}</h3><button class="space-top" data-view="${esc(id)}">Explore →</button></div>`).join('')}</div>
       <div class="split space-top"><div class="card"><h3>Reuse</h3>${list(summary.reuse)}</div><div class="card"><h3>Net new</h3>${list(summary.netNew)}</div></div>
       <div class="split space-top"><div class="card"><h3>Architecture choices</h3>${list(PLAN.decisions)}</div><div class="card"><h3>Decisions to settle</h3>${list(PLAN.questions)}</div></div>
       <div class="card space-top"><h3>Build sequence</h3>${list(summary.buildSequence)}</div>
@@ -56,11 +58,12 @@
       b.classList.toggle('active', b.dataset.view === view);
       b.setAttribute('aria-current', b.dataset.view === view ? 'page' : 'false');
     });
-    $('#scenario-bar').hidden = !surfaces.some(s => s.id === view) || !prototype.scenarios?.length;
+    $('#scenario-bar').hidden = !surfaces.some(s => s.id === view) || !prototype?.scenarios?.length;
+    $('[data-action="reset"]').hidden = !prototype?.reset;
     const status = prototype?.status?.();
     $('#scenario-status').innerHTML = status ? badge(status.label, status.tone) : '';
     const renderers = {overview:overviewView,model:modelView,flow:flowView,diagrams:diagramsView};
-    $('#app').innerHTML = renderers[view] ? renderers[view]() : prototype.render(view);
+    $('#app').innerHTML = Object.hasOwn(renderers, view) ? renderers[view]() : prototype.render(view);
   }
 
   function setView(next) {

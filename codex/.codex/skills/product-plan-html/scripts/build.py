@@ -69,8 +69,8 @@ def metadata(plan: dict) -> dict[str, str]:
         "TITLE": title,
         "PAGE_TITLE": str(document.get("pageTitle", title)),
         "DATE": str(document.get("date", "Proposed design")),
-        "SUBTITLE": str(document.get("subtitle", "Data model, logic and connected product previews")),
-        "SAMPLE_LABEL": str(document.get("sampleLabel", "Interactive preview · fictional data")),
+        "SUBTITLE": str(document.get("subtitle", "Data model, logic and data flow")),
+        "SAMPLE_LABEL": str(document.get("sampleLabel", "Proposed design")),
         "BRAND": str(document.get("brand", "traba")),
         "EYEBROW": str(document.get("eyebrow", "PRODUCT REVIEW")),
     }

@@ -78,37 +78,60 @@ Supported node kinds are `new`, `existing`, `decision`, `data` and `result`.
 results. Node IDs must be unique SQL-style identifiers, and every edge endpoint must
 name a declared node. Direction is `TB`, `BT`, `LR` or `RL`.
 
-## Connected prototype
+## Optional preview surfaces
 
-The optional `prototype.js` is trusted local JavaScript, wrapped in an IIFE to avoid
-sharing globals with the viewer. Expose:
+The document works without `prototype.js`: it shows overview, model, flow and diagrams,
+with no preview tabs, preview metric or scenario controls. The starter omits this file.
+Add it only for requested previews or affected UI. Declare exactly the chosen surfaces;
+there are no default app names. A later request can change this list. Any app, page,
+role or tool can be a surface, and a single surface needs no companion apps.
+
+The optional file is trusted local JavaScript, wrapped in an IIFE to avoid sharing
+globals with the viewer. A static, single-surface preview needs only:
 
 ```javascript
 window.PROTOTYPE = {
-  surfaces: [{id:'worker',label:'Worker app'}, {id:'ops',label:'Ops console'}],
+  surfaces: [{id:'review-tool',label:'Review tool'}],
+  render(id) { return '<section class="card"><h2>Review tool</h2><p>Illustrative preview.</p></section>'; }
+};
+```
+
+For an interactive preview, add the methods and scenarios the feature needs:
+
+```javascript
+window.PROTOTYPE = {
+  surfaces: [{id:'review-tool',label:'Review tool'}],
   scenarios: [{id:'pending',label:'Pending review'}],
   initialScenario: 'pending',
   init() { loadScenario('pending'); },
   selectScenario: loadScenario,
   reset() { loadScenario(currentScenario); },
   status() { return {label:'Awaiting review',tone:'orange'}; },
-  render(id) { return id === 'worker' ? workerView() : opsView(); }
+  render(id) { return reviewToolView(); }
 };
 ```
 
-Add `business` and other relevant apps to `surfaces`. Reserve `overview`, `model`,
-`flow` and `diagrams` for the viewer. `render(id)` returns HTML from the current shared
-demo state. `init()` runs after `window.PlanDocument` exists. Do not initialize at
+Each surface has a unique ID and its own display label. Reserve `overview`, `model`,
+`flow` and `diagrams` for the viewer. `render(id)` returns that surface's HTML. For
+multiple surfaces, route by ID and share state only where their journey requires it.
+The Injury/RTW example explicitly selects worker, Ops and business surfaces; do not copy
+that selection into unrelated features. An empty `surfaces` array also omits previews.
+
+`init()` runs after `window.PlanDocument` exists. Do not initialize at
 script load time. After an action updates state, call `window.PlanDocument.render()`.
-`window.PlanDocument.setView(id)` navigates between app/document tabs.
+`window.PlanDocument.setView(id)` navigates between declared surface/document tabs.
+`scenarios`, `initialScenario`, `init`, `selectScenario`, `reset` and `status` are
+optional. Scenario controls appear only on a surface with declared scenarios. Supply
+`selectScenario` when using the scenario selector, and `reset` when offering reset.
 
 Own the feature forms, actions, dialogs and state in this file. The viewer owns document
-navigation, scenario selection/reset, theme selection, flow tabs and diagram zoom.
+navigation, optional scenario selection/reset, theme selection, flow tabs and diagram zoom.
 An optional `overview()` returns a custom overview, but it must derive repeated counts
 and decisions from `PLAN`, not maintain a second schema or flow definition. Reuse the
 packaged CSS classes for phone frames, desktop shells, tables, badges and controls.
 
 Escape text inserted into HTML. Keep stable IDs and scenarios for verification. No
 network requests or production mutations are needed. Explain simulated behavior and
-private-versus-customer projections in the document. Define tests for booking/permission
-or other cross-app invariants; do not infer backend correctness from this demo.
+any differences in what each actor can see. Test the feature's actual invariants;
+cross-surface assertions apply only when multiple surfaces interact. Do not infer backend
+correctness from this demo.
