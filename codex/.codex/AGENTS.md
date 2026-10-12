@@ -4,6 +4,7 @@
 
 # Putting up pull requests for review
 
+- Before creating or updating any PR, read `~/AGENTS.md` and follow its `Pull request descriptions` section. Its required diagrams and blast radius apply to every PR, including each PR in a stack, regardless of optional sections in a PR authoring skill.
 - Unless explicitly asked otherwise, use the `gt` CLI for interacting with PRs and create stacks. Stacks are easier to review because each PR is smaller and logically focused.
 - Each PR of a stack is atomic and must past CI.
 - Instead of `git commit`, use `gt create`. This will create a commit and a branch with the current changes.

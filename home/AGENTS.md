@@ -28,6 +28,18 @@
 - When proposing a simpler alternative, prefer the version with less indirection unless there is a concrete downside.
 - Always use ASCII box diagrams for architecture, flow, and system maps. Do not use mermaid (or other diagram DSLs) unless explicitly asked.
 
+## Pull request descriptions
+
+Every PR description must include `System diagrams`, `Data flow diagrams`, and `Blast radius` sections. Apply this to every repository, draft PR, and individual PR in a stack, including small, documentation, config, and test changes. These requirements override optional-diagram guidance in PR authoring skills.
+
+- Read the actual diff and the relevant callers, contracts, and consumers before writing these sections. Compare each PR against its own base branch, including its immediate parent in a stack.
+- In `System diagrams`, include separately labeled `Before` and `After` ASCII box diagrams in fenced `text` blocks. Show the affected components, their responsibilities, dependencies, and system boundaries. Mark the changed components and connections.
+- In `Data flow diagrams`, include separately labeled `Before` and `After` ASCII box diagrams in fenced `text` blocks. Trace the relevant trigger or input through transformations, calls, storage reads and writes, and the output or side effect. Label arrows with the data or contract they carry.
+- Keep the diagrams scoped to the PR and use the same names and level of detail before and after. Name real components and interfaces so a reviewer can connect the diagrams to the code.
+- When the system or data flow is unchanged, show both views and label them `Unchanged`. For non-runtime changes, show the affected authoring, build, test, or configuration process. State when runtime behavior is unchanged.
+- In `Blast radius`, identify the directly affected behavior and the indirect callers, shared packages, contracts, stored data, and external integrations that could be affected. Explain the relevant failure modes and the checks that cover them. Distinguish verified facts from assumptions and untested risks.
+- Preserve repository-required template sections and bot-managed markers. Before submitting a PR or updating its description, check that all required sections and diagrams are present and accurate for the current diff. Read back the published body after submission.
+
 ## Documentation home (CRITICAL)
 
 Durable docs, reports, experiment writeups, eval dumps, and agent memos go under **`~/projects/work-docs`** (git repo `nthpaul/work-docs`) — not `/tmp`, not product-repo `tmp/`, not Desktop/Downloads.
