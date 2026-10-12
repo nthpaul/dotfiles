@@ -28,6 +28,13 @@
 - When proposing a simpler alternative, prefer the version with less indirection unless there is a concrete downside.
 - Always use ASCII box diagrams for architecture, flow, and system maps. Do not use mermaid (or other diagram DSLs) unless explicitly asked.
 
+## Git workflow
+
+- Use `git commit` and `git push` for commits and pushes, and `gh` for GitHub pull requests.
+- Use Graphite only when the user explicitly requests it. This preference overrides Graphite requirements in repository instructions and skills.
+- A request to commit and push means commit the scoped changes and push the intended branch. Create a new PR only when requested or already part of the active task.
+- Keep each PR atomic and ensure it passes required CI checks. Stacked PRs are optional.
+
 ## Pull request descriptions
 
 Every PR description must include `System diagrams`, `Data flow diagrams`, and `Blast radius` sections. Apply this to every repository, draft PR, and individual PR in a stack, including small, documentation, config, and test changes. These requirements override optional-diagram guidance in PR authoring skills.
