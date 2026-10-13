@@ -14,6 +14,7 @@ WORKTREE_ROOTS=(
   "$HOME/.grok/worktrees"
   "$HOME/.cursor/worktrees"
   "$HOME/.claude/worktrees"
+  "$HOME/.codex/worktrees"
 )
 SELF_PIDS=""
 KILL9=0
@@ -1159,6 +1160,7 @@ cmd_self_test() {
   if cwd_uses_tree /tmp/wt /tmp/other; then expect "cwd other" 1 0; else expect "cwd other" 0 0; fi
   if path_under_worktree_root "$HOME/projects/traba"; then expect "main repo is a worktree root" 1 0; else expect "main repo is a worktree root" 0 0; fi
   if path_under_worktree_root "$HOME/projects/worktrees/traba/some-branch"; then expect "projects worktree root" 1 1; else expect "projects worktree root" 0 1; fi
+  if path_under_worktree_root "$HOME/.codex/worktrees/some-task/traba"; then expect "codex worktree root" 1 1; else expect "codex worktree root" 0 1; fi
 
   if (( fails > 0 )); then
     echo "self-test: $fails failed" >&2

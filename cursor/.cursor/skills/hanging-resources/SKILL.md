@@ -15,8 +15,10 @@ description: >-
 Scan the machine for leftover agent/dev resources and **list** them.
 Do **not** kill processes or remove Docker containers unless the user explicitly asks.
 
-Stale worktrees are the exception: every run of this skill removes them before the report.
-Run `hanging-resources clean worktrees --stale`. Do not ask which worktrees to remove.
+Stale worktrees are the exception: remove them before the report.
+Run `hanging-resources clean worktrees --stale --dry-run` first. Preserve uncommitted work and local-only commits before cleanup; the CLI force-removes checkout files.
+For Codex app tasks, check `list_threads` when available. Keep checkouts belonging to active tasks even if the CLI finds no process cwd inside them. Prefer `archive_worktree` for worktrees attached to the current task. If a stale pass would include an active or unverified Codex task, retain its checkout and clean only the remaining named paths.
+Otherwise, run `hanging-resources clean worktrees --stale`. Do not ask which stale worktrees to remove.
 
 ## Command
 
@@ -38,7 +40,13 @@ hanging-resources --agent-idle-min 60
 
 Tab completion (zsh): type `hanging-resources` then Tab. Needs a new terminal, or `exec zsh`.
 
-If the command is missing, the script is:
+If the command is missing, invoke the bundled script from the skill directory. In Codex:
+
+```bash
+"${CODEX_HOME:-$HOME/.codex}/skills/hanging-resources/scripts/hanging-resources"
+```
+
+In Cursor:
 
 ```bash
 "$HOME/.cursor/skills/hanging-resources/scripts/hanging-resources"
@@ -86,7 +94,7 @@ hanging-resources clean docker postgres_local --force
 | **Stuck Hermes gateway** | `hermes_cli.main gateway restart` still running (any age). |
 | **Idle Codex** | Interactive Codex CLI (`codex` / `codex.js`), plus `codex sandbox` / `node_repl` (sandbox idle after ~1h). Skip the Codex app. |
 | **Headless Codex** | `codex exec` (alias `e`). Listed at any age / CPU. |
-| **Stale worktree** | A directory under a worktree root that has a `.git` file or directory, and no live process has its cwd inside it. Roots: `$TRABA_WORKTREES_ROOT` (default `~/.traba/worktrees`), `~/projects/worktrees`, `~/.grok/worktrees`, `~/.cursor/worktrees`, `~/.claude/worktrees`, one or two levels down. Main repos under `~/projects/<repo>` are not worktrees. |
+| **Stale worktree** | A directory under a worktree root that has a `.git` file or directory, and no live process has its cwd inside it. Roots: `$TRABA_WORKTREES_ROOT` (default `~/.traba/worktrees`), `~/projects/worktrees`, `~/.grok/worktrees`, `~/.cursor/worktrees`, `~/.claude/worktrees`, `~/.codex/worktrees`, one or two levels down. Main repos under `~/projects/<repo>` are not worktrees. |
 | **Docker leftovers** | `docker ps -a` when the daemon is up. If the daemon is down, say so once — do not invent containers. |
 
 Expected / not hanging by default:
@@ -108,13 +116,13 @@ For processes and Docker, end by asking which items to kill or remove. Do not ac
 
 ## Cleanup
 
-- **Worktrees:** `hanging-resources clean worktrees --stale` on every run. In-use checkouts stay. A named in-use checkout needs `--force`. `--all` without `--force` is the stale set. Large `node_modules` trees are slow. Do not use `lsof +D`.
+- **Worktrees:** Follow the dry run and task checks above. In-use checkouts stay. A named in-use checkout needs `--force`. `--all` without `--force` is the stale set. Large `node_modules` trees are slow. Do not use `lsof +D`.
 - **cursor-agent / claude / grok / orch / hermes / codex:** `hanging-resources clean agents|claude|grok|orch|hermes|codex <pid>` (add `--kill-9` if TERM is not enough).
 - **Docker:** `hanging-resources clean docker <id|name>`. Running containers need `--force`.
 - For processes and Docker, remove only the paths or pids the user named. If they say “all”, `hanging-resources clean <type> --all` (show `--dry-run` first if they might not want the whole set).
 
 ## Notes
 
-- Worktree layout matches [worktree-home](../worktree-home/SKILL.md): `$TRABA_WORKTREES_ROOT/<repo-slug>/<branch-slug>/`.
+- Traba worktree layout: `$TRABA_WORKTREES_ROOT/<repo-slug>/<branch-slug>/`.
 - Keep the report plain and short. No jargon pile-up.
 - On PATH via stowed zshrc (`~/.cursor/skills/hanging-resources/scripts`), same pattern as `agent-tell`. New shell or `exec zsh`.
