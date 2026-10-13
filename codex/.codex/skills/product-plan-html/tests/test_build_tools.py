@@ -9,12 +9,13 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 import xml.etree.ElementTree as ET
 
 
 PACKAGE = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PACKAGE / "scripts"))
-from build import build, resolve_node
+from build import build, load_diagrams, resolve_node
 from validate import check_plan, validate
 
 
@@ -42,6 +43,7 @@ class BuildToolsTests(unittest.TestCase):
                         "constraints": ["Only a pending request may be approved."], "relationships": "workers 1:0..1 requests."}],
             "referenceTables": [{"name": "workers", "fields": [{"name": "id", "type": "text PK"}]}],
             "existing": [], "decisions": ["Review state has one owner."], "questions": [], "sources": [],
+            "schemaDiagrams": ["model", "model-full"],
             "flows": [{"id": "review", "title": "Review request", "summary": "An authorized approval changes one request.",
                        "steps": [["Approve", "Request and authenticated actor", "Check ownership and current state", "Set APPROVED", "Updated request"]]}],
         }
@@ -156,8 +158,10 @@ const context = {
 context.window = context;
 vm.createContext(context);
 vm.runInContext(fs.readFileSync(process.argv[2], 'utf8'), context);
-assert.ok(elements.get('#app').innerHTML.includes(`<div class="metric">${process.argv[3]}</div><h3>new tables</h3>`));
-assert.ok(elements.get('#app').innerHTML.includes('<p>1 existing table extended</p>'));
+const overview = elements.get('#app').innerHTML;
+if (process.argv[3] === '0') assert.ok(!overview.includes('<h3>new tables</h3>'));
+else assert.ok(overview.includes(`<div class="metric">${process.argv[3]}</div><h3>new tables</h3>`));
+assert.ok(overview.includes('<div class="metric">1</div><h3>existing tables extended</h3>'));
 context.PlanDocument.setView('model');
 assert.ok(elements.get('#app').innerHTML.includes('<span class="badge green">Existing · proposed extension</span>'));
 """
@@ -177,6 +181,7 @@ assert.ok(elements.get('#app').innerHTML.includes('<span class="badge green">Exi
 
     def test_certification_captions_and_authored_markdown(self):
         self.plan = json.loads((PACKAGE / "tests/fixtures/equipment-certification-plan.json").read_text())
+        self.plan["schemaDiagrams"] = ["model-full"]
         self.save_plan()
         self.build()
         dot = (self.out / "diagrams/model-full.dot").read_text()
@@ -223,6 +228,72 @@ assert.ok(elements.get('#app').innerHTML.includes('<span class="badge green">Exi
             self.build()
         self.assertEqual(self.output_hashes(), original)
 
+    def test_tables_do_not_implicitly_select_schema_diagrams(self):
+        self.plan.pop("schemaDiagrams")
+        self.save_plan()
+        result = self.build()
+        self.assertEqual(result["counts"]["diagrams"], 0)
+        self.assertEqual(result["counts"]["downloads"], 2)
+        self.assertFalse((self.out / "diagrams.md").exists())
+        self.assertFalse((self.out / "diagrams/model.svg").exists())
+        self.assertNotIn("## Diagrams", (self.out / "build-plan.md").read_text())
+
+    def test_selected_schema_view_and_authored_diagrams_remain_distinct(self):
+        self.plan["schemaDiagrams"] = ["model-full"]
+        self.save_plan()
+        self.build()
+        manifest = json.loads((self.out / "diagrams/manifest.json").read_text())
+        self.assertEqual([diagram["id"] for diagram in manifest], ["model-full"])
+        self.assertFalse((self.out / "diagrams/model.svg").exists())
+        self.plan.pop("schemaDiagrams")
+        self.save_plan()
+        authored = [{"id": "model", "title": "Selected concept", "nodes": [{"id": "concept", "label": "One concept"}]}]
+        (self.project / "diagrams.json").write_text(json.dumps(authored), encoding="utf-8")
+        self.build()
+        manifest = json.loads((self.out / "diagrams/manifest.json").read_text())
+        self.assertEqual([diagram["id"] for diagram in manifest], ["model"])
+        self.assertEqual(manifest[0]["title"], "Selected concept")
+        self.assertFalse((self.out / "diagrams/model-full.svg").exists())
+
+    def test_schema_selection_rejects_no_tables_and_authored_id_collisions(self):
+        with self.assertRaisesRegex(ValueError, "require tables"):
+            load_diagrams(self.project, {"schemaDiagrams": ["model"]})
+        authored = [{"id": "model", "nodes": [{"id": "concept", "label": "One concept"}]}]
+        (self.project / "diagrams.json").write_text(json.dumps(authored), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "conflict with authored"):
+            load_diagrams(self.project, self.plan)
+
+    def test_custom_flow_columns_and_blank_legacy_columns_export_only_content(self):
+        self.plan = {"document": {"title": "Filter journey"}, "flows": [{
+            "id": "filter", "title": "Filter locally", "columns": ["Step", "Interaction", "Visible result"],
+            "steps": [["Choose", "Select a filter", "Show matching rows"], ["Clear", "Clear the filter", "Show all rows"]]}]}
+        self.save_plan()
+        self.build()
+        markdown = (self.out / "build-plan.md").read_text()
+        self.assertIn("| Step | Interaction | Visible result |", markdown)
+        self.assertIn("| Choose | Select a filter | Show matching rows |", markdown)
+        self.assertNotIn("Writes", markdown)
+        self.plan["flows"][0].pop("columns")
+        self.plan["flows"][0]["steps"] = [["Choose", "Filter", "Match rows", "", "Visible rows"]]
+        self.save_plan()
+        self.build()
+        markdown = (self.out / "build-plan.md").read_text()
+        self.assertIn("| Step | Input | Reads / decision | Output / next action |", markdown)
+        self.assertNotIn("Writes", markdown)
+
+    def test_diagramless_custom_prototype_checks_syntax_without_rendering(self):
+        self.plan = {"document": {"title": "Interaction note"}}
+        self.save_plan()
+        (self.project / "prototype.js").write_text("window.PROTOTYPE = {};\n", encoding="utf-8")
+        with mock.patch("build.subprocess.run", wraps=subprocess.run) as commands:
+            result = self.build()
+        self.assertTrue(result["ok"])
+        self.assertFalse(any("render-diagrams.mjs" in " ".join(call.args[0]) for call in commands.call_args_list))
+        self.assertTrue(json.loads((self.out / "build-info.json").read_text())["javascriptSyntaxChecked"])
+        (self.project / "prototype.js").write_text("window.PROTOTYPE = {broken: ;};\n", encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "prototype.js syntax check"):
+            self.build()
+
     def test_invalid_foreign_key_preserves_existing_build(self):
         self.build()
         original = self.output_hashes()
@@ -255,6 +326,82 @@ assert.ok(elements.get('#app').innerHTML.includes('<span class="badge green">Exi
             self.build()
         self.assertFalse(self.out.exists())
         self.assertEqual(outside.read_text(), "window.OUTSIDE = true;")
+
+
+class DiagramlessBuildToolsTests(unittest.TestCase):
+    def test_reuse_columns_and_flow_ownership_export_only_authored_content(self):
+        with tempfile.TemporaryDirectory(prefix="product-plan-optional-detail-") as temporary:
+            root = Path(temporary)
+            project = root / "project"
+            project.mkdir()
+            cases = [({"name": "Existing directory"}, "| Table / service |", "| Existing directory |"),
+                     ({"name": "Existing directory", "change": "Reuse without changes"},
+                      "| Table / service | Change |", "| Existing directory | Reuse without changes |")]
+            for existing, header, row in cases:
+                for owner in (None, "Browser owns presentation state"):
+                    with self.subTest(existing=existing, owner=owner):
+                        flow = {"id": "filter", "title": "Filter locally", "columns": ["Step", "Result"],
+                                "steps": [["Choose filter", "Show matching rows"]]}
+                        if owner is not None:
+                            flow["owner"] = owner
+                        plan = {"document": {"title": "Directory filtering"}, "existing": [existing], "flows": [flow]}
+                        (project / "plan.json").write_text(json.dumps(plan), encoding="utf-8")
+                        result = build(project, root / "output")
+                        self.assertTrue(result["ok"])
+                        markdown = (root / "output/build-plan.md").read_text()
+                        self.assertIn(header, markdown)
+                        self.assertIn(row, markdown)
+                        self.assertNotIn("| Why |", markdown)
+                        if "change" not in existing:
+                            self.assertNotIn("| Change |", markdown)
+                        if owner is None:
+                            self.assertNotIn("Owner:", markdown)
+                        else:
+                            self.assertIn("Owner: " + owner, markdown)
+
+    def test_omitting_downloads_preserves_authored_text_resembling_links(self):
+        with tempfile.TemporaryDirectory(prefix="product-plan-authored-text-") as temporary:
+            root = Path(temporary)
+            project = root / "project"
+            project.mkdir()
+            decision = "A source contains <a href='diagrams.md'>diagram notes</a>; choose content according to the task."
+            plan = {"document": {"title": "Source interpretation"}, "summary": {"decision": decision}}
+            (project / "plan.json").write_text(json.dumps(plan), encoding="utf-8")
+            result = build(project, root / "output")
+            self.assertTrue(result["ok"])
+            self.assertIn(decision, (root / "output/preview.html").read_text())
+            self.assertEqual(result["counts"]["diagrams"], 0)
+
+    def test_decision_memo_omits_technical_exports_and_requires_no_node(self):
+        with tempfile.TemporaryDirectory(prefix="product-plan-decision-memo-") as temporary:
+            root = Path(temporary)
+            project = root / "project"
+            project.mkdir()
+            plan = {"document": {"title": "Keep the existing process"},
+                    "summary": {"decision": "Use the existing review queue.", "nextAction": "Confirm the owner."}}
+            (project / "plan.json").write_text(json.dumps(plan), encoding="utf-8")
+            for authored_diagrams in (None, []):
+                with self.subTest(diagrams=authored_diagrams):
+                    if authored_diagrams is not None:
+                        (project / "diagrams.json").write_text(json.dumps(authored_diagrams), encoding="utf-8")
+                    out = root / "output"
+                    with mock.patch("build.resolve_node", side_effect=AssertionError("Node must not be needed")):
+                        result = build(project, out)
+                    self.assertTrue(result["ok"])
+                    self.assertEqual(result["counts"]["tables"], 0)
+                    self.assertEqual(result["counts"]["flows"], 0)
+                    self.assertEqual(result["counts"]["diagrams"], 0)
+                    self.assertEqual(result["counts"]["downloads"], 1)
+                    self.assertFalse((out / "diagrams.md").exists())
+                    self.assertEqual(json.loads((out / "diagrams/manifest.json").read_text()), [])
+                    self.assertFalse(json.loads((out / "build-info.json").read_text())["javascriptSyntaxChecked"])
+                    markdown = (out / "build-plan.md").read_text()
+                    self.assertIn(plan["summary"]["decision"], markdown)
+                    self.assertIn(plan["summary"]["nextAction"], markdown)
+                    for heading in ("## Diagrams", "## Data model", "## Existing tables", "## Logic and data flow", "## Source requirements"):
+                        self.assertNotIn(heading, markdown)
+                    html = out / "preview.html"
+                    self.assertTrue(validate(html)["ok"])
 
 
 if __name__ == "__main__":

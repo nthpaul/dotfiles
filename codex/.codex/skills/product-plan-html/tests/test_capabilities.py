@@ -52,11 +52,36 @@ class CapabilityTests(unittest.TestCase):
             write_skill(custom, name)
         result = capabilities.discover([custom], tool_names=["mcp__cua_repl__js"])
         self.assertFalse(result["fallbacks"])
-        self.assertEqual(len(result["read"]), 7)
+        self.assertEqual(len(result["read"]), 4)
+        self.assertEqual(set(result["read"]), {
+            item["path"] for item in result["skills"]
+            if item["name"] in capabilities.CORE_READ_NAMES
+        })
+        idempotence = self.selected(result, "principle-make-operations-idempotent")
+        self.assertFalse(idempotence["fallback"])
+        self.assertNotIn(idempotence["path"], result["read"])
         self.assertTrue(result["tools"]["browser"]["available"])
         for item in result["skills"]:
             self.assertTrue(Path(item["path"]).is_file())
             self.assertEqual(item["source"], "configured-root")
+
+    def test_missing_optional_principles_do_not_add_default_fallback_reads(self):
+        root = self.home / "core-only"
+        for _, name, scope, _ in capabilities.TARGETS:
+            if name in capabilities.CORE_READ_NAMES:
+                write_skill(root / "pstack" if scope else root, name)
+        result = capabilities.discover([root])
+        self.assertEqual(len(result["read"]), 4)
+        self.assertEqual({item["name"] for item in result["fallbacks"]}, {
+            "principle-build-the-lever", "principle-model-the-domain",
+            "principle-make-operations-idempotent",
+        })
+        self.assertTrue(all(not item["fallback"] for item in result["skills"]
+                            if item["path"] in result["read"]))
+        for fallback in result["fallbacks"]:
+            self.assertNotIn(fallback["path"], result["read"])
+            self.assertTrue(Path(fallback["path"]).is_file())
+            self.assertIn("No verified installed pstack", fallback["reason"])
 
     def test_all_missing_use_three_verified_fallbacks(self):
         result = capabilities.discover()

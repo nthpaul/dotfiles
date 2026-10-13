@@ -45,14 +45,21 @@ def check_plan(plan: object) -> dict:
     if not isinstance(plan, dict):
         return {"ok": False, "errors": ["plan.json must contain an object"], "counts": counts}
     for key in ("tables", "existing", "flows", "decisions", "questions", "sources"):
-        if not isinstance(plan.get(key), list):
+        if key in plan and not isinstance(plan[key], list):
             errors.append(f"{key} must be an array")
+    for key in ("document", "summary"):
+        if not isinstance(plan.get(key, {}), dict):
+            errors.append(f"{key} must be an object")
+    selected = plan.get("schemaDiagrams", [])
+    if (not isinstance(selected, list) or any(key not in ("model", "model-full") for key in selected)
+            or len(selected) != len(set(selected))):
+        errors.append("schemaDiagrams must be an array of unique model/model-full IDs")
+    elif selected and not plan.get("tables"):
+        errors.append("schemaDiagrams requires tables")
     if errors:
         return {"ok": False, "errors": errors, "counts": counts}
-    if not isinstance(plan.get("document", {}), dict):
-        errors.append("document must be an object")
     tables: dict[str, set[str]] = {}
-    for table in plan["tables"]:
+    for table in plan.get("tables", []):
         if not isinstance(table, dict):
             errors.append("Each table must be an object")
             continue
@@ -83,19 +90,20 @@ def check_plan(plan: object) -> dict:
             if field_name in names:
                 errors.append(f"Duplicate field: {name}.{field_name}")
             names.add(field_name)
-            for key in ("type", "rule"):
-                if not isinstance(field.get(key), str):
-                    errors.append(f"{name}.{field_name}.{key} must be text")
+            if not isinstance(field.get("type"), str) or not field["type"].strip():
+                errors.append(f"{name}.{field_name}.type must be nonempty text")
+            if "rule" in field and not isinstance(field["rule"], str):
+                errors.append(f"{name}.{field_name}.rule must be text")
             if not isinstance(field.get("relation", ""), str):
                 errors.append(f"{name}.{field_name}.relation must be text")
         tables[name] = names
         counts["fields"] += len(fields)
-    counts["tables"] = len(plan["tables"])
+    counts["tables"] = len(plan.get("tables", []))
     targets = {**existing_tables(plan), **tables}
-    for table in plan["tables"]:
+    for table in plan.get("tables", []):
         if not isinstance(table, dict):
             continue
-        for field in table.get("fields", []) or []:
+        for field in table.get("fields", []) if isinstance(table.get("fields"), list) else []:
             if not isinstance(field, dict) or not field.get("relation"):
                 continue
             relation = field["relation"]
@@ -111,25 +119,33 @@ def check_plan(plan: object) -> dict:
             elif targets[target] is not None and target_field not in targets[target]:
                 errors.append(f"{label}: relation target field {relation} does not exist")
     flow_ids: set[str] = set()
-    for flow in plan["flows"]:
+    for flow in plan.get("flows", []):
         if not isinstance(flow, dict):
             errors.append("Each flow must be an object")
             continue
         flow_id = flow.get("id", "")
         if not isinstance(flow_id, str) or not DIAGRAM_ID.fullmatch(flow_id):
             errors.append(f"Invalid flow id: {flow_id!r}")
+            continue
         if flow_id in flow_ids:
             errors.append(f"Duplicate flow id: {flow_id}")
         flow_ids.add(flow_id)
+        columns = flow.get("columns", ["Step", "Input", "Read / decide", "Write", "Output / next action"])
+        if (not isinstance(columns, list) or not columns
+                or not all(isinstance(value, str) and value.strip() for value in columns)):
+            errors.append(f"{flow_id}.columns must be a nonempty array of text labels")
+            continue
+        if "owner" in flow and not isinstance(flow["owner"], str):
+            errors.append(f"{flow_id}.owner must be text")
         steps = flow.get("steps")
         if not isinstance(steps, list):
             errors.append(f"{flow_id}.steps must be an array")
             continue
         counts["steps"] += len(steps)
         for index, step in enumerate(steps, 1):
-            if not isinstance(step, list) or len(step) != 5 or not all(isinstance(v, str) for v in step):
-                errors.append(f"{flow_id} step {index} needs five text columns: step/input/read/write/output")
-    counts["flows"] = len(plan["flows"])
+            if not isinstance(step, list) or len(step) != len(columns) or not all(isinstance(v, str) for v in step):
+                errors.append(f"{flow_id} step {index} needs {len(columns)} text columns matching its labels")
+    counts["flows"] = len(plan.get("flows", []))
     return {"ok": not errors, "errors": errors, "counts": counts}
 
 
@@ -153,9 +169,16 @@ class ArtifactHTML(HTMLParser):
         self._script: list[str] | None = None
         self._style: list[str] | None = None
         self.bad: list[str] = []
+        self.structured = False
+        self.title: list[str] = []
+        self._in_title = False
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
+        if tag == "meta" and attrs.get("name") == "product-plan-format" and attrs.get("content") == "structured":
+            self.structured = True
+        if tag == "title":
+            self._in_title = True
         if tag == "script" and "src" not in attrs:
             self._script = []
         if tag == "style":
@@ -164,7 +187,8 @@ class ArtifactHTML(HTMLParser):
             if key in attrs:
                 self.assets.append(attrs[key])
         if "srcset" in attrs:
-            self.bad.append("srcset assets are not supported by the portable bundler")
+            self.assets.extend(token.rstrip(",") for token in attrs["srcset"].split()
+                               if not re.fullmatch(r"\d+(?:\.\d+)?[wx],?", token))
         if tag == "link" and attrs.get("rel") in ("stylesheet", "preload", "modulepreload", "icon"):
             self.assets.append(attrs.get("href", ""))
         if tag in ("image", "use"):
@@ -177,6 +201,8 @@ class ArtifactHTML(HTMLParser):
             self.inline_styles.append(attrs["style"])
 
     def handle_endtag(self, tag):
+        if tag == "title":
+            self._in_title = False
         if tag == "script" and self._script is not None:
             self.inline_scripts.append("".join(self._script))
             self._script = None
@@ -185,6 +211,8 @@ class ArtifactHTML(HTMLParser):
             self._style = None
 
     def handle_data(self, data):
+        if self._in_title:
+            self.title.append(data)
         if self._script is not None:
             self._script.append(data)
         if self._style is not None:
@@ -239,6 +267,15 @@ def _validate_bundle(html: str, plan=None, diagrams=None, downloads=None) -> dic
                 errors.append(f"Portable CSS has a runtime asset reference: {ref}")
         if re.search(r"@import\b", css, re.IGNORECASE):
             errors.append("Portable CSS must not contain @import")
+    structured = parser.structured or plan is not None
+    if not structured:
+        if not "".join(parser.title).strip():
+            errors.append("Portable HTML needs a document title")
+        for name, href in parser.downloads:
+            if not href.startswith("data:"):
+                errors.append(f"Portable download is not embedded: {name or href}")
+        return {"ok": not errors, "errors": errors,
+                "counts": {"downloads": len(parser.downloads), "inlineScripts": len(parser.inline_scripts)}}
     embedded_plan = None
     embedded_diagrams = None
     for script in parser.inline_scripts:
@@ -280,7 +317,12 @@ def _validate_bundle(html: str, plan=None, diagrams=None, downloads=None) -> dic
         anchor.feed(match.group(0))
         declared.update(anchor.downloads)
     payloads = {}
-    for name in DOWNLOADS:
+    required_downloads = ["build-plan.md"]
+    if embedded_diagrams:
+        required_downloads.append("diagrams.md")
+    if isinstance(embedded_plan, dict) and embedded_plan.get("tables"):
+        required_downloads.append("data-model.json")
+    for name in required_downloads:
         href = declared.get(name)
         if not href:
             errors.append(f"Missing declared source download: {name}")
@@ -295,7 +337,7 @@ def _validate_bundle(html: str, plan=None, diagrams=None, downloads=None) -> dic
             errors.append(f"Embedded download differs from source: {name}")
     if "data-model.json" in payloads and json.loads(payloads["data-model.json"]) != embedded_plan:
         errors.append("Embedded JSON download differs from bundled window.PLAN")
-    counts["downloads"] = sum(name in declared for name in DOWNLOADS)
+    counts["downloads"] = sum(name in declared for name in required_downloads)
     counts["inlineScripts"] = len(parser.inline_scripts)
     if counts["inlineScripts"] != 4:
         errors.append("Portable HTML must contain the four declared scripts and no injected script elements")
@@ -311,6 +353,10 @@ def validate(path: Path) -> dict:
             return _validate_bundle(path.read_text(encoding="utf-8"))
         except (OSError, ValueError, TypeError) as exc:
             return {"ok": False, "errors": [f"Cannot validate portable HTML: {exc}"], "counts": counts}
+    if not (path / "data-model.json").exists() and not (path / "build-info.json").exists():
+        preview = path / "preview.html"
+        if preview.is_file():
+            return validate(preview)
     try:
         plan = json.loads((path / "data-model.json").read_text(encoding="utf-8"))
         model = check_plan(plan)
@@ -355,12 +401,16 @@ def validate(path: Path) -> dict:
             for item in manifest
             if isinstance(item, dict) and isinstance(item.get("id"), str) and DIAGRAM_ID.fullmatch(item["id"])
         ]
-        bundle = _validate_bundle(html, plan, rendered_manifest, {name: (path / name).read_bytes() for name in DOWNLOADS})
+        downloads = {name: (path / name).read_bytes() for name in DOWNLOADS if (path / name).is_file()}
+        bundle = _validate_bundle(html, plan, rendered_manifest, downloads)
         errors.extend(bundle["errors"])
         counts.update(bundle["counts"])
     except (OSError, ValueError, TypeError) as exc:
         errors.append(f"Cannot validate portable HTML: {exc}")
-    for name in ("index.html", "styles.css", "viewer.js", "prototype.js", "spec.js", "diagrams.js", *DOWNLOADS):
+    outputs = ["index.html", "styles.css", "viewer.js", "prototype.js", "spec.js", "diagrams.js", "build-plan.md"]
+    if manifest:
+        outputs.append("diagrams.md")
+    for name in outputs:
         if not (path / name).is_file():
             errors.append(f"Missing output: {name}")
     return {"ok": not errors, "errors": errors, "counts": counts}

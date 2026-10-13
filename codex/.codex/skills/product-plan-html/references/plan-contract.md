@@ -1,65 +1,98 @@
-# Authored inputs
+# Optional structured builder
 
-Keep project inputs separate from generated outputs. All paths below are relative to
-the project. The build reads `plan.json`, optional `diagrams.json` and optional
-`prototype.js`. Save requirements and source notes alongside them for the next author.
+Use this builder for technical plans that benefit from shared model/flow inputs,
+generated diagrams, exports or connected previews. For a tailored document, author
+HTML directly as described in SKILL.md. This contract applies only to the builder.
+
+```bash
+python3 <skill-dir>/scripts/plan.py scaffold <project-dir> --structured
+python3 <skill-dir>/scripts/plan.py build <project-dir> --out <output-dir>
+python3 <skill-dir>/scripts/plan.py validate <output-dir>
+```
+
+`--example injury-rtw` scaffolds the comprehensive example instead. Inputs and generated
+outputs must be separate. Edit inputs and rebuild, rather than patching generated files.
+The builder protects source directories and produces deterministic preview bytes.
 
 ## Plan
 
-`plan.json` is an object with these fields. Run `scaffold` for a complete small example.
+`plan.json` is an object. Include only relevant keys; absent arrays behave as empty.
+The neutral scaffold includes only document metadata and a summary. No schema, flow,
+diagram or preview is implied by scaffolding.
 
 | Field | Shape and purpose |
 | --- | --- |
-| `document` | `title`, `pageTitle`, `subtitle`, `date`, `brand`, `eyebrow`, `sampleLabel`; `sourceUrl` and `revision` record the input and inspected checkout |
-| `summary` | `decision`, `nextAction` and `evidence` are strings; `reuse`, `netNew` and `buildSequence` are arrays of strings |
-| `tables` | Array of proposed new tables or extensions to existing tables, defined below |
-| `referenceTables` | Existing FK targets, each `{name, fields:[{name,type}]}`. Include the actual referenced columns; these are declarations of inspected targets, not proposed full schemas |
-| `existing` | Array of `{name, change, why}` describing existing tables/services to reuse or extend |
-| `flows` | Array of `{id, title, summary, steps}` with the five-column step format below |
+| `document` | Optional `title`, `pageTitle`, `subtitle`, `date`, `brand`, `eyebrow`, `sampleLabel`; `sourceUrl` and `revision` record inspected evidence |
+| `summary` | Optional `decision`, `nextAction`, `evidence` strings; `reuse`, `netNew`, `buildSequence` string arrays |
+| `tables` | Proposed physical tables or extensions, described below |
+| `referenceTables` | Existing FK targets as `{name, fields:[{name,type}]}`. Declare inspected referenced columns, not invented full schemas |
+| `existing` | `{name, change, why}` entries describing existing tables/services to reuse |
+| `flows` | `{id, title, summary, columns, steps, owner}` entries, described below |
+| `schemaDiagrams` | Explicit selection of generated diagram IDs, `"model"` and/or `"model-full"`. Omitted or `[]` generates none |
 | `decisions` | Settled design choices as strings |
-| `questions` | Unresolved policy or design decisions as strings |
-| `sources` | Array of `[label, pathOrUrl]`. Prefer repository-relative paths plus recorded revisions; preserve citations to precise files or source documents |
+| `questions` | Unresolved decisions as strings |
+| `sources` | `[label, pathOrUrl]` pairs. Prefer precise repository paths with recorded revisions or source document links |
 
-Every table has `{name, purpose, fields, constraints, relationships}`. Every field has
-`{name, type, rule, relation}`. `type` is the physical storage type, with `PK`, `FK` or
-`nullable` explicitly stated when applicable. `rule` explains its purpose, values,
-ownership or invariants. `relation` is `table.column`, or `""` for no FK. Give nullable
-and composite foreign keys their enforcement rules in constraints. `constraints` is
-an array of strings; `relationships` describes cardinality and cross-table behavior.
-Use existing ID types rather than assuming UUID.
+The viewer omits empty technical tabs, cards, counts and optional columns. Existing
+reuse entries without a model appear in the overview. Authored `document.modelIntro`
+or `notStored` can justify a model section; `flowContract` or `flowNotes` can justify
+a flow section without a step table. Use direct HTML when another structure is clearer.
 
-Set optional table `storage` to `"extension"` for proposed changes to an existing
-table. Omitted `storage` defaults to `"new"`; these are the only accepted values.
-Include the proposed fields and any existing columns needed to explain relationships.
-The viewer labels extensions as existing and counts them separately from new tables.
+## Physical tables
 
-Each flow step is exactly five strings:
+A table has `name` and a nonempty `fields` array. Optional `purpose`, `constraints`
+string array and `relationships` text explain important rules. A field has `name` and
+physical `type`, with optional `rule` text and `relation` as `table.column`. Type text
+includes `PK`, `FK` and `nullable` when applicable. Match inspected ID types and time
+conventions. Validate declared foreign keys against actual targets.
+
+Choose detail from the task. A full-schema request needs all relevant fields; an
+extension can show only proposed fields and existing columns needed to explain it.
+Use prose or direct HTML for a conceptual model without physical field types.
+
+Table `storage` is `"new"` by default; `"extension"` identifies changes to an existing
+table. For a single-column unique FK, `unique:true` renders one child per parent.
+Explain composite uniqueness and enforcement in constraints; the generator does not
+infer it from prose. Table and column names use SQL identifier characters.
+
+## Flows
+
+Choose column labels that explain this flow. The first column names the step:
 
 ```json
-["Step name", "Input + actor", "Reads and decisions", "Transaction writes", "Output / next action"]
+{
+  "id": "filter",
+  "title": "Narrow the visible results",
+  "columns": ["Step", "User action", "Visible result"],
+  "steps": [["Filter", "Select a status", "Matching rows remain visible"]]
+}
 ```
 
-Flow IDs and diagram IDs use letters, numbers, `_` and `-`, starting with a letter.
-The corresponding flow diagram should use the same ID. Table and column names use SQL
-identifier characters, starting with a letter or `_`.
-For a single-column unique FK, add `unique:true` to that field to render one child per
-parent. Composite uniqueness belongs in constraints and needs explicit explanation;
-the generator does not infer a unique FK from constraint prose.
+Each step has one string per label. Omitted `columns` uses the technical example's
+five labels: Step, Input, Read / decide, Write, Output / next action. Entirely blank
+columns are hidden. Optional `owner` states verified ownership when it matters;
+no ownership is assumed. Flow IDs use letters, numbers, `_` and `-`, starting with
+a letter. An associated diagram can use the same ID for inline display.
 
-Optional document fields add feature-specific explanations without changing the viewer:
-`modelIntro`, `modelConventionsTitle`, `notStored`, `flowContract`, `diagramNote`, and
-`flowNotes:[{title,text,tone}]`. Tones are `violet`, `green`, `orange`, `blue` or blank.
-The bundled recreation also includes metadata recording the original artifact.
+Optional document explanations are `modelIntro`, `modelConventionsTitle`, `notStored`,
+`flowContract`, `diagramNote` and `flowNotes:[{title,text,tone}]`. Tones are `violet`,
+`green`, `orange`, `blue` or blank. Keep claims specific to the authored feature.
 
 ## Diagrams
 
-`diagrams.json` is an array. New graphs use a shared node/edge representation:
+`diagrams.json` is optional. Missing or `[]` adds no supplementary diagrams.
+`schemaDiagrams` selects generated schema views only when tables are present:
+`model` shows relationships; `model-full` shows every authored field. Choose one,
+both or neither according to the information needed. Their content derives from
+`plan.json`. A selected ID cannot also be authored in `diagrams.json`.
+
+Supplementary graphs use one node/edge representation for DOT, SVG and Mermaid:
 
 ```json
 {
   "id": "review",
   "title": "Review a request",
-  "description": "Permission and state precede the write.",
+  "description": "Permission precedes the write.",
   "direction": "LR",
   "nodes": [
     {"id": "input", "label": "Request + actor", "kind": "input"},
@@ -73,19 +106,23 @@ The bundled recreation also includes metadata recording the original artifact.
 }
 ```
 
-The builder generates schema overview `model` and every-field diagram `model-full`
-from the plan. Do not manually author their contents for new plans. The recreation
-fixture retains canonical originals of these graphs for comparison with that artifact.
-Legacy graphs may instead supply `dot` and `mermaid` strings. They are separate authored
-representations; compare their nodes, branches and labels before changing them.
-Supported node kinds are `new`, `existing`, `decision`, `data` and `result`.
-`input` aliases `result`; `state` aliases `data`. Use `result` for outputs and failure
-results. Node IDs must be unique SQL-style identifiers, and every edge endpoint must
-name a declared node. Direction is `TB`, `BT`, `LR` or `RL`.
+Node kinds are `new`, `existing`, `decision`, `data` and `result`. `input` aliases
+`result`; `state` aliases `data`. IDs are unique SQL-style identifiers; edge endpoints
+must exist. Direction is `TB`, `BT`, `LR` or `RL`.
+
+Legacy recreation graphs may supply authored `dot` and `mermaid` strings, including
+schema views. Compare their nodes, branches and labels when revising them. The injury
+fixture explicitly retains these graphs to reproduce its comprehensive artifact.
+
+The build always keeps internal plan JSON and a Markdown plan. It exposes a model
+JSON download only with tables, and creates diagram exports only with diagrams.
+Diagramless plans without a custom prototype need no Node runtime. Builds with Node
+check script syntax; `build-info.json` records whether that check ran. Browser rendering
+and source truth require separate verification.
 
 ## Optional preview surfaces
 
-The document works without `prototype.js`: it shows overview, model, flow and diagrams,
+The document works without `prototype.js`. It shows only authored document content,
 with no preview tabs, preview metric or scenario controls. The starter omits this file.
 Add it only for requested previews or affected UI. Declare exactly the chosen surfaces;
 there are no default app names. A later request can change this list. Any app, page,
@@ -129,8 +166,8 @@ script load time. After an action updates state, call `window.PlanDocument.rende
 optional. Scenario controls appear only on a surface with declared scenarios. Supply
 `selectScenario` when using the scenario selector, and `reset` when offering reset.
 
-Own the feature forms, actions, dialogs and state in this file. The viewer owns document
-navigation, optional scenario selection/reset, theme selection, flow tabs and diagram zoom.
+Own feature forms, actions, dialogs and state in this file. The viewer owns navigation
+for included content, optional scenario selection/reset, themes, flow tabs and diagram zoom.
 An optional `overview()` returns a custom overview, but it must derive repeated counts
 and decisions from `PLAN`, not maintain a second schema or flow definition. Reuse the
 packaged CSS classes for phone frames, desktop shells, tables, badges and controls.

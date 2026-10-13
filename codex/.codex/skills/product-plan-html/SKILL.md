@@ -1,140 +1,113 @@
 ---
 name: product-plan-html
-description: Build a source-grounded product implementation plan as a portable interactive HTML document, with the full data model, logic and data flows, diagrams, reuse versus net-new analysis, and optional previews for requested or relevant surfaces. Use for PRD-to-build plans or recreating this document format. Automatically use installed pstack, traba-design and relay-design guidance, with bundled fallbacks when unavailable.
-version: 1.0.1
+description: Create source-grounded product plans as readable, portable HTML. Use for product proposals, implementation planning, PRD-to-build analysis, or recreating this document style. Adapt the content and layout to the task, with diagrams and previews when useful or requested. Automatically use installed pstack, traba-design and relay-design guidance, with bundled fallbacks.
+metadata:
+  version: "1.1.0"
 ---
 
 # Product plan HTML
 
-Produce a reviewable implementation plan from the supplied requirements and inspected
-source. Explain what can be reused, what needs to be built, and how data moves through
-the system. Add illustrative previews when the request or feature calls for them.
+Create a document that helps its audience understand the proposal and make the next
+needed decision. This is style guidance with borrowable templates, examples and tools.
+Choose the content, level of detail and layout from the work being planned.
 
-## Discover guidance and tools
+## Select scope and guidance
 
-Resolve this skill directory from the loaded SKILL.md location. Run commands with that
-directory's `scripts/plan.py`; do not depend on the current working directory.
+Resolve this directory from the loaded SKILL.md path and discover available guidance:
 
 ```bash
 python3 <skill-dir>/scripts/plan.py detect
 ```
 
-Pass the session's available browser tool names through repeated `--tools` arguments
-before `detect`. The returned `read` list is mandatory reading before authoring. It selects
-pstack architect, build-the-lever, model-the-domain, idempotence and prove-it-works;
-traba-design; and relay-design. Follow installed guidance. If any is missing, read the
-selected bundled reference for that role. Do not install plugins or stop to ask about
-missing optional skills. `--standalone detect` exercises fallback selection explicitly.
-Follow any applicable skill references these documents require. Honor user instructions
-and local AGENTS.md above defaults. Apply available unslop guidance to the final prose.
+Pass callable browser tool names through repeated `--tools` arguments before `detect`.
+Read the returned `read` paths for pstack architecture and verification, traba-design,
+and relay-design. Discovery automatically selects bundled guidance for missing roles;
+`--standalone detect` selects all fallbacks. Additional pstack principles remain in
+`skills`: use model-the-domain for stateful work, idempotence for retries and external
+effects, and build-the-lever for repeated transformations. Apply their guidance to the
+actual scope. Installed guidance does not make its examples mandatory document sections.
+Honor the user's instructions and local AGENTS.md. Apply available unslop guidance to prose.
 
-The same package works in Codex, Cursor, Grok and Claude Code. Discovery searches their
-project/user skill roots and installed plugin layouts, preferring the invocation host.
-For platform installation or tool differences, read [platforms](references/platforms.md).
+Start from the audience, problem, requested deliverables and next decision. Include
+technical detail when it changes understanding or makes a requested plan complete.
+For a full data-model request, include every relevant table, field and relationship.
+A UI change may need only a user journey or preview; a decision memo may need only
+reasoning and evidence. Diagrams should explain a useful relationship, flow or timing,
+or satisfy an explicit request. Choose preview surfaces from the request and affected
+experience, with arbitrary apps, tools or roles. Omit content that has no purpose,
+including empty sections, placeholder fields, zero-value metrics and repeated diagrams.
 
-The package includes the viewer, local Poppins fonts, a pinned Viz/Graphviz renderer,
-schema/diagram generators, bundling, validation, preview serving and Relay publication.
-Python 3.10+ and Node 18+ are required. Discovery locates PATH and Codex runtimes. If
-needed, use the desktop `load_workspace_dependencies` tool for runtime paths. No npm
-install, system Graphviz, network connection or external skill is needed to build.
-Relay CLI and a browser are optional capabilities. Use only callable tools exposed by
-the current session. Report checks that could not run.
+## Ground the proposal
 
-## Gather evidence once
+Read supplied requirements through the user's requested browser or connected document
+tools. Inspect relevant code with `rg`; record exact evidence and revisions before
+asserting reuse or current behavior. Distinguish requirements, observed behavior,
+proposed decisions and unresolved questions. Label unavailable source as proposed design
+and sample data as fictional. A checkout alone does not establish a deployed revision.
+Reuse established evidence for the same revision; refresh facts that may have changed.
 
-Read the PRD through the user's requested browser or connected document tools. Prefer
-Codex's in-app browser when requested. Inspect the relevant repositories with `rg`,
-record revisions, and save source/input evidence with the project. Verify authoritative
-schema and service ownership before asserting reuse. Inspect eligibility, cancellation,
-scheduling, notifications and app patterns when relevant to the feature. Label unavailable
-source as proposed design.
+## Author the HTML
 
-Reuse verified evidence from an earlier run when the user asks for reconstruction.
-Do not repeat research already established for the same source revision. Refresh facts
-that may have changed for a new implementation plan. Separate requirements, observed
-behavior, proposed decisions and open policy questions. Keep private medical or user
-data out of fixtures. Use clearly labeled fictional examples.
-
-## Author the contract
-
-Read [the input and prototype contract](references/plan-contract.md). Scaffold a project:
+Write tailored HTML directly. Optionally scaffold a small editable document:
 
 ```bash
 python3 <skill-dir>/scripts/plan.py scaffold <project-dir>
 ```
 
-For a recreation test, add `--example injury-rtw`. The example is an input fixture,
-not a prebuilt HTML snapshot. Its three apps belong to that feature; they are not defaults.
-For a new feature, replace the starter contents.
+This creates `preview.html` with embedded Poppins fonts, theme tokens, responsive styles
+and a theme toggle. Edit that file as the source. Borrow or reshape its markup freely.
+The broader [viewer styles](assets/viewer/styles.css) provide field tables, diagram
+panels, app frames and controls when useful. The [injury example](assets/examples/injury-rtw)
+is a comprehensive reference, not a required outline or default set of apps. Read its
+[source context](references/provenance.md) when recreating that fixture.
 
-Choose preview surfaces from the current request and verified feature scope. Include
-surfaces explicitly requested by the user. When previews are requested without naming
-surfaces, infer only those affected by the feature. Support arbitrary apps, pages, tools,
-and roles with their own IDs and labels. Worker app, Ops console and Business console
-are examples, not required sections. A feature may need one surface, several, or none.
-For a data model, backend or workflow plan without a preview request or UI changes,
-omit `prototype.js` and all preview sections. Later requests can add or remove surfaces
-without rebuilding the document format. State any material assumptions about scope.
+Lead with the conclusion and next action. Use headings, anchored navigation, tabs or
+collapsed detail according to the document's size and reading task. Apply Traba styling
+to previews and Relay guidance to the surrounding document. Support readable light,
+system dark and explicit dark themes, keyboard use and narrow layouts. Keep necessary
+content visible without interactions. Preview behavior is illustrative; it does not
+prove the backend works.
 
-Use three authored inputs:
+Use the optional structured builder when repeated schemas, flows, diagrams or connected
+previews benefit from shared inputs and generated exports. Read
+[the structured contract](references/plan-contract.md) only for that path. Its components
+are optional, including schema diagrams. Select the representations needed by the task.
+Edit its authored inputs and rebuild generated output. Tailored HTML requires no JSON
+contract, fixed tabs, compulsory downloads, diagram renderer or script count.
 
-1. `plan.json` owns document metadata, every table/field, references, reuse changes,
-   decisions, questions, evidence and flows with inputs, reads, writes and outputs.
-2. `diagrams.json` owns supplementary flow graphs. Structured nodes/edges generate
-   both DOT/SVG and Mermaid. Table diagrams always derive from `plan.json`. Preserve
-   legacy DOT/Mermaid only for faithful recreations; check their agreement explicitly.
-3. Optional `prototype.js` declares only the selected preview surfaces and owns their
-   feature-specific state and actions. It exposes the small viewer API. When surfaces
-   interact, use one shared state across them. Start from
-   user actions and legal transitions. Include failure, rejection, retry and return
-   paths required by the feature. Browser actions are a simulation, not backend proof.
-
-Keep the packaged viewer generic. Do not rebuild tabs, field tables, flow cards, zoom,
-downloads, themes, fonts or bundling for each feature. Apply Traba visual guidance to
-app previews and Relay guidance to the surrounding document. Lead with the decision
-and next action. Keep evidence and unsettled policy visible. Use both light and dark
-themes and layouts that remain usable at narrow widths.
-
-## Build and verify
+## Verify and deliver
 
 ```bash
-python3 <skill-dir>/scripts/plan.py build <project-dir> --out <output-dir>
-python3 <skill-dir>/scripts/plan.py validate <output-dir>
-python3 <skill-dir>/scripts/plan.py serve <output-dir> --port 8771
+python3 <skill-dir>/scripts/plan.py validate <project-dir>/preview.html
+python3 <skill-dir>/scripts/plan.py serve <project-dir> --port 8771
 ```
 
-The single build generates model JSON, Markdown, schema diagrams, authored flow SVGs,
-viewer assets and `preview.html` with embedded fonts, scripts and downloads. Edit inputs
-and rebuild. Never patch generated HTML, diagrams or Markdown by hand. Use a separate
-output directory; repeated builds must yield the same preview bytes for the same input.
+Validation checks portability for tailored HTML and consistency for components in a
+structured build. Follow [verification](references/verification.md) for the selected
+content. Inspect the actual document in the user's chosen browser; otherwise prefer
+Codex's in-app browser when available, then the host's exposed browser tools. Check
+reading order, themes, narrow layout and the controls or previews that exist. Verify
+source-backed claims separately. Report browser or other checks that could not run.
 
-Follow [verification](references/verification.md). Open the actual `preview.html` using
-the user's chosen browser, otherwise prefer Codex's in-app browser when available or
-the host's browser tools. If the session has no browser tool, reuse a permitted existing
-local browser harness. Verify diagrams/zoom, themes, narrow layout and downloaded
-sources. When previews exist, exercise the selected surfaces, their main journey,
-applicable failure and permission cases, and reset when provided. Check cross-surface
-state only when that journey spans multiple surfaces. With no previews, confirm their
-tabs, metric and scenario controls are absent. Verify the downloaded
-plan/model reflect the same input. Fix root causes in authored inputs or package tools.
-For substantial designs, ask an independent reviewer to inspect the artifacts and
-check load-bearing claims. Preserve their findings and verification evidence alongside
-the project. Do not call a successful build visual or end-to-end QA.
+Return the self-contained HTML with concise verification results. Keep authored inputs
+and supporting evidence in the user's durable document workspace. Publish only when
+requested, following [Relay publication](references/relay-publishing.md) and the user's
+destination. Publication does not authorize contacting reviewers.
 
-## Deliver or publish
+## Tools and portability
 
-Return a link to the self-contained HTML and concise validation results. Keep authored
-inputs and generated supporting files in the user's durable document workspace.
-Publish only when requested, using the user's destination and
-[Relay publication guidance](references/relay-publishing.md). Resolve a missing destination
-from the authenticated user's library namespace. Read an existing destination before
-replacing it. Publication does not authorize messaging reviewers or ongoing reviews.
+The package works in Codex, Cursor, Grok and Claude Code; [platforms](references/platforms.md)
+explains discovery and browser differences. Python 3.10+ runs the CLI. Node 18+ is needed
+only for Graphviz diagrams or structured custom-prototype syntax checks. Local fonts,
+a pinned Viz renderer, bundling and fallback guidance are included. No dependency install
+or external skill is required. Use the exposed desktop dependency-loader to locate a
+runtime when needed. Relay CLI is optional and used only for requested publication.
 
-To distribute this skill with its tools, run:
+To distribute the whole package:
 
 ```bash
 python3 <skill-dir>/scripts/plan.py package <outside-skill-dir>/product-plan-html.zip
 ```
 
-Extract the resulting `product-plan-html/` directory into the target's user skills root.
-Capability discovery resolves that machine's guidance and runtimes on its next run.
+Extract `product-plan-html/` into the target host's user skills root. Its next discovery
+run resolves that machine's installed guidance and tools.

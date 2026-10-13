@@ -15,7 +15,7 @@ import zipfile
 from capabilities import PACKAGE_ROOT, discover
 
 
-def scaffold(destination, example=None):
+def scaffold(destination, example=None, structured=False):
     destination = Path(destination).expanduser().resolve()
     if destination.exists() and any(destination.iterdir()):
         raise ValueError(f"Scaffold destination must be empty: {destination}")
@@ -24,33 +24,27 @@ def scaffold(destination, example=None):
         if not source.is_dir():
             raise ValueError(f"Unknown packaged example: {example}")
         shutil.copytree(source, destination, dirs_exist_ok=True)
-    else:
+    elif structured:
         destination.mkdir(parents=True, exist_ok=True)
         plan = {
-            "document": {"title": "Review requests", "pageTitle": "Product plan · Review requests",
+            "document": {"title": "Product plan", "pageTitle": "Product plan",
                          "date": "Draft", "brand": "traba", "eyebrow": "PRODUCT PLAN",
-                         "subtitle": "Illustrative starter. Replace with verified requirements.",
-                         "sampleLabel": "Fictional sample data"},
-            "summary": {"decision": "One request owns review state", "nextAction": "Replace this starter with the feature requirements.",
-                        "reuse": [], "netNew": ["A request record and review command"], "buildSequence": []},
-            "tables": [{"name": "review_requests", "purpose": "Illustrative review state.",
-                        "fields": [{"name": "id", "type": "uuid PK", "rule": "Stable request identity.", "relation": ""},
-                                   {"name": "status", "type": "text", "rule": "PENDING or APPROVED.", "relation": ""},
-                                   {"name": "createdAt", "type": "timestamptz", "rule": "Creation instant.", "relation": ""}],
-                        "constraints": ["A review command can approve only a pending request."], "relationships": "No external references in this starter."}],
-            "referenceTables": [], "existing": [], "decisions": ["The backend owns review transitions."],
-            "questions": ["Which actors can approve?"], "sources": [],
-            "flows": [{"id": "review", "title": "Review a request", "summary": "An authorized decision changes one request.",
-                       "steps": [["Approve", "Request ID and authenticated actor", "Load pending request and check permission", "Persist APPROVED and audit event", "Updated request projection"]]}]
+                         "subtitle": "", "sampleLabel": "Proposed design"},
+            "summary": {"decision": "State the proposed decision.",
+                        "nextAction": "State what the reader should decide or do next."}
         }
-        diagrams = [{"id": "review", "title": "Review a request", "description": "Illustrative command flow.",
-                     "nodes": [{"id": "input", "label": "Request + actor", "kind": "input"},
-                               {"id": "check", "label": "Authorized and pending?", "kind": "decision"},
-                               {"id": "write", "label": "Persist approval", "kind": "state"}],
-                     "edges": [{"from": "input", "to": "check"}, {"from": "check", "to": "write", "label": "Yes"}]}]
-        for name, value in [("plan.json", plan), ("diagrams.json", diagrams)]:
-            (destination / name).write_text(json.dumps(value, indent=2) + "\n", encoding="utf-8")
-    return {"project": str(destination), "example": example}
+        (destination / "plan.json").write_text(json.dumps(plan, indent=2) + "\n", encoding="utf-8")
+    else:
+        destination.mkdir(parents=True, exist_ok=True)
+        from build import data_url
+        html = (PACKAGE_ROOT / "assets/document.html").read_text(encoding="utf-8")
+        faces = []
+        for name, weight in (("Regular", 400), ("SemiBold", 600)):
+            font = PACKAGE_ROOT / f"assets/viewer/fonts/Poppins-{name}.ttf"
+            faces.append(f'@font-face {{ font-family:Poppins; font-weight:{weight}; font-style:normal; font-display:swap; src:url("{data_url(font)}") format("truetype"); }}')
+        faces.append("/*\n" + (PACKAGE_ROOT / "assets/viewer/fonts/OFL.txt").read_text(encoding="utf-8") + "\n*/")
+        (destination / "preview.html").write_text(html.replace("{{FONT_FACES}}", "\n".join(faces)), encoding="utf-8")
+    return {"project": str(destination), "example": example, "format": "structured" if example or structured else "html"}
 
 
 def publish(html, destination, executable):
@@ -98,7 +92,9 @@ def main():
     commands.add_parser("detect")
     starter = commands.add_parser("scaffold")
     starter.add_argument("project")
-    starter.add_argument("--example", choices=["injury-rtw"])
+    starter_mode = starter.add_mutually_exclusive_group()
+    starter_mode.add_argument("--example", choices=["injury-rtw"])
+    starter_mode.add_argument("--structured", action="store_true", help="Start the optional JSON-based builder")
     builder = commands.add_parser("build")
     builder.add_argument("project")
     builder.add_argument("--out", required=True)
@@ -119,12 +115,10 @@ def main():
     if args.command == "detect":
         result = capabilities
     elif args.command == "scaffold":
-        result = scaffold(args.project, args.example)
+        result = scaffold(args.project, args.example, args.structured)
     elif args.command == "build":
         from build import build
         node = args.node or capabilities["tools"]["node"]["path"]
-        if not node:
-            raise ValueError("Node is required for bundled Graphviz. Supply --node or use an existing Node runtime.")
         result = build(Path(args.project).expanduser().resolve(), Path(args.out).expanduser().resolve(), node)
         (Path(args.out).expanduser().resolve() / "capabilities.json").write_text(json.dumps(capabilities, indent=2) + "\n", encoding="utf-8")
         result["guidance"] = {"external": len(capabilities["skills"]) - len(capabilities["fallbacks"]),

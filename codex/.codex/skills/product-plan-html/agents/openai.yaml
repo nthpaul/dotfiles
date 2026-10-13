@@ -1,6 +1,6 @@
 interface:
   display_name: "Product plan HTML"
-  short_description: "Build product plans with diagrams and optional previews"
-  default_prompt: "Use $product-plan-html to inspect this feature's requirements and existing code, then create a full data model, logic and data-flow diagrams, and an interactive HTML plan. Include only requested or relevant preview surfaces; omit previews when unnecessary."
+  short_description: "Flexible HTML product plans and previews"
+  default_prompt: "Use $product-plan-html to create a source-grounded HTML plan for this work, adapting its content, detail and layout to the audience and requested deliverables."
 policy:
   allow_implicit_invocation: true

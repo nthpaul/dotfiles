@@ -59,7 +59,7 @@ def resolve_node(explicit: str | None = None) -> str:
     for path in roots:
         if path.is_file():
             return str(path)
-    raise ValueError("Node is required to render diagrams; pass --node or load Codex workspace dependencies")
+    raise ValueError("Node is required for diagrams or prototype syntax checks; pass --node or load Codex workspace dependencies")
 
 
 def metadata(plan: dict) -> dict[str, str]:
@@ -69,7 +69,7 @@ def metadata(plan: dict) -> dict[str, str]:
         "TITLE": title,
         "PAGE_TITLE": str(document.get("pageTitle", title)),
         "DATE": str(document.get("date", "Proposed design")),
-        "SUBTITLE": str(document.get("subtitle", "Data model, logic and data flow")),
+        "SUBTITLE": str(document.get("subtitle", "Implementation plan")),
         "SAMPLE_LABEL": str(document.get("sampleLabel", "Proposed design")),
         "BRAND": str(document.get("brand", "traba")),
         "EYEBROW": str(document.get("eyebrow", "PRODUCT REVIEW")),
@@ -126,41 +126,66 @@ def markdown_plan(plan: dict, diagrams: list[dict]) -> str:
             lines += ["## " + title, ""] + ["- " + str(value) for value in summary[key]] + [""]
     if summary.get("evidence"):
         lines += ["## Evidence", "", str(summary["evidence"]), ""]
-    lines += ["## Source requirements and evidence", ""]
-    lines += ["- [" + title.replace("]", "\\]") + "](" + url.replace(" ", "%20") + ")" for title, url in source_rows(plan)]
+    sources = source_rows(plan)
+    if sources:
+        lines += ["## Source requirements and evidence", ""]
+        lines += ["- [" + title.replace("]", "\\]") + "](" + url.replace(" ", "%20") + ")" for title, url in sources]
     if plan.get("decisions"):
         lines += ["", "## Design decisions", ""] + ["- " + str(v) for v in plan["decisions"]]
-    lines += ["", "## Diagrams", "", "The HTML preview includes fit/zoom controls and editable SVG/Mermaid downloads.", "",
-              "[All diagrams and editable sources](diagrams.md)", ""]
-    if authored.get("diagramNote"):
-        lines += [str(authored["diagramNote"]), ""]
-    lines += diagram_markdown(diagrams)
-    lines += ["## Complete data model", ""]
-    if authored.get("modelIntro"):
-        lines += ["### " + str(authored.get("modelConventionsTitle", "Storage and state conventions")), "",
-                  str(authored["modelIntro"]), ""]
-    for table in plan["tables"]:
+    if diagrams:
+        lines += ["", "## Diagrams", "", "The HTML preview includes fit/zoom controls and editable SVG/Mermaid downloads.", "",
+                  "[All diagrams and editable sources](diagrams.md)", ""]
+        if authored.get("diagramNote"):
+            lines += [str(authored["diagramNote"]), ""]
+        lines += diagram_markdown(diagrams)
+    tables = plan.get("tables", [])
+    if tables or authored.get("modelIntro") or authored.get("notStored"):
+        lines += ["## Data model", ""]
+        if authored.get("modelIntro"):
+            lines += ["### " + str(authored.get("modelConventionsTitle", "Storage and state conventions")), "",
+                      str(authored["modelIntro"]), ""]
+    for table in tables:
         lines += ["### " + table["name"], "", table.get("purpose", ""), ""]
         if table.get("storage", "new") == "extension":
             lines += ["Existing table · proposed extension.", ""]
-        lines += ["| Field | Type | Rule | Foreign key |", "| --- | --- | --- | --- |"]
+        columns = [("name", "Field"), ("type", "Type")]
+        columns += [(key, title) for key, title in (("rule", "Rule"), ("relation", "Foreign key"))
+                    if any(field.get(key, "").strip() for field in table["fields"])]
+        lines += ["| " + " | ".join(title for _, title in columns) + " |",
+                  "| " + " | ".join("---" for _ in columns) + " |"]
         for field in table["fields"]:
-            lines.append("| " + " | ".join(md_cell(field.get(k, "")) for k in ("name", "type", "rule", "relation")) + " |")
-        lines += ["", "Relationships: " + table.get("relationships", ""), ""]
-        lines += ["- " + str(v) for v in table.get("constraints", [])]
+            lines.append("| " + " | ".join(md_cell(field.get(key, "")) for key, _ in columns) + " |")
         lines.append("")
+        if table.get("relationships"):
+            lines += ["Relationships: " + table["relationships"], ""]
+        if table.get("constraints"):
+            lines += ["- " + str(v) for v in table["constraints"]] + [""]
     if authored.get("notStored"):
         lines += ["### What is intentionally not stored", "", str(authored["notStored"]), ""]
-    lines += ["## Existing tables and services", "", "| Table / service | Change | Why |", "| --- | --- | --- |"]
-    lines += ["| " + " | ".join(md_cell(row.get(k, "")) for k in ("name", "change", "why")) + " |"
-              for row in plan["existing"] if isinstance(row, dict)]
-    lines += ["", "## Logic and data flow", ""]
-    if authored.get("flowContract"):
-        lines += [str(authored["flowContract"]), ""]
-    for flow in plan["flows"]:
-        lines += ["### " + flow.get("title", flow["id"]), "", flow.get("summary", ""), "",
-                  "| Step | Input | Reads / decision | Writes | Output / next action |", "| --- | --- | --- | --- | --- |"]
-        lines += ["| " + " | ".join(md_cell(v) for v in step) + " |" for step in flow["steps"]]
+    existing = [row for row in plan.get("existing", []) if isinstance(row, dict)]
+    columns = [(key, title) for key, title in (("name", "Table / service"), ("change", "Change"), ("why", "Why"))
+               if any(str(row.get(key) or "").strip() for row in existing)]
+    if columns:
+        lines += ["## Existing tables and services", "", "| " + " | ".join(title for _, title in columns) + " |",
+                  "| " + " | ".join("---" for _ in columns) + " |"]
+        lines += ["| " + " | ".join(md_cell(row.get(key, "")) for key, _ in columns) + " |" for row in existing]
+        lines.append("")
+    flows = plan.get("flows", [])
+    if flows or authored.get("flowContract") or authored.get("flowNotes"):
+        lines += ["## Logic and data flow", ""]
+        if authored.get("flowContract"):
+            lines += [str(authored["flowContract"]), ""]
+    for flow in flows:
+        lines += ["### " + flow.get("title", flow["id"]), "", flow.get("summary", ""), ""]
+        if flow.get("owner", "").strip():
+            lines += ["Owner: " + flow["owner"], ""]
+        labels = flow.get("columns", ["Step", "Input", "Reads / decision", "Writes", "Output / next action"])
+        columns = [(index, label) for index, label in enumerate(labels)
+                   if any(step[index].strip() for step in flow["steps"])]
+        if columns:
+            lines += ["| " + " | ".join(md_cell(label) for _, label in columns) + " |",
+                      "| " + " | ".join("---" for _ in columns) + " |"]
+            lines += ["| " + " | ".join(md_cell(step[index]) for index, _ in columns) + " |" for step in flow["steps"]]
         lines.append("")
     for note in authored.get("flowNotes", []):
         lines += ["### " + str(note.get("title", "Flow note")), "", str(note.get("text", "")), ""]
@@ -241,7 +266,7 @@ def schema_table_label(name: str, fields: list[dict], existing: bool = False, st
 
 def schema_diagram(plan: dict, full: bool) -> dict:
     lines = graph_start("LR" if full else "TB")
-    tables = {table["name"]: table for table in plan["tables"]}
+    tables = {table["name"]: table for table in plan.get("tables", [])}
     declared_fields = {}
     for entry in [*plan.get("existing", []), *plan.get("existingTables", []), *plan.get("referenceTables", [])]:
         if not isinstance(entry, dict) or not isinstance(entry.get("fields"), list):
@@ -359,11 +384,9 @@ def structured_graph(diagram: dict) -> tuple[str, str]:
 
 def load_diagrams(project: Path, plan: dict) -> list[dict]:
     path = local_path(project, "diagrams.json")
-    if not path.exists():
-        return [schema_diagram(plan, False), schema_diagram(plan, True)]
-    diagrams = read_json(path)
-    if not isinstance(diagrams, list) or not diagrams:
-        raise ValueError("diagrams.json must be a nonempty array")
+    diagrams = read_json(path) if path.exists() else []
+    if not isinstance(diagrams, list):
+        raise ValueError("diagrams.json must be an array")
     result = []
     seen = set()
     for diagram in diagrams:
@@ -382,8 +405,16 @@ def load_diagrams(project: Path, plan: dict) -> list[dict]:
         result.append({"id": key, "title": str(diagram.get("title", key)),
                        "description": str(diagram.get("description", "")), "dot": dot, "mermaid": mermaid,
                        "canonical": diagram.get("canonical", "nodes" if "nodes" in diagram else "dot")})
-    automatic = [schema_diagram(plan, full) for full in (False, True)
-                 if ("model-full" if full else "model") not in seen]
+    selected = plan.get("schemaDiagrams", [])
+    if not isinstance(selected, list) or any(key not in ("model", "model-full") for key in selected):
+        raise ValueError("schemaDiagrams must be an array containing model and/or model-full")
+    if len(selected) != len(set(selected)):
+        raise ValueError("schemaDiagrams must not contain duplicate IDs")
+    if selected and not plan.get("tables"):
+        raise ValueError("Selected schema diagrams require tables")
+    if seen.intersection(selected):
+        raise ValueError("Selected schema diagram IDs conflict with authored diagrams: " + ", ".join(sorted(seen.intersection(selected))))
+    automatic = [schema_diagram(plan, key == "model-full") for key in selected]
     return automatic + result
 
 
@@ -433,15 +464,27 @@ def bundle(out: Path) -> str:
     html = re.sub(r"<script\b([^>]*)>\s*</script\s*>", script_tag, html, flags=re.IGNORECASE)
     if tuple(declared) != SCRIPT_ORDER:
         raise ValueError("Viewer must declare scripts in order: " + ", ".join(SCRIPT_ORDER))
-    scripts = "\n".join("<script>" + safe_script(local_path(out, name).read_text(encoding="utf-8")) + "</script>" for name in SCRIPT_ORDER)
-    html = re.sub(r"</body\s*>", lambda _: scripts + "\n</body>", html, count=1, flags=re.IGNORECASE)
-    for name in ("build-plan.md", "diagrams.md", "data-model.json"):
-        pattern = re.compile(r'<a\b([^>]*?)\bhref=["\']' + re.escape(name) + r'["\']([^>]*)>', re.IGNORECASE)
-        def download(match, filename=name):
-            attrs = match.group(1) + match.group(2)
-            attrs = re.sub(r'\s*\bdownload(?:\s*=\s*["\'][^"\']*["\'])?', "", attrs, flags=re.IGNORECASE)
-            return '<a' + attrs + ' href="' + data_url(out / filename) + '" download="' + filename + '">'
-        html = pattern.sub(download, html)
+    plan = read_json(out / "data-model.json")
+    def embed_downloads(content):
+        for name in ("build-plan.md", "diagrams.md", "data-model.json"):
+            if not (out / name).is_file() or (name == "data-model.json" and not plan.get("tables")):
+                content = re.sub(r'<a\b[^>]*\bhref=["\']' + re.escape(name) + r'["\'][^>]*>.*?</a\s*>', "", content, flags=re.IGNORECASE | re.DOTALL)
+                continue
+            pattern = re.compile(r'<a\b([^>]*?)\bhref=["\']' + re.escape(name) + r'["\']([^>]*)>', re.IGNORECASE)
+            def download(match, filename=name):
+                attrs = match.group(1) + match.group(2)
+                attrs = re.sub(r'\s*\bdownload(?:\s*=\s*["\'][^"\']*["\'])?', "", attrs, flags=re.IGNORECASE)
+                return '<a' + attrs + ' href="' + data_url(out / filename) + '" download="' + filename + '">'
+            content = pattern.sub(download, content)
+        return content
+    html = embed_downloads(html)
+    scripts = []
+    for name in SCRIPT_ORDER:
+        source = local_path(out, name).read_text(encoding="utf-8")
+        if name in ("prototype.js", "viewer.js"):
+            source = embed_downloads(source)
+        scripts.append("<script>" + safe_script(source) + "</script>")
+    html = re.sub(r"</body\s*>", lambda _: "\n".join(scripts) + "\n</body>", html, count=1, flags=re.IGNORECASE)
     return html
 
 
@@ -458,7 +501,8 @@ def build(project: Path, out: Path, node: str | None = None) -> dict:
     if not checked["ok"]:
         raise ValueError("Invalid plan: " + "; ".join(checked["errors"]))
     diagrams = load_diagrams(project, plan)
-    executable = resolve_node(node)
+    prototype = local_path(project, "prototype.js")
+    executable = resolve_node(node) if diagrams or prototype.is_file() else None
     out.parent.mkdir(parents=True, exist_ok=True)
     stage = Path(tempfile.mkdtemp(prefix=f".{out.name}-build-", dir=out.parent))
     try:
@@ -474,7 +518,6 @@ def build(project: Path, out: Path, node: str | None = None) -> dict:
                 if font.is_file():
                     (stage / "fonts").mkdir(exist_ok=True)
                     shutil.copyfile(font, stage / "fonts" / font.name)
-        prototype = local_path(project, "prototype.js")
         write(stage / "prototype.js", prototype.read_text(encoding="utf-8") if prototype.is_file() else "// This plan has no custom prototype.\n")
         shell = (stage / "index.html").read_text(encoding="utf-8")
         for token, value in metadata(plan).items():
@@ -489,16 +532,29 @@ def build(project: Path, out: Path, node: str | None = None) -> dict:
         for diagram in diagrams:
             write(stage / "diagrams" / (diagram["id"] + ".dot"), diagram["dot"])
             write(stage / "diagrams" / (diagram["id"] + ".mmd"), diagram["mermaid"])
-        write(stage / "diagrams.md", "# " + metadata(plan)["TITLE"] + " · diagrams\n\n" + "\n".join(diagram_markdown(diagrams)).rstrip() + "\n")
+        if diagrams:
+            write(stage / "diagrams.md", "# " + metadata(plan)["TITLE"] + " · diagrams\n\n" + "\n".join(diagram_markdown(diagrams)).rstrip() + "\n")
         write(stage / "build-plan.md", markdown_plan(plan, diagrams))
-        rendered = subprocess.run([executable, str(PACKAGE / "scripts/render-diagrams.mjs"), str(stage)], capture_output=True, text=True)
-        if rendered.returncode:
-            raise ValueError("Diagram render failed: " + (rendered.stderr or rendered.stdout).strip())
+        if diagrams:
+            rendered = subprocess.run([executable, str(PACKAGE / "scripts/render-diagrams.mjs"), str(stage)], capture_output=True, text=True)
+            if rendered.returncode:
+                raise ValueError("Diagram render failed: " + (rendered.stderr or rendered.stdout).strip())
+        else:
+            write(stage / "diagrams.js", "window.DIAGRAMS = [];\n")
+            if executable:
+                for name in SCRIPT_ORDER:
+                    source = (stage / name).read_text(encoding="utf-8")
+                    checked_script = subprocess.run([executable, "--check", str(stage / name)], capture_output=True, text=True)
+                    if checked_script.returncode:
+                        raise ValueError(name + " syntax check failed: " + (checked_script.stderr or checked_script.stdout).strip())
+                    checked_inline = subprocess.run([executable, "--check"], input=safe_script(source), capture_output=True, text=True)
+                    if checked_inline.returncode:
+                        raise ValueError("Inline " + name + " syntax check failed: " + (checked_inline.stderr or checked_inline.stdout).strip())
         write(stage / "preview.html", bundle(stage))
         report = validate(stage)
         if not report["ok"]:
             raise ValueError("Build validation failed: " + "; ".join(report["errors"]))
-        info = {"format": "product-plan-html/1", "counts": report["counts"],
+        info = {"format": "product-plan-html/1", "counts": report["counts"], "javascriptSyntaxChecked": executable is not None,
                 "files": sorted(str(path.relative_to(stage)) for path in stage.rglob("*") if path.is_file())}
         write(stage / "build-info.json", json_text(info))
         if out.exists():

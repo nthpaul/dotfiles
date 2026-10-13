@@ -21,6 +21,7 @@ TARGETS = (
     ("design", "traba-design", None, "design.md"),
     ("relay", "relay-design", None, "relay.md"),
 )
+CORE_READ_NAMES = {"architect", "principle-prove-it-works", "traba-design", "relay-design"}
 PLATFORMS = ("codex", "cursor", "grok", "claude")
 
 
@@ -267,7 +268,9 @@ def discover(skills_roots=None, standalone=False, tool_names=None):
     browser = {"available": bool(browser_tools), "tools": browser_tools,
                "source": "supplied-tool-catalog" if browser_tools else None,
                "reason": None if browser_tools else "Browser capability was not present in the supplied tool names; disk state is not evidence of browser access."}
-    return {"platform": platform, "skills": selected, "read": list(dict.fromkeys(item["path"] for item in selected)),
+    return {"platform": platform, "skills": selected,
+            "read": list(dict.fromkeys(item["path"] for item in selected
+                                       if item["name"].split(":")[-1] in CORE_READ_NAMES)),
             "fallbacks": fallbacks, "roots_searched": searched,
             "tools": {"python": python, "node": node, "viz": _viz(node), "relay": relay, "browser": browser}}
 

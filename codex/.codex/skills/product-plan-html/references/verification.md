@@ -1,65 +1,62 @@
 # Verification
 
-The build checks field/FK targets, graph structure and SVGs, embedded assets/downloads,
-and bundle syntax. JavaScript syntax is checked during the build; `validate` checks
-artifact structure and portability without requiring Node. These checks do not establish that a proposal matches production.
-Check source-backed claims separately.
+Verify the content and controls actually included. The validator checks portability
+for authored HTML; structured builds also check selected schema/FK references, graphs,
+SVGs and agreement between inputs, exports and embedded downloads. It does not prove
+source truth, visual quality or backend behavior.
 
-## Generated artifact
+## Artifact checks
 
-Run `plan.py validate <output-dir>`. Build the same project into a second empty output
-directory and compare `preview.html` hashes. Generated content must be deterministic;
-the separate capabilities report may differ across machines. Validate the copied
-standalone HTML too. No local script, CSS, font, image or supporting download should
-be required for the bundle to work.
+Run `plan.py validate <html-file>` for a tailored document, or `validate <output-dir>`
+for a structured build. Copy the standalone HTML away from its supporting files and
+validate it too. Actual runtime assets and downloadable files must be embedded; ordinary
+source links can remain links. When using the structured builder, compare two builds'
+`preview.html` hashes for determinism and inspect `build-info.json` for syntax-check status.
+For tailored interactive HTML, syntax-check its authored scripts with an available Node
+runtime when useful; no fixed script count is required.
 
-For package changes, use:
+Check that each included section serves the request. Absent schema, flows, diagrams or
+previews should leave no empty navigation destinations, placeholder rows or unrelated
+ownership claims. If full physical schema was requested, check completeness against
+the requirements and authoritative schema. Otherwise check only the represented fields
+and relationships. A diagram should add understanding or satisfy the requested format.
+
+For package changes, run:
 
 ```bash
 python3 -m unittest discover -s <skill-dir>/tests -v
 python3 <skill-dir>/scripts/plan.py --standalone detect
 ```
 
-The bundled fixture tests compare the original plan's seven tables, 124 fields,
-28 foreign keys, four flows and eight diagrams. They check the connected recovery
-actions and the Markdown additions that formerly required manual edits. A new feature
-needs its own realistic scenario assertions rather than the injury-specific tests.
+Use realistic cases with different scopes: a short decision memo, a client-side journey,
+a schema change with selected diagrams, and the comprehensive recreation fixture. Tests
+must verify meaningful content and omission, not impose the example's layout everywhere.
 
-## Browser
+## Browser checks
 
-Serve the generated output on `127.0.0.1` with `plan.py serve`. Use the session's
-available browser tools or an existing permitted harness, following their actual
-documentation. With CUA, select/create an `iab` tab when Codex's browser is requested.
-See [platforms](platforms.md) for host differences. Inspect the actual bundle, then:
+Serve the document on `127.0.0.1` with `plan.py serve`. Use the user's chosen browser or
+the session's exposed browser tools, following their actual documentation. With CUA,
+select/create an `iab` tab when Codex's browser is requested. See [platforms](platforms.md).
 
-1. Read overview, every table, each flow and diagram. Check labels, cardinality, table
-   wrapping, graph zoom/scroll and downloaded sources.
-   Include realistic long table names when checking summaries and SVG labels. Verify
-   the Markdown export preserves the decision, evidence and optional explanatory prose.
-2. Check that preview tabs match the selected surfaces exactly, including arbitrary
-   IDs and labels. With no previews, confirm there is no preview metric, separator or
-   scenario toolbar, and that the document sections still work.
-3. When previews exist, run the main journey on those surfaces. If multiple surfaces
-   interact, verify an input changes the next surface's projection. Exercise applicable
-   rejected/failed paths and permission restrictions, and confirm a visible return path.
-   Test reset when supplied. Static previews need no scenario controls or reset.
-4. Check light, explicit dark and system theme behavior. Inspect a narrow window with
-   diagrams and any selected previews or dialogs. Save relevant screenshots and assertions.
+Read the actual document and follow its reading order. Check light, explicit dark and
+system themes, narrow layout, wrapping, contrast and keyboard navigation. Exercise the
+controls present, such as navigation, collapsed detail, diagram zoom and downloads.
+Confirm downloaded content agrees with the document. Save relevant screenshots/results.
 
-Use UI actions for actual QA. An isolated prototype state test complements the browser;
-it does not replace rendered interaction checks. If the browser is unavailable, deliver
-the built artifact and state exactly which rendering checks remain unverified.
+If previews exist, run their main journey and applicable failures, permissions and return
+paths. Check reset only when supplied, and shared state only when multiple surfaces
+interact. Static previews need no scenarios or reset. A runtime state test complements
+rendered UI checks. If browser access is unavailable, state which rendering checks remain
+unverified rather than calling a build visual or end-to-end QA.
 
-## Injury/RTW recreation assertions
+For substantial designs, use an independent reviewer for load-bearing claims and document
+fit. Keep evidence, artifact hashes, runtime versions and limitations beside the project.
 
-- Worker sample full note reaches the Ops queue as pending review.
-- Approval releases the medical hold when no other open injury exists.
-- Approval alone creates no sent business notice. Preview then explicit send creates it.
-- A second injury or ordinary account restriction still prevents booking/clearance notice.
-- Restricted notes stay blocked; expected return dates do not automatically clear injury.
-- Illness cancellation permits booking. Sharing is limited to the consented document
-  and named business; revoke or conversion removes access.
-- Reset restores the selected scenario without leaking prior notices or consent.
+## Injury/RTW recreation
 
-Record observed results, artifact hashes, runtime versions and limitations in a short
-verification report beside the recreated project. Keep the original document intact.
+The explicitly comprehensive fixture preserves seven tables, 124 fields, 28 foreign
+keys, four flows, eight diagrams and its worker/Ops/business previews. Its scenario checks
+cover medical holds, approval, explicit business notices, multiple injuries, account
+restrictions, illness booking, document consent, revocation, conversion and reset.
+Use [the fixture manifest](../assets/examples/injury-rtw/fixture-manifest.json) for exact
+assertions. These feature-specific checks do not define requirements for other plans.

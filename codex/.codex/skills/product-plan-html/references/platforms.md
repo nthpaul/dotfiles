@@ -1,8 +1,7 @@
 # Platforms and tools
 
 Install this directory as `product-plan-html` in the host's user skills root. Keep
-`scripts`, `assets`, `references` and `tests` together. All hosts use the same build
-commands and input contract.
+`scripts`, `assets`, `references` and `tests` together. All hosts use the same style guidance and optional build tools.
 
 | Host | User skills root | Project skills root | Installed plugins searched |
 | --- | --- | --- | --- |
@@ -19,7 +18,7 @@ Cached marketplace source that has not been installed is not a guidance root.
 
 Run `plan.py` through the path shown by the host's loaded skill. The script preserves
 that invocation path for host selection, even when the skill directory is a symlink.
-The build resolves assets from the package's actual location. `--standalone` ignores
+Scaffolding and the optional builder resolve assets from the package's actual location. `--standalone` ignores
 external guidance, but still discovers runtimes and accepts the session tool catalog.
 
 ## Browser verification
@@ -44,7 +43,9 @@ path is available, deliver the built document and state that visual QA has not r
 Use the host's shell/file tools to run bundled Python and Node helpers. Discovery checks
 PATH and locally installed Codex runtimes; it does not install dependencies. The Codex
 desktop dependency-loader is an optional way to locate a runtime when exposed. Other
-hosts can pass an existing Node executable with `build --node <path>`.
+hosts can pass an existing Node executable with `build --node <path>`. Node is needed
+for selected Graphviz diagrams or structured custom-prototype syntax checks. Tailored
+HTML and diagramless plans without custom prototypes can use the Python tools alone.
 
 Relay publication uses the `relay` executable discovered on PATH or `~/.relay/bin/relay`.
 It needs an authenticated Relay installation and an explicit publication request.
