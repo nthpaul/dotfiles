@@ -1,0 +1,6 @@
+interface:
+  display_name: "Craft"
+  short_description: "Precise work with proportionate care and verification"
+  default_prompt: "Use $craft to complete this work with clear quality criteria, source-grounded decisions, and verification of the delivered result."
+policy:
+  allow_implicit_invocation: true
