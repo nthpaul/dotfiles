@@ -39,6 +39,13 @@ by Codex, Claude Code, Cursor and Grok. Claude uses the shared skills directory;
 Cursor and Grok link this skill to the canonical Codex folder. Its discovery command
 selects available pstack, Traba and Relay guidance, with bundled fallbacks.
 
+The [Anatomy skill](codex/.codex/skills/anatomy/SKILL.md) uses the same shared
+layout for Codex, Claude Code, Cursor and Grok. It includes the drawing kit,
+verification scripts and eight complete examples from
+[wheresryan22/anatomy](https://github.com/wheresryan22/anatomy/tree/454a0ef801b6d9b905f08309d094491c7085b3dd),
+vendored at commit `454a0ef801b6d9b905f08309d094491c7085b3dd` under the MIT license.
+Invoke it as `$anatomy` in Codex or `/anatomy` in Claude Code, Cursor and Grok.
+
 ## Adding new configs
 
 1. Create a new package folder at repo root.
