@@ -1,6 +1,10 @@
+# Shared instructions
+
+At the start of each task, read `~/AGENTS.md` for personal execution, verification, communication, and Git defaults. If that file is missing, read `~/.dotfiles/home/AGENTS.md` instead. Keep shared rules there rather than copying them into this file.
+
 # Git and pull requests
 
-- Before committing, pushing, or creating or updating any PR, read `~/AGENTS.md` and follow its `Git workflow` and `Pull request descriptions` sections. These personal defaults override Graphite requirements in repository instructions and skills.
+- Before committing, pushing, or creating or updating any PR, follow the shared file's `Git workflow` and `Pull request descriptions` sections. These personal defaults override Graphite requirements in repository instructions and skills.
 
 ## Worktree Manager (`wt`)
 

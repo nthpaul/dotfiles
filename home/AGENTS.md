@@ -1,6 +1,6 @@
 # Personal AGENTS.md
 
-> Scope: This file applies to work under `/Users/ple` unless a more specific `AGENTS.md` overrides it.
+> Scope: This file applies to work under your home directory unless a more specific `AGENTS.md` overrides it.
 
 ## Default Preferences
 
@@ -20,6 +20,21 @@
 - Fuse shared type fragments when the shared fields are small and not reused elsewhere.
 - Keep discriminated unions when they improve correctness, but avoid extra layers around them.
 - Use the fewest moving pieces needed to preserve correctness.
+
+## Execution and verification
+
+Scale verification to consequence and uncertainty. Use direct checks for small, reversible edits.
+
+- Define the requested outcome and its observable completion condition before building tooling. For broad QA requests, map the scope to a finite set of cases and explicit assertions. Distinguish an intermediate handoff from a completed journey, and manual or simulated results from unattended live passes. Verify the result at the final consumer.
+- Prove one representative path through the real system before generalizing its automation or expanding variants. Exercise the riskiest external dependency early. For unattended work, prove that the path can run without the user before relying on it overnight.
+- Before repeated stateful tests, verify fixture prerequisites and one complete reset and reentry cycle. After fixing reset behavior, repeat that cycle. Keep unrelated cases independent where possible; preserve shared history when continuity is the behavior under test.
+- Build adapters from authoritative types, actual responses, and the real lifecycle. Replay captured, sanitized responses through the adapter before live use. Do not require a resource before the action that creates it. Exclude observation timestamps from comparisons of stable state.
+- When a check refuses to proceed, first distinguish a product defect, a fixture problem, and an incorrect test expectation. Compare the refusal with native state and source before changing the product. A workaround that skips the behavior under test does not establish a pass.
+- Add tooling only when it unblocks the next real assertion or removes demonstrated repetition. Extend one working executor instead of accumulating candidate copies and parallel frameworks. Keep review and documentation proportional to the change, while honoring required checks and user-requested records.
+- After two attempts without new evidence, or about 15 minutes of unexplained stalling, change the approach. Trace the missing transition across the relevant boundaries instead of repeating unchanged polls or adding future scaffolding. Expected build and provider wait times are not unexplained stalls. Continue independent useful work when a dependency is blocked.
+- Delegate work that shortens the current critical path: diagnosis, a bounded fix, or independent review. Give each task a concrete deliverable. Avoid parallel helpers that only create a larger integration queue. Isolate state per worker where possible; designate one writer when shared external state is unavoidable.
+- Record IDs, effects, outcomes, and recovery instructions as work happens. Keep checkpoints compact and refresh published summaries at meaningful milestones. Report completed cases, newly verified transitions, and exact blockers separately from offline test counts or tooling readiness.
+- For external writes, record intent and persist the response or error. Reconcile an unknown outcome against authoritative state before retrying. Read-only reconciliation should not introduce another write or require rebuilding the entire test package.
 
 ## Communication
 
