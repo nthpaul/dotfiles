@@ -41,7 +41,7 @@ Scale verification to consequence and uncertainty. Use direct checks for small, 
 - Explain tradeoffs plainly.
 - Call out unnecessary complexity directly.
 - When proposing a simpler alternative, prefer the version with less indirection unless there is a concrete downside.
-- Use Mermaid diagrams in PR descriptions. Elsewhere, use ASCII box diagrams for architecture, flow, and system maps unless explicitly asked for another format.
+- Use Mermaid diagrams in PR descriptions. Elsewhere, use mermaid diagrams for architecture, the diagram should be top to bottom rather that LTR, flow, and system maps unless explicitly asked for another format.
 
 ## Git workflow
 
@@ -59,7 +59,7 @@ Every PR description must include `System diagrams`, `Data flow diagrams`, and `
 - In `Data flow diagrams`, include separately labeled `Before` and `After` Mermaid diagrams in fenced `mermaid` blocks. Trace the relevant trigger or input through transformations, calls, storage reads and writes, and the output or side effect. Label arrows with the data or contract they carry.
 - Keep the diagrams scoped to the PR and use the same names and level of detail before and after. Name real components and interfaces so a reviewer can connect the diagrams to the code.
 - When the system or data flow is unchanged, show both views and label them `Unchanged`. For non-runtime changes, show the affected authoring, build, test, or configuration process. State when runtime behavior is unchanged.
-- In `Blast radius`, identify the directly affected behavior and the indirect callers, shared packages, contracts, stored data, and external integrations that could be affected. Explain the relevant failure modes and the checks that cover them. Distinguish verified facts from assumptions and untested risks.
+- In `Blast radius`, identify the directly affected behavior and the indirect callers, shared packages, contracts, stored data, and external integrations that could be affected. Explain the relevant failure modes and the checks that cover them. Distinguish verified facts from assumptions and untested risks. Use bullet points.
 - Preserve repository-required template sections and bot-managed markers. Before submitting a PR or updating its description, check that all required sections and diagrams are present and accurate for the current diff. Read back the published body after submission.
 
 ## Documentation home (CRITICAL)
