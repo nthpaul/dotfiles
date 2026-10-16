@@ -270,8 +270,8 @@ with steering commands; full Grok TUI remains an open choice. Start with two wor
 Installed Grok 1.0.30 advertises streaming JSON; Codex 0.154.0 advertises
 \texttt{queue}. Interruption semantics remain untested. Existing \texttt{orch}
 creates and kills separate windows; reuse selectively. Omit its mandatory
-\texttt{poteto-mode} and nested agents. Resolve the missing documented \texttt{wt}
-script path before code tasks.
+\texttt{poteto-mode} and nested agents. Create isolated checkouts with
+\texttt{git worktree add} before code tasks.
 
 \textbf{Required fault tests.} PID reuse; crash before send and after send/before ack;
 duplicate assignment; urgent conflict during a tool call; old-revision result;

@@ -34,8 +34,8 @@ $TRABA_WORKTREES_ROOT/<repo-slug>/<branch-slug>/
 **Resolve path (before or after the worktree exists):**
 
 ```bash
-"$HOME/.cursor/skills/worktree-home/scripts/wt-path.sh"
-"$HOME/.cursor/skills/worktree-home/scripts/wt-path.sh" ple/eng-18856-foo
+"$HOME/.cursor/skills/worktree-home/scripts/worktree-path.sh"
+"$HOME/.cursor/skills/worktree-home/scripts/worktree-path.sh" ple/eng-18856-foo
 ```
 
 The script only prints the path. Same branch → same path, always.
@@ -43,16 +43,12 @@ The script only prints the path. Same branch → same path, always.
 ## Agent checklist
 
 1. **Discover existing worktrees:** `ls "$TRABA_WORKTREES_ROOT/<repo-slug>"` (use default root if env unset).
-2. **Path for a branch:** run `wt-path.sh <branch>` from any directory inside the repo.
-3. **Create** (when needed), using the path from `wt-path.sh` — e.g.  
-   `git worktree add "$("$HOME/.cursor/skills/worktree-home/scripts/wt-path.sh" my/feature)" -b my/feature`  
+2. **Path for a branch:** run `worktree-path.sh <branch>` from any directory inside the repo.
+3. **Create** (when needed), using the path from `worktree-path.sh` — e.g.
+   `git worktree add "$("$HOME/.cursor/skills/worktree-home/scripts/worktree-path.sh" my/feature)" -b my/feature`
    or, if the branch already exists,  
-   `git worktree add "$("$HOME/.cursor/skills/worktree-home/scripts/wt-path.sh" my/feature)" my/feature`
+   `git worktree add "$("$HOME/.cursor/skills/worktree-home/scripts/worktree-path.sh" my/feature)" my/feature`
 4. **Do not** place agent worktrees in arbitrary `../` siblings; use this layout only so every agent knows where to look.
-
-## When `wt` (shell helper) is used
-
-If the user’s `wt` helper creates worktrees, it should be configured to use the **same** root and the **same** slug rule as `wt-path.sh`, or call `wt-path.sh` to obtain the path. Otherwise the “one place to look” rule breaks.
 
 ## Optional local overrides
 

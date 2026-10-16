@@ -24,7 +24,7 @@ Do not write product code until the ticket Baseline has numbers, not TBD.
 1. Read the ticket. Keep Summary / Scope / AC. Write **Plan** (what leaves the prefix, what stays, which surfaces).
 2. Fill **Baseline** on the ticket. Measure. Copy SQL and Datadog pulls from the playbook. Name live path (Slack skills-on Neutron) separately from skills-off / Neo.
 3. Check stale byte claims against the code constant this week.
-4. Worktree: `~/.cursor/skills/worktree-home/scripts/wt-path.sh` then `git worktree add` from `origin/main`. Branch `ple/eng-<id>-<slug>`.
+4. Worktree: `~/.cursor/skills/worktree-home/scripts/worktree-path.sh` then `git worktree add` from `origin/main`. Branch `ple/eng-<id>-<slug>`.
 5. Implement the smallest extract. Availability from grants / surface / product. Never `questionIntent`. Do not dump bodies under `## Current Context`. Use `stampSkillBody` for this-run facts.
 6. SHA pair must cover the intents this card kills. If DEBUGGING still forks, say so.
 7. **Evals:** only if the moved body was model-visible. Name the ids. They must pass **3× in a row** before merge. A fail resets the count. Prefix-only cards write `Evals: n/a`. Do not use `compose-noskill-*` as the gate (fictional names vs live ids).

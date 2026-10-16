@@ -42,7 +42,7 @@ If the branch was force-pushed during restack, use the old tip SHA from `gh pr v
 **Do not** `git rebase origin/main` the whole old stack — lower commits are already squashed on `main` and will conflict.
 
 ```bash
-cd "$(~/.cursor/skills/worktree-home/scripts/wt-path.sh <branch>)"  # or existing worktree
+cd "$(~/.cursor/skills/worktree-home/scripts/worktree-path.sh <branch>)"  # or existing worktree
 git fetch origin
 git checkout -B <branch> origin/main
 git cherry-pick <stack-only-commit-sha>

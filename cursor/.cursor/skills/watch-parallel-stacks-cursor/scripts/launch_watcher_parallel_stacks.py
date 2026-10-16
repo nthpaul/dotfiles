@@ -27,16 +27,6 @@ def run(
     )
 
 
-def zsh(
-    command: str,
-    *,
-    capture_output: bool = False,
-    interactive: bool = False,
-) -> subprocess.CompletedProcess[str]:
-    flag = "-ic" if interactive else "-lc"
-    return run(["zsh", flag, command], capture_output=capture_output)
-
-
 def ensure_binary(name: str) -> None:
     result = run(["zsh", "-lc", f"command -v {shlex.quote(name)} >/dev/null"], check=False)
     if result.returncode != 0:
@@ -63,7 +53,7 @@ def sanitize_name(value: str) -> str:
 
 
 def lane_session_name(project: str, worktree: str) -> str:
-    return f"wt/{project}/{worktree}".replace(".", "_").replace(":", "_")
+    return f"work/{project}/{worktree}".replace(".", "_").replace(":", "_")
 
 
 def watcher_session_name(plan_path: Path, explicit_name: str | None) -> str:
@@ -83,16 +73,19 @@ def tmux_session_exists(session_name: str) -> bool:
     return result.returncode == 0
 
 
-def resolve_worktree_path(project: str, worktree: str) -> str:
-    cmd = f"source ~/.zshrc && wt {shlex.quote(project)} {shlex.quote(worktree)} pwd"
-    result = zsh(cmd, capture_output=True, interactive=True)
-    lines = [line.strip() for line in result.stdout.splitlines() if line.strip()]
-    for line in reversed(lines):
-        if line.startswith("/"):
-            return line
-    raise RuntimeError(
-        f"failed to resolve worktree path for project={project} worktree={worktree}; output was:\n{result.stdout}"
+def resolve_worktree_path(worktree_path: str) -> str:
+    path = Path(worktree_path)
+    if not path.is_absolute():
+        raise ValueError(f"worktree_path must be absolute: {worktree_path}")
+    path = path.resolve()
+    result = run(
+        ["git", "-C", str(path), "rev-parse", "--show-toplevel"],
+        check=False,
+        capture_output=True,
     )
+    if result.returncode != 0 or Path(result.stdout.strip()).resolve() != path:
+        raise ValueError(f"worktree_path must be an existing Git worktree root: {path}")
+    return str(path)
 
 
 def validate_plan(plan: dict[str, Any]) -> None:
@@ -116,6 +109,9 @@ def validate_plan(plan: dict[str, Any]) -> None:
             raise ValueError(f"lane {lane_id} is missing project")
         if not worktree:
             raise ValueError(f"lane {lane_id} is missing worktree")
+        worktree_path = lane.get("worktree_path")
+        if not isinstance(worktree_path, str) or not worktree_path.strip():
+            raise ValueError(f"lane {lane_id} is missing worktree_path")
         if not isinstance(tasks, list) or not tasks:
             raise ValueError(f"lane {lane_id} must have a non-empty tasks array")
         for task_index, task in enumerate(tasks, start=1):
@@ -152,11 +148,15 @@ def build_metadata(plan: dict[str, Any], run_root: Path) -> dict[str, Any]:
     state_dir.mkdir(parents=True, exist_ok=True)
 
     lanes: list[dict[str, Any]] = []
+    worktree_paths: set[str] = set()
     for lane in plan["lanes"]:
         lane_id = str(lane["id"]).strip()
         project = str(lane["project"]).strip()
         worktree = str(lane["worktree"]).strip()
-        worktree_path = resolve_worktree_path(project, worktree)
+        worktree_path = resolve_worktree_path(lane["worktree_path"])
+        if worktree_path in worktree_paths:
+            raise ValueError(f"lanes must use separate worktree paths: {worktree_path}")
+        worktree_paths.add(worktree_path)
         safe_lane = sanitize_name(lane_id)
         lanes.append(
             {

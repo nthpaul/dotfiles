@@ -1,6 +1,6 @@
 ---
 name: parallelize-work
-description: Orchestrate multiple independent implementation tasks in parallel by creating one `wt` worktree and one detached worker session per task. Use when an implementation document, task breakdown, or Linear project link explicitly identifies which Linear issues can be worked on concurrently.
+description: Orchestrate multiple independent implementation tasks in parallel using one existing Git worktree and one detached worker session per task. Use when an implementation document, task breakdown, or Linear project link explicitly identifies which Linear issues can be worked on concurrently.
 ---
 
 # Parallelize Work
@@ -30,14 +30,16 @@ Do not infer concurrency from vague project organization, issue titles, or guess
 2. Extract only the tasks explicitly marked safe to execute in parallel.
 3. For each task, resolve:
    - Linear issue id
-   - repo or project name accepted by `wt`
+   - repo or project name for session naming
    - worktree name
+   - absolute path to the task's Git worktree
    - short task summary
    - optional extra guidance specific to that task
 4. Stop and escalate if any task is missing a repo mapping, missing a Linear issue id, or appears non-atomic.
-5. Write a JSON execution plan that matches the launcher schema below.
-6. Run `scripts/launch_parallel_ticket_work.py <plan.json>`.
-7. Report the created worktrees, tmux session names, log paths, and any skipped tasks.
+5. Prepare an isolated worktree for each task with native Git, for example `git -C /absolute/path/to/repo worktree add -b ple/eng-123 /absolute/path/to/eng-123 origin/main`.
+6. Write a JSON execution plan that matches the launcher schema below. Set each `worktree_path` to its prepared worktree's absolute path.
+7. Run `scripts/launch_parallel_ticket_work.py <plan.json>`.
+8. Report the worktree paths, tmux session names, log paths, and any skipped tasks.
 
 ## Launcher plan schema
 
@@ -50,6 +52,7 @@ Do not infer concurrency from vague project organization, issue titles, or guess
       "issue_id": "ENG-123",
       "project": "traba",
       "worktree": "eng-123",
+      "worktree_path": "/absolute/path/to/eng-123",
       "task_summary": "Implement candidate-side loading state for shift actions.",
       "extra_prompt": "Limit changes to mobile app surfaces covered by the ticket."
     }
@@ -61,16 +64,18 @@ Rules:
 
 - `source` is required
 - `spec` is optional
-- each task must include `issue_id` and `project`
+- each task must include `issue_id`, `project`, and `worktree_path`
 - `worktree` is optional; if omitted, default to the lowercase Linear issue id
-- `project` must match the repo name used with `wt`
+- `project` and `worktree` identify the tmux session
+- `worktree_path` must be the absolute root path of an existing Git worktree
+- tasks must use distinct worktree paths, including after resolving symlinks
 
 ## Execution behavior
 
 The launcher script will:
 
-1. Use `source ~/.zshrc && wt <project> <worktree> pwd` to create or resolve the worktree and discover its path.
-2. Create a detached tmux session named `wt/<project>/<worktree>`.
+1. Validate each `worktree_path` with `git rev-parse --show-toplevel` and reuse that worktree.
+2. Create a detached tmux session named `work/<project>/<worktree>`.
 3. Start a full-access interactive child worker in that worktree. In this migrated version, the bundled script still uses the `codex` CLI by default for those detached child workers.
 4. Start it inside a detached tmux session so the user can attach later and continue prompting it directly.
 5. Feed the child worker an initial prompt that tells it to follow the `linear-ticket-work` workflow for the assigned Linear issue.

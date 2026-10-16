@@ -4,7 +4,7 @@
 set -euo pipefail
 
 usage() {
-  echo "Usage: wt-path.sh [branch-name]" >&2
+  echo "Usage: worktree-path.sh [branch-name]" >&2
   echo "  Uses current branch when branch-name is omitted." >&2
   echo "  Env: TRABA_WORKTREES_ROOT (default: ~/.traba/worktrees)" >&2
   echo "  Env: TRABA_WORKTREE_REPO_SLUG (default: basename of git top-level)" >&2
@@ -16,7 +16,7 @@ if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
 fi
 
 REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || {
-  echo "wt-path.sh: not inside a git repository" >&2
+  echo "worktree-path.sh: not inside a git repository" >&2
   exit 1
 }
 

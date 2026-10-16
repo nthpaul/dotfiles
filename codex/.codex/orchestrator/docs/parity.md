@@ -213,8 +213,8 @@ not acceptance evidence.
   and assert it queues without hidden worker execution or destroying existing panes.
 - **PANE-4 — Restart.** Restart runtime with panes present, missing and repurposed.
   Reconcile exact ownership before reusing/cleaning; no orphan duplicate panes.
-- **CODE-1 — Worktrees.** Resolve the documented wt function location before code
-  execution. Concurrent writers use distinct worktrees with nonoverlapping declared
+- **CODE-1 — Worktrees.** Create isolated checkouts with `git worktree add` before
+  code execution. Concurrent writers use distinct worktrees with nonoverlapping declared
   ownership; one named integration worker assembles accepted changes. Inspect
   actual checkout paths and branch assignments, not just assignment prose.
 - **CODE-2 — Review authority.** Result, process exit and passing tests cannot self-

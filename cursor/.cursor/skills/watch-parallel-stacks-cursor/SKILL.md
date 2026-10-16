@@ -24,7 +24,7 @@ Provide:
 
 - one required source of truth that lists the tasks for the project
 - one optional TRD or spec for deeper implementation guidance
-- enough repo context to map each task to the repo name used by `wt`
+- enough repo context to prepare one isolated Git worktree per lane
 
 Good inputs:
 
@@ -55,6 +55,9 @@ Use these rules:
 - Do not start a blocked task early just because its lane already exists.
 - Do not put multiple unrelated issues in the same lane just to reduce session count.
 
+Prepare each lane's worktree with native Git, for example `git -C /absolute/path/to/repo worktree add -b ple/resolution-runtime /absolute/path/to/resolution-runtime origin/main`.
+Set each lane's `worktree_path` to its prepared worktree's absolute path.
+
 ## Plan schema
 
 Write a JSON execution plan with this shape:
@@ -69,6 +72,7 @@ Write a JSON execution plan with this shape:
       "id": "resolution-runtime",
       "project": "traba-server-node",
       "worktree": "resolution-runtime",
+      "worktree_path": "/absolute/path/to/resolution-runtime",
       "tasks": [
         {
           "issue_id": "ENG-18178",
@@ -88,6 +92,7 @@ Write a JSON execution plan with this shape:
       "id": "config-contract",
       "project": "traba-server-node",
       "worktree": "config-contract",
+      "worktree_path": "/absolute/path/to/config-contract",
       "tasks": [
         {
           "issue_id": "ENG-18177",
@@ -106,7 +111,10 @@ Rules:
 - `source` is required
 - `spec` is optional
 - `watcher_workspace` is optional and defaults to the current working directory
-- each lane must include `id`, `project`, `worktree`, and `tasks`
+- each lane must include `id`, `project`, `worktree`, `worktree_path`, and `tasks`
+- `project` and `worktree` identify the lane's tmux session as `work/<project>/<worktree>`
+- `worktree_path` must be the absolute root path of an existing Git worktree
+- lanes must use distinct worktree paths, including after resolving symlinks
 - each task must include `issue_id`
 - `depends_on` is optional but should be included whenever the dependency is known
 - dependencies may point to tasks in the same lane or another lane
@@ -121,7 +129,7 @@ python ~/.cursor/skills/watch-parallel-stacks-cursor/scripts/launch_watcher_para
 
 That launcher will:
 
-1. Resolve every lane worktree path with `wt`
+1. Validate each `worktree_path` with `git rev-parse --show-toplevel` and reuse that worktree
 2. Create a durable watcher tmux session
 3. Write watcher prompt, metadata, logs, and state files under `~/.cursor/tmp/watch-parallel-stacks-cursor/<timestamp>/`
 4. Restart the watcher agent automatically if it exits before the project is finished

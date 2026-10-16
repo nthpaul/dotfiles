@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Launch one detached interactive Cursor agent session per task in a wt-managed worktree."""
+"""Launch one detached interactive Cursor agent session per task in an existing Git worktree."""
 
 from __future__ import annotations
 
@@ -19,6 +19,7 @@ class Task:
     issue_id: str
     project: str
     worktree: str
+    worktree_path: str
     task_summary: str
     extra_prompt: str
 
@@ -29,7 +30,7 @@ def slugify_issue(issue_id: str) -> str:
 
 def tmux_session_name(project: str, worktree: str) -> str:
     dir_name = worktree.replace("/", "-")
-    return f"wt/{project}/{dir_name}".replace(".", "_").replace(":", "_")
+    return f"work/{project}/{dir_name}".replace(".", "_").replace(":", "_")
 
 
 def load_plan(path: Path) -> dict[str, Any]:
@@ -47,6 +48,7 @@ def load_plan(path: Path) -> dict[str, Any]:
 
 def parse_tasks(raw_tasks: list[dict[str, Any]]) -> list[Task]:
     tasks: list[Task] = []
+    worktree_paths: set[str] = set()
     for index, raw in enumerate(raw_tasks, start=1):
         if not isinstance(raw, dict):
             raise ValueError(f"task #{index} must be an object")
@@ -56,12 +58,20 @@ def parse_tasks(raw_tasks: list[dict[str, Any]]) -> list[Task]:
             raise ValueError(f"task #{index} is missing issue_id")
         if not project:
             raise ValueError(f"task #{index} is missing project")
+        worktree_path = raw.get("worktree_path")
+        if not isinstance(worktree_path, str) or not worktree_path.strip():
+            raise ValueError(f"task #{index} is missing worktree_path")
+        worktree_path = resolve_worktree_path(worktree_path)
+        if worktree_path in worktree_paths:
+            raise ValueError(f"tasks must use separate worktree paths: {worktree_path}")
+        worktree_paths.add(worktree_path)
         worktree = str(raw.get("worktree") or slugify_issue(issue_id)).strip()
         tasks.append(
             Task(
                 issue_id=issue_id,
                 project=project,
                 worktree=worktree,
+                worktree_path=worktree_path,
                 task_summary=str(raw.get("task_summary", "")).strip(),
                 extra_prompt=str(raw.get("extra_prompt", "")).strip(),
             )
@@ -78,35 +88,25 @@ def run(command: list[str], *, check: bool = True, capture_output: bool = False)
     )
 
 
-def zsh(
-    command: str,
-    *,
-    capture_output: bool = False,
-    interactive: bool = False,
-) -> subprocess.CompletedProcess[str]:
-    flag = "-ic" if interactive else "-lc"
-    return run(["zsh", flag, command], capture_output=capture_output)
-
-
 def ensure_binary(name: str) -> None:
     result = run(["zsh", "-lc", f"command -v {shlex.quote(name)} >/dev/null"], check=False)
     if result.returncode != 0:
         raise RuntimeError(f"required command not found: {name}")
 
 
-def resolve_worktree_path(task: Task) -> str:
-    cmd = (
-        "source ~/.zshrc && "
-        f"wt {shlex.quote(task.project)} {shlex.quote(task.worktree)} pwd"
+def resolve_worktree_path(worktree_path: str) -> str:
+    path = Path(worktree_path)
+    if not path.is_absolute():
+        raise ValueError(f"worktree_path must be absolute: {worktree_path}")
+    path = path.resolve()
+    result = run(
+        ["git", "-C", str(path), "rev-parse", "--show-toplevel"],
+        check=False,
+        capture_output=True,
     )
-    result = zsh(cmd, capture_output=True, interactive=True)
-    lines = [line.strip() for line in result.stdout.splitlines() if line.strip()]
-    for line in reversed(lines):
-        if line.startswith("/"):
-            return line
-    raise RuntimeError(
-        f"failed to resolve worktree path for {task.issue_id}; output was:\n{result.stdout}"
-    )
+    if result.returncode != 0 or Path(result.stdout.strip()).resolve() != path:
+        raise ValueError(f"worktree_path must be an existing Git worktree root: {path}")
+    return str(path)
 
 
 def build_prompt(task: Task, source: str, spec: str | None) -> str:
@@ -222,7 +222,7 @@ def launch_task(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Launch one wt worktree and detached interactive Cursor agent session per task from a JSON plan."
+        description="Launch one detached interactive Cursor agent session per task in an existing Git worktree from a JSON plan."
     )
     parser.add_argument("plan", help="Path to the JSON execution plan.")
     parser.add_argument(
@@ -263,13 +263,12 @@ def main() -> int:
     results: list[dict[str, str]] = []
 
     for task in tasks:
-        worktree_path = resolve_worktree_path(task)
         results.append(
             launch_task(
                 task=task,
                 source=str(plan["source"]),
                 spec=spec,
-                worktree_path=worktree_path,
+                worktree_path=task.worktree_path,
                 run_root=run_root,
                 worker_bin=args.worker_bin,
                 dry_run=args.dry_run,

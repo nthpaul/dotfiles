@@ -5,4 +5,3 @@ tmux.conf: prefix-t layout at line 35.
 orchestrate-skill.md: Coordinator boundary and Model policy and identity.
 
 CLI help demonstrates advertised interfaces only, not end-to-end delivery or cancellation.
-The documented worktree-manager path was absent during the earlier session inspection; installation remains an implementation prerequisite.
