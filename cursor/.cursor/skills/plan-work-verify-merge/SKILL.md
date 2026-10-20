@@ -29,6 +29,13 @@ Work in this order. Finish a step before you start the next.
 3. Open the pull request ready for review. Do not open it as a draft.
 4. Babysit CI with `gh pr checks <n> --watch`. Never pass `--fail-fast`. Replace `<n>` with the pull request number. Green means every check is `pass` or `skipping`.
 5. Triage Bugbot comments. Fix a real defect. Dismiss a nit with a concrete reason.
-6. Spawn one fresh agent on `reviewer_model` to review the diff. Do not resume the implementer. The reviewer does not edit. If the reviewer reports a blocking defect, fix it on `implementer_model` and review again with another fresh agent.
+6. Spawn one fresh reviewer on `reviewer_model`. Do not resume the implementer. The reviewer does not edit. Use the spawn tool for the harness you are running in.
+
+   - Cursor: one fresh Task agent.
+   - Claude Code: one fresh Agent subagent.
+   - Codex: `spawn_agent` with `fork_turns` set to `none`, so the reviewer does not inherit this transcript.
+   - Grok: `spawn_subagent`.
+
+   If that tool is missing, stop and report. Do not review the diff yourself and call it a fresh review. If the reviewer reports a blocking defect, fix it on `implementer_model` and review again with another fresh agent.
 7. Test and QA the behavior. Confirm the change works and existing behavior still works.
 8. If `auto_merge` is false, stop. Leave the pull request open and ready. If `auto_merge` is true, merge with `gh pr merge <number> --squash --admin` so an approver is not required. Merge only after every CI check is `pass` or `skipping`, the fresh reviewer reported no blocking defect, and step 7 passed. If admin is denied, stop and report. Do not merge a red pull request. Do not force-push.
