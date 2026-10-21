@@ -38,6 +38,14 @@ Scale verification to consequence and uncertainty. Use direct checks for small, 
 - Background monitors write a journal or log. Post into the steering thread only for a new bug, a merge, a failure, or a question only the user can answer. Unchanged status stays in the log.
 - For external writes, record intent and persist the response or error. Reconcile an unknown outcome against authoritative state before retrying. Read-only reconciliation should not introduce another write or require rebuilding the entire test package.
 
+### Keep tests fast
+
+- Treat CI runtime as part of the change's cost. Use the cheapest test layer that proves the behavior. Cover pure logic and decision matrices with unit tests. Use focused integration tests for real database, queue, transaction, or concurrency contracts.
+- Keep full end-to-end journeys few and representative. Do not replay dozens of conversation turns for every variation. Build the smallest valid persisted fixture and exercise the transition under test. Keep a full journey when the interaction between its steps is what needs proof.
+- Extend existing fixtures and tests before adding another heavy spec. Avoid repeated application startup, unnecessary Postgres or Redis round trips, sleeps, polling, and broad regression matrices that duplicate existing coverage. Preserve the real boundaries needed to expose the defect.
+- Measure changed integration specs before pushing. Record a material runtime increase in the PR and reduce avoidable work before shipping. Do not add minutes to shared CI without a clear coverage need. Use timings to separate expensive tests from runner contention.
+- When one spec determines the slowest shard, split independent cases into balanced files so CI can distribute them. Splitting does not replace reducing total work. Preserve useful assertions and race coverage when replacing expensive tests with cheaper ones. Do not weaken checks or raise timeouts to hide the cost.
+
 ### Visual QA (mandatory)
 
 - Every visual change requires QA in the actual browser or app, inspected screenshots, and a short video walkthrough before marking the work complete or ready for review. Show the changed appearance and interactions, including relevant before/after, loading, error, and empty states. Check desktop and a smaller viewport when the UI is responsive.
