@@ -69,3 +69,6 @@ grok/.grok/skills/.port-partitions.json
 
 # Local Traba dev infra audit + ops deck (paths, ports, internal Slack captures)
 dev-machine/
+
+# mermaid-preview hook: local Pele install for build.sh and diagram checks
+claude/.claude/hooks/mermaid-preview/node_modules/

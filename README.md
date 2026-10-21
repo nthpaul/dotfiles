@@ -32,7 +32,7 @@ Stow creates relative symlinks so the repo stays portable across machines.
 - Git/GitHub: `git/` (.gitconfig, global gitignore), `gh/` (CLI config; `hosts.yml` stays local)
 - Shared agent instructions: `home/AGENTS.md` is linked to `~/AGENTS.md`. The Codex and Claude entry files instruct agents to read it at task startup, with a fallback to the dotfiles source if the home link is missing.
 - Codex: `codex/` (`config.toml`, `AGENTS.md`, `rules/`, `skills/`, `plans/`, and the [local orchestrator](codex/.codex/orchestrator/README.md) exposed as `codex-orch`; auth, sessions, sqlite, and caches stay local)
-- Claude Code: `claude/` (`CLAUDE.md`, `settings.json`; `skills/` symlinked to `codex/.codex/skills`)
+- Claude Code: `claude/` (`CLAUDE.md`, `settings.json`, and the `hooks/mermaid-preview` Stop hook, which renders the Mermaid diagrams in each reply to a background browser tab; `skills/` symlinked to `codex/.codex/skills`)
 - Grok: `grok/` (`config.toml`, `skills/`; auth, sessions, MCP credentials, and caches stay local)
 
 The [product-plan-html skill](codex/.codex/skills/product-plan-html/SKILL.md) is shared

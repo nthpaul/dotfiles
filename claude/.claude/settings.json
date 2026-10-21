@@ -2,5 +2,19 @@
   "model": "opus[1m]",
   "effortLevel": "high",
   "skipDangerousModePermissionPrompt": true,
-  "theme": "dark-ansi"
+  "theme": "dark-ansi",
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME/.claude/hooks/mermaid-preview/mermaid-preview.sh\"",
+            "timeout": 30,
+            "async": true
+          }
+        ]
+      }
+    ]
+  }
 }
