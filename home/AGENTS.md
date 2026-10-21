@@ -38,6 +38,11 @@ Scale verification to consequence and uncertainty. Use direct checks for small, 
 - Background monitors write a journal or log. Post into the steering thread only for a new bug, a merge, a failure, or a question only the user can answer. Unchanged status stays in the log.
 - For external writes, record intent and persist the response or error. Reconcile an unknown outcome against authoritative state before retrying. Read-only reconciliation should not introduce another write or require rebuilding the entire test package.
 
+### Visual QA (mandatory)
+
+- Every visual change requires QA in the actual browser or app, inspected screenshots, and a short video walkthrough before marking the work complete or ready for review. Show the changed appearance and interactions, including relevant before/after, loading, error, and empty states. Check desktop and a smaller viewport when the UI is responsive.
+- Attach screenshots and the video to the PR and final handoff. Show screenshots inline and provide a playable video or durable video link. Keep the original evidence under `~/projects/work-docs`. State when evidence uses synthetic data and which backend, authentication, or persistence paths were not exercised. Automated checks alone do not satisfy visual QA. If capture is blocked, report the missing evidence and blocker explicitly rather than calling the work ready.
+
 ## Communication
 
 - Explain tradeoffs plainly.
