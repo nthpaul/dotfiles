@@ -119,8 +119,11 @@ gcloud() {
   command gcloud "$@"
 }
 
-# nvm.sh is ~350ms. `node` on PATH is Hermes (~/.local/bin); nvm loads on first `nvm`.
+# nvm.sh is ~350ms, so put the newest installed node on PATH directly; nvm loads on first `nvm`.
 export NVM_DIR="$HOME/.nvm"
+_nvm_node=("$NVM_DIR"/versions/node/*(N/nOn[1]))
+[ -n "$_nvm_node" ] && export PATH="$_nvm_node/bin:$PATH"
+unset _nvm_node
 nvm() {
   unset -f nvm
   [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"

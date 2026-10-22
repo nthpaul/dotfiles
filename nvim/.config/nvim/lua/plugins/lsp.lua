@@ -365,7 +365,8 @@ return {
 				local opts = { buffer = event.buf, silent = true }
 
 				opts.desc = "Show LSP references"
-				vim.keymap.set("n", "gr", "<CMD>Telescope lsp_references<CR>", opts)
+				-- nowait: Neovim 0.11 maps grr/grn/gra/gri/grt globally, which would otherwise delay gr.
+				vim.keymap.set("n", "gr", "<CMD>Telescope lsp_references<CR>", vim.tbl_extend("force", opts, { nowait = true }))
 
 				opts.desc = "Go to definition"
 				vim.keymap.set("n", "gd", "<CMD>Telescope lsp_definitions<CR>", opts)
