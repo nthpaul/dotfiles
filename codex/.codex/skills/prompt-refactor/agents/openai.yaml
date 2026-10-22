@@ -1,0 +1,6 @@
+interface:
+  display_name: "Prompt Refactor"
+  short_description: "Audit and restructure prompts into MECE sections"
+  default_prompt: "Use $prompt-refactor to audit this prompt for contradictions, ambiguity, and duplication."
+policy:
+  allow_implicit_invocation: false

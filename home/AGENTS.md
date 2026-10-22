@@ -67,6 +67,19 @@ Scale verification to consequence and uncertainty. Use direct checks for small, 
 - When proposing a simpler alternative, prefer the version with less indirection unless there is a concrete downside.
 - Use Mermaid diagrams in PR descriptions. Elsewhere, use mermaid diagrams for architecture, the diagram should be top to bottom rather that LTR, flow, and system maps unless explicitly asked for another format.
 
+## Writing prompts
+
+Applies to system prompts, agent and tool instructions, LLM call templates, skills, and `AGENTS.md`/`CLAUDE.md` files. For a full audit or restructure, use the `prompt-refactor` skill.
+
+- Treat a prompt change as a product change. Each added line, and each case left unspecified, decides what users experience. Before editing, state the behavior you want in the case being fixed. If the user has not decided it, ask instead of guessing.
+- Read the whole prompt the model actually receives before changing it, including fragments injected conditionally from other files. Remove or rewrite the text a change supersedes; do not only append.
+- Keep sections mutually exclusive and collectively exhaustive: each concern lives in exactly one section, and together the sections cover the intended behavior. Use three top-level sections: `Background` (aim; context such as the product and domain terms), `Behavior` (process only: how proactive to be versus asking to clarify, workflow, tool use), and `Output` (output only: format, and rules on what the output may contain). Put a new rule in the section that owns it, and add a subsection when none does.
+- Keep each tool description about its own tool. Put choices between tools, parallel tool use, and interactions between tools under `Behavior` → `Tool use`.
+- Write each instruction so a reader without the team's context finds one interpretation. Define every referenced set, such as which companies count as competitors. State decisions as conditions ("If X, do Y; otherwise Z") for the main branches, and give a rubric for judgment calls instead of scripting every edge case.
+- State each rule once. Duplicates cost tokens and drift into contradictions.
+- When a project has evals, pair a behavior fix with a case that states the expected result. If writing that expectation shows the prompt never said it, fix the prompt.
+- After a model upgrade, test deleting examples and workaround rules before adding new ones.
+
 ## Git workflow
 
 - Use `git commit` and `git push` for commits and pushes, and `gh` for GitHub pull requests.
