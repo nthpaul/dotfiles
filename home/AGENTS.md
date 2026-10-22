@@ -13,6 +13,8 @@
 - Keep code easy to understand at first glance.
 - Optimize for local clarity before theoretical reuse.
 - If an abstraction exists only for possible future reuse, remove it.
+- Keep files, including test files, under about 500 lines with one capability per file. Split a file before it grows past that, rather than after.
+- When adding a feature gate, name its owner and removal condition in the PR. Once a gate is fully on or fully off, remove it and its dead branch. Do not add a gate that only one call site reads unless a rollout needs it.
 
 ## Refactoring Bias
 
@@ -40,18 +42,23 @@ Scale verification to consequence and uncertainty. Use direct checks for small, 
 
 ### Keep tests fast
 
-- Treat CI runtime as part of the change's cost. Use the cheapest test layer that proves the behavior. Cover pure logic and decision matrices with unit tests. Before adding an integration test, name the database, queue, transaction, or concurrency contract that cheaper tests cannot prove.
-- Keep full end-to-end journeys few and representative. Do not replay dozens of conversation turns for every variation. Build the smallest valid persisted fixture and exercise the transition under test. Keep a full journey when the interaction between its steps is what needs proof.
-- Extend existing fixtures and tests before adding another heavy spec. Avoid repeated application startup, unnecessary Postgres or Redis round trips, sleeps, polling, and broad regression matrices that duplicate existing coverage. Preserve the real boundaries needed to expose the defect.
+- Treat CI runtime as part of the change's cost. Use the cheapest test layer that proves the behavior. Put pure logic, retry counts, and decision matrices, including any `it.each` over an enum or status, in unit tests. Before adding an integration test, name the database, queue, transaction, or concurrency contract that cheaper tests cannot prove.
+- An integration test proves one contract per boundary: a request through the public entry point, the persisted state, and the outbound effect. Cover one success and one refusal. Everything else is a unit test.
+- Keep multi-turn agent conversations out of integration tests. Test them in unit specs with a fake model or in the eval or scenario suite. An integration test runs at most one conversation turn.
+- Drive integration tests through the public entry point, such as HTTP, in every integration test directory, and use factories only for preconditions. When a repository guard checks test shape, keep new specs inside its scope.
+- In every test, assert what a caller can observe: responses, status codes, and outbound effects. Do not assert internal rows, intermediate state steps, broker internals, or long stretches of prompt text. Those tests break together on unrelated changes. Test prompts by behavior or by a few required phrases.
+- Do not wait in real time. Avoid sleeps, polling, real retry backoff, and tests that exhaust real attempts. Use controlled time and drain queues deterministically.
+- Keep per-file setup under 10 seconds. Start one app and worker per file and build only the records the cases need. Extend existing fixtures and tests before adding another heavy spec. Avoid unnecessary Postgres or Redis round trips and broad regression matrices that duplicate existing coverage. Preserve the real boundaries needed to expose the defect.
+- Give each spec unique keys, such as ZIP codes, phone numbers, and regions. Specs batched into one process share caches, so a shared key fails unrelated specs. When a test fails on branches that did not touch its code, trace the cause instead of re-running.
 - When slimming tests, map unique contracts to the coverage that remains. Replace an important uncovered contract with a small focused test. Check importers before deleting helpers, and update timing manifests and stale coverage claims. During upstream integration, preserve intentional suite deletions and move new assertions into focused tests.
-- Measure changed integration specs and their slowest cases before pushing. Follow the repository's runtime budgets and investigate warnings. Record a material increase and reduce avoidable work before shipping. A reviewed exception needs a measured reason and owner. Missing timings or a passing retry do not establish a runtime pass.
+- Measure changed integration specs and their slowest cases before pushing. Follow the repository's runtime budgets and investigate warnings. Without a repository budget, keep each integration spec under 60 seconds and each test under 30 seconds. Put each changed integration spec's measured CI time in the PR, and name the unit specs that cover its logic. Reduce avoidable work before shipping. A reviewed exception needs a measured reason and owner. Missing timings or a passing retry do not establish a runtime pass.
 - Measure total test work and the slowest shard separately. Split independent cases only when a spec prevents useful distribution; splitting does not reduce total work. Distinguish local timings and projected savings from measured CI improvements. Preserve useful assertions and race coverage. Do not weaken checks or raise timeouts to hide the cost.
-- Batch fixes into one push per CI round and let every check on that head finish before the next push. Work bottom-up when PRs depend on each other. Integrate each merged parent once, then verify the new head. Correct a known broken head when necessary, but avoid cosmetic pushes that cancel useful runs.
+- CI is not the test runner. Before every push, run the specs you touched locally, unit and integration. Batch fixes into one push per CI round and let every check on that head finish before the next push. Re-run a head only when its run was cancelled or failed for a traced infrastructure cause. Work bottom-up when PRs depend on each other. Integrate each merged parent once, then verify the new head. Correct a known broken head when necessary, but avoid cosmetic pushes that cancel useful runs.
 
 ### Visual QA (mandatory)
 
 - Every visual change requires QA in the actual browser or app, inspected screenshots, and a short video walkthrough before marking the work complete or ready for review. Show the changed appearance and interactions, including relevant before/after, loading, error, and empty states. Check desktop and a smaller viewport when the UI is responsive.
-- Attach screenshots and the video to the PR and final handoff. Show screenshots inline and provide a playable video or durable video link. Keep the original evidence under `~/projects/work-docs`. State when evidence uses synthetic data and which backend, authentication, or persistence paths were not exercised. Automated checks alone do not satisfy visual QA. If capture is blocked, report the missing evidence and blocker explicitly rather than calling the work ready.
+- Attach screenshots and the video to the PR and final handoff. Show screenshots inline and provide a playable video or durable video link. Keep the original evidence under `~/projects/work-docs`, and never commit screenshots, captures, or recordings to a product repository. State when evidence uses synthetic data and which backend, authentication, or persistence paths were not exercised. Automated checks alone do not satisfy visual QA. If capture is blocked, report the missing evidence and blocker explicitly rather than calling the work ready.
 
 ## Communication
 
@@ -65,7 +72,7 @@ Scale verification to consequence and uncertainty. Use direct checks for small, 
 - Use `git commit` and `git push` for commits and pushes, and `gh` for GitHub pull requests.
 - Use Graphite only when the user explicitly requests it. This preference overrides Graphite requirements in repository instructions and skills.
 - A request to commit and push means commit the scoped changes and push the intended branch. Create a new PR only when requested or already part of the active task.
-- Keep each PR atomic and ensure it passes required CI checks. Stacked PRs are optional.
+- Keep each PR atomic and ensure it passes required CI checks. Keep each PR under about 1,000 added lines, excluding generated files and lockfiles; split larger work into a sequence of reviewable PRs. Stacked PRs are optional.
 
 ## Pull request descriptions
 

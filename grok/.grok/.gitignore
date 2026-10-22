@@ -1,7 +1,8 @@
-# Deny-by-default. This package only tracks config.toml and skills/.
+# Deny-by-default. This package only tracks config.toml, AGENTS.md and skills/.
 *
 !.gitignore
 !config.toml
+!AGENTS.md
 !skills/
 !skills/**
 
