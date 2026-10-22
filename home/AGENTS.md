@@ -40,11 +40,13 @@ Scale verification to consequence and uncertainty. Use direct checks for small, 
 
 ### Keep tests fast
 
-- Treat CI runtime as part of the change's cost. Use the cheapest test layer that proves the behavior. Cover pure logic and decision matrices with unit tests. Use focused integration tests for real database, queue, transaction, or concurrency contracts.
+- Treat CI runtime as part of the change's cost. Use the cheapest test layer that proves the behavior. Cover pure logic and decision matrices with unit tests. Before adding an integration test, name the database, queue, transaction, or concurrency contract that cheaper tests cannot prove.
 - Keep full end-to-end journeys few and representative. Do not replay dozens of conversation turns for every variation. Build the smallest valid persisted fixture and exercise the transition under test. Keep a full journey when the interaction between its steps is what needs proof.
 - Extend existing fixtures and tests before adding another heavy spec. Avoid repeated application startup, unnecessary Postgres or Redis round trips, sleeps, polling, and broad regression matrices that duplicate existing coverage. Preserve the real boundaries needed to expose the defect.
-- Measure changed integration specs before pushing. Record a material runtime increase in the PR and reduce avoidable work before shipping. Do not add minutes to shared CI without a clear coverage need. Use timings to separate expensive tests from runner contention.
-- When one spec determines the slowest shard, split independent cases into balanced files so CI can distribute them. Splitting does not replace reducing total work. Preserve useful assertions and race coverage when replacing expensive tests with cheaper ones. Do not weaken checks or raise timeouts to hide the cost.
+- When slimming tests, map unique contracts to the coverage that remains. Replace an important uncovered contract with a small focused test. Check importers before deleting helpers, and update timing manifests and stale coverage claims. During upstream integration, preserve intentional suite deletions and move new assertions into focused tests.
+- Measure changed integration specs and their slowest cases before pushing. Follow the repository's runtime budgets and investigate warnings. Record a material increase and reduce avoidable work before shipping. A reviewed exception needs a measured reason and owner. Missing timings or a passing retry do not establish a runtime pass.
+- Measure total test work and the slowest shard separately. Split independent cases only when a spec prevents useful distribution; splitting does not reduce total work. Distinguish local timings and projected savings from measured CI improvements. Preserve useful assertions and race coverage. Do not weaken checks or raise timeouts to hide the cost.
+- Batch fixes into one push per CI round and let every check on that head finish before the next push. Work bottom-up when PRs depend on each other. Integrate each merged parent once, then verify the new head. Correct a known broken head when necessary, but avoid cosmetic pushes that cancel useful runs.
 
 ### Visual QA (mandatory)
 
