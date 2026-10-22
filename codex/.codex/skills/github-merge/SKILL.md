@@ -17,7 +17,7 @@ Use `gh` and the repository's permitted merge method. When requirements block an
 gh pr merge PR_NUMBER --repo OWNER/REPO --squash --admin --match-head-commit VERIFIED_HEAD_SHA
 ```
 
-Use `--squash` only where the repository permits it; choose another supported method when appropriate. Read Paul's Git workflow and PR-description instructions in `~/AGENTS.md`, or `/Users/ple/.dotfiles/home/AGENTS.md` when the home entry is absent.
+Use `--squash` only where the repository permits it; choose another supported method when appropriate. Read the `Git and CI` and `Pull request descriptions` sections in `~/AGENTS.md`, or `/Users/ple/.dotfiles/home/AGENTS.md` when the home entry is absent.
 
 Do not infer that bypass is unavailable from a WRITE role, `REVIEW_REQUIRED`, `BLOCKED`, or disabled auto-merge. On 2026-10-14, the authenticated `nthpaul` account successfully bypass-merged `trabapro/traba#12490` with this command despite those states. Let GitHub enforce current permissions. If it rejects the bypass, report its actual denial. Do not change protections, switch identities, or self-approve to manufacture permission.
 

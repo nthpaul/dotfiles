@@ -30,7 +30,7 @@ Stow creates relative symlinks so the repo stays portable across machines.
 - macOS: `hammerspoon/`
 - Dev tools: `asdf/`, `graphite/`, `opencode/`, `github-copilot/`
 - Git/GitHub: `git/` (.gitconfig, global gitignore), `gh/` (CLI config; `hosts.yml` stays local)
-- Shared agent instructions: `home/AGENTS.md` is linked to `~/AGENTS.md`. The Codex and Claude entry files and the always-applied Cursor rule `shared-instructions.mdc` instruct agents to read it at task startup, with a fallback to the dotfiles source if the home link is missing. Grok loads `~/.grok/AGENTS.md` as its global rules, so `grok/.grok/AGENTS.md` is a symlink to the shared file.
+- Shared agent instructions: `home/AGENTS.md` is linked to `~/AGENTS.md`. Claude's `CLAUDE.md` imports it. The Codex entry file and the always-applied Cursor rule `shared-instructions.mdc` instruct agents to read it at task startup, with a fallback to the dotfiles source if the home link is missing. It also holds the voice and documentation rules that used to be separate Cursor rules. Grok loads `~/.grok/AGENTS.md` as its global rules, so `grok/.grok/AGENTS.md` is a symlink to the shared file.
 - Codex: `codex/` (`config.toml`, `AGENTS.md`, `rules/`, `skills/`, `plans/`, and the [local orchestrator](codex/.codex/orchestrator/README.md) exposed as `codex-orch`; auth, sessions, sqlite, and caches stay local)
 - Claude Code: `claude/` (`CLAUDE.md`, `settings.json`, and the `hooks/mermaid-preview` Stop hook, which renders the Mermaid diagrams in each reply to a background browser tab; `skills/` symlinked to `codex/.codex/skills`)
 - Grok: `grok/` (`config.toml`, `skills/`; auth, sessions, MCP credentials, and caches stay local)

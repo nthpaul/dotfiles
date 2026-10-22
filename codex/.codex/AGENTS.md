@@ -4,7 +4,7 @@ At the start of each task, read `~/AGENTS.md` for personal execution, verificati
 
 # Git and pull requests
 
-- Before committing, pushing, or creating or updating any PR, follow the shared file's `Git workflow` and `Pull request descriptions` sections. These personal defaults override Graphite requirements in repository instructions and skills.
+- Before committing, pushing, or creating or updating any PR, follow the shared file's `Git and CI` and `Pull request descriptions` sections, alongside the repository's own instructions as the shared file's precedence rule describes.
 
 ## Linear CLI
 

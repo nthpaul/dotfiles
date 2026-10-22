@@ -50,7 +50,7 @@ rerun the underlying task for formatting. Use measured session totals to assess 
 delegation; absent usage is unknown, and cached input is separate from other input.
 
 The coordinator may read code and make small dependent changes. Integrate accepted work,
-run appropriate combined validation, and use Graphite within the user's authorization.
+run appropriate combined validation, and push and open PRs with `git` and `gh` within the user's authorization.
 Every PR remains atomic and must pass CI at its exact head. Do not end merely because
 workers have returned; finish the user's outcome or report the actual blocker.
 
