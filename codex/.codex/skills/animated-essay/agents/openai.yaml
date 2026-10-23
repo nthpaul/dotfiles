@@ -1,0 +1,4 @@
+interface:
+  display_name: "Animated Essay"
+  short_description: "Long-form HTML essays with auto-playing system figures"
+  default_prompt: "Use $animated-essay to explain this system as a long-form essay with animated, interactive figures."

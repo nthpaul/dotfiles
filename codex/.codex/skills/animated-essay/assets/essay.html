@@ -1,0 +1,361 @@
+<title>Webhook Delivery</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: a single 645px essay column with wide figure breakouts (max 966px); a quiet left gutter carries the breadcrumb. Figures are auto-playing scenes: nodes, dashed links, travelling packets, a store panel, a phase strip. */
+:root{
+  --bg:#f7f7f4; --ink:#26251e; --muted:#7a786f; --faint:#a9a69b; --line:#e3e1d9; --fig:#f2f1ec; --fig2:#ebe9e2; --panel:#fbfbf8; --code:#efeee9;
+  --accent:#f54e00; --accent-soft:#fde4d6;
+  --g:#3f9d6b; --g-s:#dcefe3; --o:#de6f38; --o-s:#fbe2d5; --b:#4a6fd6; --b-s:#e0e7fa; --p:#cf4f86; --p-s:#fadfea; --y:#b9860b; --y-s:#f6ecd0;
+  --f-sans:"Geist", system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --f-mono:"Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#14130f; --ink:#ebe9e1; --muted:#9c998e; --faint:#6e6b62; --line:#2d2b25; --fig:#1b1a16; --fig2:#23221d; --panel:#1f1e19; --code:#24231e;
+  --accent:#ff6a26; --accent-soft:#3a2216;
+  --g:#5cc48c; --g-s:#1c3326; --o:#f08a55; --o-s:#3a2519; --b:#7f9cf2; --b-s:#1d2642; --p:#ec78a8; --p-s:#3b1d2a; --y:#e0b13d; --y-s:#352c14; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#14130f; --ink:#ebe9e1; --muted:#9c998e; --faint:#6e6b62; --line:#2d2b25; --fig:#1b1a16; --fig2:#23221d; --panel:#1f1e19; --code:#24231e;
+  --accent:#ff6a26; --accent-soft:#3a2216;
+  --g:#5cc48c; --g-s:#1c3326; --o:#f08a55; --o-s:#3a2519; --b:#7f9cf2; --b-s:#1d2642; --p:#ec78a8; --p-s:#3b1d2a; --y:#e0b13d; --y-s:#352c14; color-scheme:dark }
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 var(--f-sans);letter-spacing:.005em;margin:0;-webkit-font-smoothing:antialiased}
+.page{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,645px) minmax(0,1fr);column-gap:40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:96px 120px}
+.gutter{grid-column:1;justify-self:end;width:min(100%,260px);color:var(--muted);font-size:16px}
+.gutter .crumb{position:sticky;top:calc(24px + env(safe-area-inset-top,0px))}
+.col{grid-column:2;min-width:0}
+@media (max-width:900px){.page{grid-template-columns:minmax(0,1fr);padding-block:40px 80px}.gutter{grid-column:1;justify-self:start;margin-bottom:18px}.col{grid-column:1}}
+.date{color:var(--muted);margin:0 0 6px}
+h1{font:400 36px/1.2 var(--f-sans);letter-spacing:-.02em;margin:0 0 18px;text-wrap:balance}
+.byline{display:flex;align-items:center;gap:8px;color:var(--muted);margin-bottom:40px}
+.byline .av{width:24px;height:24px;border-radius:50%;background:var(--fig2);display:grid;place-items:center;font:500 10px var(--f-mono);color:var(--muted)}
+h2{font:700 22px/1.3 var(--f-sans);letter-spacing:-.005em;margin:56px 0 14px;text-wrap:balance;scroll-margin-top:24px}
+h3{font:600 17px/1.35 var(--f-sans);margin:32px 0 8px}
+p{margin:0 0 20px;overflow-wrap:anywhere}
+.gap .t{overflow-wrap:anywhere}
+em{font-style:italic}
+a{color:inherit;text-decoration:underline;text-decoration-color:var(--faint);text-underline-offset:3px}
+a:hover{text-decoration-color:var(--ink)}
+code{font:14px/1.4 var(--f-mono);background:var(--code);padding:1px 5px;border-radius:4px;word-break:break-word}
+ul.plain{margin:0 0 20px;padding-left:20px} ul.plain li{margin:4px 0}
+.toc{background:var(--fig);border-radius:4px;padding:14px 16px;margin:0 0 40px}
+.toc summary{cursor:pointer;color:var(--muted);list-style:none;display:flex;justify-content:space-between}
+.toc summary::-webkit-details-marker{display:none}
+.toc ol{list-style:none;margin:8px 0 0;padding:0}
+.toc li{margin:3px 0}
+.toc a{text-decoration:none}
+.aside{border-left:2px solid var(--line);padding:2px 0 2px 16px;color:var(--muted);margin:0 0 20px}
+.k{font:500 11px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+
+/* Figures */
+.fig{width:min(966px, calc(100vw - 32px));margin:36px 0 40px;position:relative;left:50%;transform:translateX(-50%);border:1px solid var(--line);border-radius:6px;background:var(--fig);overflow:hidden}
+@media (max-width:900px){.fig{width:100%;left:0;transform:none}}
+.fig .ctrl{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line);font-size:13px;color:var(--muted)}
+.fig .ctrl .grp{display:flex;align-items:center;gap:8px}
+.seg{display:inline-flex;flex-wrap:wrap;max-width:100%;border:1px solid var(--line);border-radius:4px;overflow:hidden;background:var(--panel)}
+.fig .ctrl .grp{flex-wrap:wrap;min-width:0}
+.seg button{font:500 11px var(--f-mono);letter-spacing:.05em;text-transform:uppercase;border:0;border-right:1px solid var(--line);background:none;color:var(--muted);padding:6px 9px;cursor:pointer}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent)}
+label.chk{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);cursor:pointer}
+label.chk input{accent-color:var(--accent)}
+input[type=range]{accent-color:var(--accent);width:160px}
+.stage{overflow-x:auto}
+.stage svg{display:block;width:100%;min-width:720px;height:auto}
+.phases{display:flex;border-top:1px solid var(--line);overflow-x:auto}
+.phases button{flex:1 1 0;min-width:84px;font:500 11px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;background:none;border:0;border-right:1px solid var(--line);color:var(--faint);padding:9px 6px;cursor:pointer;white-space:nowrap}
+.phases button:last-child{border-right:0}
+.phases button.on{background:var(--accent-soft);color:var(--ink);box-shadow:inset 0 0 0 1px var(--accent)}
+.phases button.done{color:var(--muted)}
+.player{display:flex;justify-content:center;gap:6px;padding:8px;border-top:1px solid var(--line)}
+.player button{font:500 12px var(--f-sans);background:var(--panel);border:1px solid var(--line);border-radius:4px;color:var(--ink);padding:4px 10px;cursor:pointer}
+.cap{padding:10px 14px 12px;border-top:1px solid var(--line);font-size:13px;line-height:1.5;color:var(--muted);background:var(--fig)}
+.cap b{color:var(--ink);font-weight:500}
+button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* SVG primitives */
+.n-box{fill:var(--panel);stroke:var(--line)}
+.n-title{font:600 11px var(--f-mono);letter-spacing:.05em;fill:var(--ink);text-transform:uppercase}
+.n-sub{font:500 8.5px var(--f-mono);letter-spacing:.06em;fill:var(--faint);text-transform:uppercase}
+.link{stroke:var(--faint);stroke-dasharray:3 4;stroke-width:1;fill:none}
+.pk rect{stroke-width:1}
+.pk text{font:600 8.5px var(--f-mono);letter-spacing:.05em;text-transform:uppercase}
+.st-title{font:600 10px var(--f-mono);letter-spacing:.07em;fill:var(--ink)}
+.st-name{font:500 9px var(--f-mono);fill:var(--muted)}
+.chip text{font:500 8px var(--f-mono);letter-spacing:.02em}
+.json{font:500 10px var(--f-mono)}
+.lbl{font:500 9px var(--f-mono);letter-spacing:.07em;fill:var(--faint);text-transform:uppercase}
+.mx-h{font:500 8.5px var(--f-mono);fill:var(--muted)}
+.mx-c text{font:600 9px var(--f-mono)}
+.detail{padding:10px 14px;border-top:1px solid var(--line);font-size:13px;min-height:58px;background:var(--panel)}
+.detail .when{font:500 11px var(--f-mono);color:var(--muted)}
+.gaps{display:flex;flex-direction:column;gap:0;margin:0 0 20px;border-top:1px solid var(--line)}
+.gap{padding:14px 0;border-bottom:1px solid var(--line)}
+.gap .t{font-weight:600;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.gap p{margin:6px 0 0;color:var(--muted);font-size:15px}
+.sev{font:600 10px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;padding:2px 5px;border-radius:3px}
+.sev-high{background:var(--p-s);color:var(--p)} .sev-medium{background:var(--y-s);color:var(--y)} .sev-low{background:var(--fig2);color:var(--muted)}
+.tag{font:500 10px var(--f-mono);letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+details.ref{border-top:1px solid var(--line);padding:10px 0}
+details.ref summary{cursor:pointer;font-weight:500}
+details.ref .mmd{background:var(--fig);border:1px solid var(--line);border-radius:6px;padding:10px;overflow-x:auto;margin-top:10px}
+details.ref .mmd svg{max-width:none;height:auto}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 6px}
+table.t{width:100%;border-collapse:collapse;font-size:14px;margin:0 0 20px}
+table.t th{text-align:left;font:500 11px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);padding:6px 8px 6px 0}
+table.t td{border-bottom:1px solid var(--line);padding:8px 8px 8px 0;vertical-align:top}
+.tw{overflow-x:auto}
+</style>
+
+<div class="page">
+  <div class="gutter"><div class="crumb">Engineering / Platform</div></div>
+  <article class="col">
+    <p class="date">Jan 1, 2026</p>
+    <h1>How a webhook gets delivered</h1>
+    <div class="byline"><span class="av">AU</span>Author Name · 6 min read</div>
+
+    <div id="fig-hero"></div>
+
+    <details class="toc" open><summary>Table of Contents <span>⌃</span></summary><ol>
+      <li><a href="#send">Sending one event</a></li>
+      <li><a href="#retries">Retries</a></li>
+      <li><a href="#real">What happened last week</a></li>
+      <li><a href="#breaks">Where it breaks</a></li>
+    </ol></details>
+
+    <p>EXAMPLE CONTENT. Replace every paragraph, figure and data row. Open with the concrete thing a reader would see, then say what systems sit behind it and what this piece will show.</p>
+    <p>Each figure plays on its own once it scrolls into view. You can pause it, step through it, or flip the switches under it to see the failure modes.</p>
+
+    <h2 id="send">Sending one event</h2>
+    <p>Explain the mechanism in plain prose first. Then show it moving.</p>
+    <div id="fig-send"></div>
+    <p>After the figure, say what it showed and what to notice, especially what the switch revealed.</p>
+
+    <h2 id="retries">Retries</h2>
+    <p>A JSON store panel works well when one document holds the state.</p>
+    <div id="fig-json"></div>
+
+    <h2 id="real">What happened last week</h2>
+    <p>Real data gets its own figure, labeled as real. Each dot is an event; click one to read it.</p>
+    <div id="fig-real"></div>
+
+    <h2 id="breaks">Where it breaks</h2>
+    <div class="gaps">
+      <div class="gap"><div class="t"><span class="sev sev-high">high</span><span class="tag">Delivery</span>Example gap title</div><p>One or two sentences: what goes wrong, for whom, and the evidence.</p></div>
+    </div>
+    <p class="aside">Sources: name the code revision, data source and capture time. Say which figures use illustrative values.</p>
+  </article>
+</div>
+
+<script type="application/json" id="data">{"lanes":[{"name":"Endpoint A","sub":"3 failures","events":[{"at":"2026-01-01T02:00:00Z","kind":"message","actor":"system","text":"Delivered evt_1 (200 in 120 ms)"},{"at":"2026-01-01T09:30:00Z","kind":"error","actor":"system","text":"evt_2 timed out after 10 s"},{"at":"2026-01-01T10:00:00Z","kind":"vetting","actor":"system","text":"Retry 1 of evt_2 delivered"}]},{"name":"Endpoint B","sub":"0 failures","events":[{"at":"2026-01-01T05:00:00Z","kind":"message","actor":"worker","text":"Customer acknowledged evt_3"},{"at":"2026-01-01T18:00:00Z","kind":"onboarding","actor":"system","text":"Endpoint verified"}]}],"t0":"2026-01-01T00:00:00Z","t1":"2026-01-02T00:00:00Z"}</script>
+<script>
+const D = JSON.parse(document.getElementById('data').textContent);
+const $ = (s,r=document)=>r.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const NS='http://www.w3.org/2000/svg';
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const sleep = ms => new Promise(r=>setTimeout(r, RM?0:ms));
+const TONE = {g:['var(--g-s)','var(--g)'], o:['var(--o-s)','var(--o)'], b:['var(--b-s)','var(--b)'], p:['var(--p-s)','var(--p)'], y:['var(--y-s)','var(--y)'], n:['var(--panel)','var(--faint)']};
+const DOT = {run:'var(--accent)', ok:'var(--g)', bad:'var(--p)', idle:'var(--faint)', wait:'var(--y)'};
+function el(tag, attrs={}, parent){ const e=document.createElementNS(NS,tag); for(const k in attrs) e.setAttribute(k, attrs[k]); if(parent) parent.appendChild(e); return e; }
+function txt(parent, x, y, s, cls, extra={}){ const t=el('text',{x,y,class:cls,...extra},parent); t.textContent=s; return t; }
+
+/* ---------- Scene engine ----------
+spec: {id, w, h, nodes:{id:{x,y,w,h,title,sub,tone,dot}}, links:[[a,b]], store:{x,y,w,h,title,tables:[], kind:'rows'|'json'},
+       controls:[{type:'seg'|'chk', key, label, options:[[v,l]]}], init:{}, phases:(opt)=>[{name, cap, steps:[...]}], draw?(state,g) }
+steps: {p:[from,to,label,tone]} {n:[id,sub,dot]} {r:[table,text,op]} {j:[key,val]} {f:fn(state)} {w:ms} */
+function Scene(spec){
+  const host = document.getElementById(spec.id);
+  const opt = {...(spec.init||{})};
+  host.innerHTML = `<figure class="fig" aria-label="${esc(spec.label||'')}">${spec.controls?`<div class="ctrl">${spec.controls.map(c=>c.type==='seg'
+      ? `<span class="grp"><span>${esc(c.label)}</span><span class="seg" data-key="${c.key}">${c.options.map(([v,l])=>`<button data-v="${v}" aria-pressed="${opt[c.key]===v}">${esc(l)}</button>`).join('')}</span></span>`
+      : `<label class="chk"><input type="checkbox" data-key="${c.key}" ${opt[c.key]?'checked':''}>${esc(c.label)}</label>`).join('')}</div>`:''}
+    <div class="stage"></div><div class="phases"></div>
+    <div class="player"><button data-a="back">◀ Back</button><button data-a="play">❚❚ Pause</button><button data-a="next">Next ▶</button></div>
+    <figcaption class="cap"></figcaption></figure>`;
+  const fig = host.firstElementChild, stage = $('.stage',fig), phEl=$('.phases',fig), cap=$('.cap',fig), playBtn=$('[data-a=play]',fig);
+  const svg = el('svg',{viewBox:`0 0 ${spec.w} ${spec.h}`, role:'img'}); stage.appendChild(svg);
+  const gLinks = el('g',{},svg), gStore=el('g',{},svg), gDraw=el('g',{},svg), gNodes=el('g',{},svg), gPk=el('g',{},svg);
+  let phases=[], cur=0, playing=false, token=0, state=null, visible=false, everPlayed=false;
+  const fresh = () => ({nodes:Object.fromEntries(Object.entries(spec.nodes).map(([k,n])=>[k,{sub:n.sub||'',dot:n.dot||'idle',hl:false}])), rows:{}, json:{...(spec.store?.json||{})}, changed:new Set(), x:{}});
+  function apply(s, st){
+    if(st.n){ const [id,sub,dot]=st.n; const n=s.nodes[id]; if(sub!=null) n.sub=sub; if(dot) n.dot=dot; }
+    if(st.r){ const [t,text,op]=st.r; (s.rows[t] ||= []).push({text,op:op||'INSERT'}); s.lastRow=t+'|'+(s.rows[t].length-1); }
+    if(st.j){ const [k,v]=st.j; s.json[k]=v; s.changed=new Set([k]); }
+    if(st.f) st.f(s, opt);
+  }
+  function replayTo(i){ const s=fresh(); for(let k=0;k<i;k++) for(const st of phases[k].steps) apply(s,st); return s; }
+  function anchor(a,b){ // point on rect a's edge toward b's center
+    const ax=a.x+a.w/2, ay=a.y+a.h/2, bx=b.x+b.w/2, by=b.y+b.h/2, dx=bx-ax, dy=by-ay;
+    const sx = dx? (a.w/2)/Math.abs(dx) : Infinity, sy = dy? (a.h/2)/Math.abs(dy) : Infinity, s=Math.min(sx,sy);
+    return [ax+dx*s, ay+dy*s];
+  }
+  const nodeRect = id => spec.nodes[id] || (spec.store && id==='store' ? spec.store : null);
+  function drawStatic(){
+    gLinks.innerHTML='';
+    for (const [a,b] of spec.links||[]){ const A=nodeRect(a), B=nodeRect(b); const p=anchor(A,B), q=anchor(B,A); el('line',{x1:p[0],y1:p[1],x2:q[0],y2:q[1],class:'link'},gLinks); }
+    for (const l of spec.labels||[]) txt(gLinks, l[0], l[1], l[2], 'lbl', l[3]?{'text-anchor':l[3]}:{});
+  }
+  function render(){
+    gNodes.innerHTML='';
+    for (const [id,n] of Object.entries(spec.nodes)){
+      const s=state.nodes[id]; const [fill,stroke]=TONE[n.tone||'n'];
+      const g=el('g',{},gNodes);
+      el('rect',{x:n.x,y:n.y,width:n.w,height:n.h,rx:3,class:'n-box', ...(s.dot==='bad'?{fill:'var(--p-s)',stroke:'var(--p)', 'stroke-dasharray':'3 3'}:{})},g);
+      if(n.tone) el('rect',{x:n.x,y:n.y,width:3,height:n.h,fill:stroke},g);
+      const cx = n.x+12, cy = n.y + Math.min(n.h/2, 22) - (n.h>40?2:3);
+      el('circle',{cx,cy:cy-3.5,r:3.5,fill:DOT[s.dot]||DOT.idle},g);
+      txt(g, cx+9, cy, n.title, 'n-title');
+      const subs = String(s.sub||'').split('\n');
+      subs.forEach((line,i)=>txt(g, cx+9, cy+13+i*11, line, 'n-sub'));
+    }
+    if (spec.store) renderStore();
+    if (spec.draw){ gDraw.innerHTML=''; spec.draw(state, gDraw, opt); }
+    phEl.innerHTML = phases.map((p,i)=>`<button class="${i===cur?'on':i<cur?'done':''}" data-i="${i}">${esc(p.name)}</button>`).join('');
+    cap.innerHTML = (phases[cur]?.cap ? `<b>${esc(phases[cur].name)}.</b> ${phases[cur].cap}` : '') + (spec.caption? ` ${spec.caption}`:'');
+    playBtn.textContent = playing ? '❚❚ Pause' : '▶ Play';
+  }
+  function renderStore(){
+    gStore.innerHTML=''; const S=spec.store;
+    el('rect',{x:S.x,y:S.y,width:S.w,height:S.h,rx:3,fill:'var(--fig2)',stroke:'var(--line)'},gStore);
+    el('rect',{x:S.x,y:S.y,width:S.w,height:22,rx:3,fill:'var(--panel)',stroke:'var(--line)'},gStore);
+    txt(gStore, S.x+10, S.y+15, S.title, 'st-title');
+    if (S.counter){ const n=Object.values(state.rows).flat().filter(r=>r.op==='INSERT').length; txt(gStore, S.x+S.w-10, S.y+15, `NEW ROWS ${n}`, 'st-name', {'text-anchor':'end'}); }
+    if (S.kind==='json'){
+      let y=S.y+40; txt(gStore,S.x+10,y-2,'{','json',{fill:'var(--muted)'});
+      for (const [k,v] of Object.entries(state.json)){
+        y+=16; const ch=state.changed.has(k);
+        if(ch) el('rect',{x:S.x+6,y:y-11,width:S.w-12,height:15,rx:2,fill:'var(--accent-soft)'},gStore);
+        const t=el('text',{x:S.x+20,y,class:'json'},gStore);
+        const a=el('tspan',{fill:'var(--b)'},t); a.textContent=`"${k}"`;
+        const b=el('tspan',{fill:'var(--muted)'},t); b.textContent=': ';
+        const c=el('tspan',{fill:'var(--ink)'},t); c.textContent=v;
+      }
+      txt(gStore,S.x+10,y+18,'}','json',{fill:'var(--muted)'});
+      return;
+    }
+    let y=S.y+38;
+    for (const t of S.tables){
+      txt(gStore, S.x+10, y, t, 'st-name');
+      const rows=state.rows[t]||[]; let x=S.x+10, yy=y+6;
+      rows.forEach((r,i)=>{
+        const w=Math.min(S.w-20, 10+r.text.length*5.1);
+        if (x+w > S.x+S.w-10){ x=S.x+10; yy+=17; }
+        const tone = r.op==='INSERT'?'g':r.op==='UPDATE'?'b':r.op==='DELETE'?'p':r.op==='UPSERT'?'y':'n';
+        const g=el('g',{class:'chip'},gStore);
+        const isNew = state.lastRow===t+'|'+i;
+        el('rect',{x,y:yy,width:w,height:14,rx:2,fill:TONE[tone][0],stroke:isNew?'var(--accent)':TONE[tone][1],'stroke-width':isNew?1.4:.6},g);
+        txt(g, x+5, yy+10, r.text, '', {fill:TONE[tone][1]});
+        x+=w+4;
+      });
+      y = (rows.length? yy+14 : y) + 18;
+    }
+  }
+  async function packet(from,to,label,tone,my){
+    if (RM) return;
+    const A=nodeRect(from), B=nodeRect(to); const p=anchor(A,B), q=anchor(B,A);
+    const [fill,stroke]=TONE[tone||'b']; const w=12+String(label).length*5.6;
+    const g=el('g',{class:'pk'},gPk); el('rect',{x:-w/2,y:-8,width:w,height:16,rx:2,fill,stroke},g); txt(g,0,3,label,'',{'text-anchor':'middle',fill:stroke});
+    const dur=Math.max(450, Math.min(900, Math.hypot(q[0]-p[0],q[1]-p[1])*1.6)); const t0=performance.now();
+    await new Promise(res=>{ const step=now=>{ if(my!==token){ g.remove(); return res(); } const k=Math.min(1,(now-t0)/dur), e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2; g.setAttribute('transform',`translate(${p[0]+(q[0]-p[0])*e},${p[1]+(q[1]-p[1])*e})`); if(k<1) requestAnimationFrame(step); else { setTimeout(()=>g.remove(),120); res(); } }; requestAnimationFrame(step); });
+  }
+  async function runFrom(i){
+    const my=++token; cur=i; state=replayTo(i); gPk.innerHTML=''; render();
+    while(playing && my===token){
+      for (const st of phases[cur].steps){
+        if(my!==token) return;
+        if(st.p) await packet(st.p[0],st.p[1],st.p[2],st.p[3],my);
+        if(my!==token) return;
+        if(st.w) await sleep(st.w);
+        apply(state, st); render(); await sleep(st.p?120:260);
+      }
+      await sleep(1300); if(my!==token||!playing) return;
+      if(cur<phases.length-1){ cur++; render(); }
+      else { await sleep(1500); if(my!==token||!playing) return; cur=0; state=fresh(); render(); }
+    }
+  }
+  function show(i, play){ playing = play ?? playing; if(playing) runFrom(i); else { token++; cur=i; state=replayTo(i+1); gPk.innerHTML=''; render(); } }
+  function rebuild(){ phases = spec.phases(opt); cur=Math.min(cur,phases.length-1); show(playing?0:phases.length-1, playing); }
+  fig.addEventListener('click', e=>{
+    const pb=e.target.closest('.phases button'); if(pb){ show(+pb.dataset.i, false); return; }
+    const a=e.target.closest('.player button')?.dataset.a;
+    if(a==='play'){ playing=!playing; if(playing) runFrom(cur); else { token++; state=replayTo(cur+1); gPk.innerHTML=''; render(); } }
+    if(a==='back') show(Math.max(0,cur-1), false);
+    if(a==='next') show(Math.min(phases.length-1,cur+1), false);
+    const sb=e.target.closest('.seg button'); if(sb){ const k=sb.parentElement.dataset.key; opt[k]=sb.dataset.v; sb.parentElement.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b===sb)); cur=0; rebuild(); }
+  });
+  fig.addEventListener('change', e=>{ const k=e.target.dataset?.key; if(k){ opt[k]=e.target.checked; cur=0; rebuild(); } });
+  drawStatic(); phases=spec.phases(opt); cur=phases.length-1; state=replayTo(phases.length); render();
+  let userPaused=false;
+  fig.addEventListener('click', e=>{ if(e.target.closest('.phases button,[data-a=back],[data-a=next]') || (e.target.closest('[data-a=play]') && !playing)) userPaused=true; else if(e.target.closest('[data-a=play]') && playing) userPaused=false; });
+  if(!RM) new IntersectionObserver(es=>{ for(const en of es){
+    if(en.isIntersecting && !playing && !userPaused){ playing=true; runFrom(everPlayed?cur:0); everPlayed=true; }
+    else if(!en.isIntersecting && playing){ playing=false; token++; state=replayTo(cur+1); gPk.innerHTML=''; render(); } } },{threshold:.45}).observe(fig);
+}
+
+
+/* ---------- Swimlanes: real timestamped events, one lane per subject ----------
+   Swimlanes({id, t0, t1, lanes:[{name, sub, events:[{at, kind, actor, text}]}], caption})
+   actor 'worker' (or any external party) draws hollow; others filled. Click a dot to read it. */
+function Swimlanes(o){
+  const host=$('#'+o.id); const T0=Date.parse(o.t0), T1=Date.parse(o.t1);
+  const W=940, X0=150, X1=920, lh=40, top=34, H=top+o.lanes.length*lh+30;
+  const xs=t=>X0+(X1-X0)*Math.max(0,Math.min(1,(t-T0)/(T1-T0)));
+  const color=k=>({message:'var(--b)',error:'var(--p)',vetting:'var(--o)',call:'var(--o)',onboarding:'var(--g)',offer:'var(--g)',tool:'var(--y)'})[k]||'var(--muted)';
+  const kinds=[...new Set(o.lanes.flatMap(l=>l.events.map(e=>e.kind)))];
+  host.innerHTML=`<figure class="fig"><div class="ctrl">${kinds.map(k=>`<span class="grp"><svg width="10" height="10"><circle cx="5" cy="5" r="4" fill="${color(k)}"/></svg>${esc(k)}</span>`).join('')}</div>
+    <div class="stage"><svg viewBox="0 0 ${W} ${H}"></svg></div><div class="detail"><span class="muted">Click any dot.</span></div>
+    <figcaption class="cap">${o.caption||''}</figcaption></figure>`;
+  const svg=$('svg',host), det=$('.detail',host), span=T1-T0, step=span/8;
+  for(let t=T0;t<=T1;t+=step){ el('line',{x1:xs(t),x2:xs(t),y1:top-10,y2:H-24,stroke:'var(--line)'},svg); const d=new Date(t); txt(svg,xs(t),H-10,`${d.getUTCMonth()+1}/${d.getUTCDate()} ${String(d.getUTCHours()).padStart(2,'0')}:00`,'lbl',{'text-anchor':'middle'}); }
+  const dots=[]; let sel=null;
+  const show=(l,ev,c)=>{ if(sel) sel.setAttribute('r',sel.dataset.r); sel=c; c.dataset.r=c.getAttribute('r'); c.setAttribute('r',7); det.innerHTML=`<div class="when">${esc(ev.at)} · ${esc(l.name)} · ${esc(ev.kind)} · ${esc(ev.actor)}</div><div>${esc(ev.text)}</div>`; };
+  o.lanes.forEach((l,i)=>{ const y=top+i*lh+lh/2;
+    txt(svg,12,y-2,l.name,'n-title'); if(l.sub) txt(svg,12,y+10,l.sub,'n-sub');
+    el('line',{x1:X0,x2:X1,y1:y,y2:y,stroke:'var(--line)'},svg);
+    l.events.forEach(ev=>{ const t=Date.parse(ev.at); if(isNaN(t)) return; const early=t<T0;
+      const c=el('circle',{cx:xs(t)+(early?-6:0),cy:y,r:early?3:4.5,fill:ev.actor==='worker'?'var(--panel)':color(ev.kind),stroke:color(ev.kind),'stroke-width':1.5,style:'cursor:pointer',tabindex:0},svg);
+      c.addEventListener('click',()=>show(l,ev,c)); c.addEventListener('keydown',e=>{ if(e.key==='Enter') show(l,ev,c); }); dots.push([t,c]); }); });
+  const ph=el('line',{x1:X0,x2:X0,y1:top-10,y2:H-24,stroke:'var(--accent)',style:'opacity:.25'},svg);
+  let done=false; if(!RM) new IntersectionObserver(es=>es.forEach(en=>{ if(!en.isIntersecting||done) return; done=true; dots.forEach(([t,c])=>c.style.opacity=0); ph.style.opacity=1;
+    const s0=performance.now(), dur=4500; const f=now=>{ const k=Math.min(1,(now-s0)/dur), t=T0+span*k, x=xs(t); ph.setAttribute('x1',x); ph.setAttribute('x2',x); dots.forEach(([tt,c])=>{ if(tt<=t) c.style.opacity=1; }); if(k<1) requestAnimationFrame(f); else ph.style.opacity=.25; }; requestAnimationFrame(f); }),{threshold:.4}).observe(host);
+}
+
+/* ---------- Example figures (replace) ---------- */
+Scene({id:'fig-hero', w:940, h:170, label:'Overview',
+  nodes:{ app:{x:20,y:60,w:180,h:56,title:'App',sub:'emits event',tone:'b'}, queue:{x:260,y:60,w:180,h:56,title:'Queue',sub:'durable',tone:'y'},
+          worker:{x:500,y:60,w:180,h:56,title:'Sender',sub:'signs · posts',tone:'o'}, ep:{x:740,y:60,w:180,h:56,title:'Endpoint',sub:'customer',tone:'g'} },
+  links:[['app','queue'],['queue','worker'],['worker','ep']],
+  caption:'Each stage hands the event to the next.',
+  phases:o=>[
+    {name:'Emit',cap:'The app commits the event with its own transaction.',steps:[{n:['app','committed','ok']},{p:['app','queue','evt_1','b']}]},
+    {name:'Dequeue',cap:'A sender claims the job.',steps:[{n:['queue','claimed','run']},{p:['queue','worker','job','y']}]},
+    {name:'Deliver',cap:'Signed POST to the customer endpoint.',steps:[{p:['worker','ep','POST','o']},{p:['ep','worker','200','g']},{n:['ep','acknowledged','ok']}]}
+  ]});
+
+Scene({id:'fig-send', w:940, h:250, label:'Sending one event, with the rows it writes',
+  nodes:{ sender:{x:20,y:40,w:170,h:56,title:'Sender',sub:'idle',tone:'o'}, ep:{x:20,y:170,w:170,h:56,title:'Endpoint',sub:'',tone:'g'} },
+  links:[['sender','ep'],['sender','store']],
+  store:{x:250,y:20,w:670,h:210,title:'ROWS',counter:true,tables:['deliveries','delivery_attempts','events']},
+  controls:[{type:'chk',key:'timeout',label:'Endpoint times out'}], init:{timeout:false},
+  phases:o=>[
+    {name:'Claim',cap:'The attempt row is written before the network call, so a crash leaves evidence.',steps:[{n:['sender','claiming','run']},{r:['delivery_attempts','PENDING','INSERT']}]},
+    {name:'Post',cap:o.timeout?'No answer within 10 s. The attempt is marked UNKNOWN, not FAILED: the endpoint may have processed it.':'The endpoint answers 200.',steps:[{p:['sender','ep','POST evt_1','o']}, ...(o.timeout?[{n:['ep','no answer','bad']},{r:['delivery_attempts','UNKNOWN (timeout)','UPDATE']}]:[{p:['ep','sender','200','g']},{r:['delivery_attempts','OK 120ms','UPDATE']}])]},
+    {name:'Settle',cap:o.timeout?'A retry is scheduled with backoff.':'The delivery is closed.',steps:[ ...(o.timeout?[{r:['deliveries','RETRY_SCHEDULED','UPDATE']},{n:['sender','retry in 30s','wait']}]:[{r:['deliveries','DELIVERED','UPDATE']},{n:['sender','done','ok']}])]}
+  ]});
+
+Scene({id:'fig-json', w:940, h:230, label:'Retry state as one JSON document',
+  nodes:{ sweep:{x:20,y:40,w:170,h:56,title:'Retry sweep',sub:'every minute',tone:'y'}, sender:{x:20,y:150,w:170,h:56,title:'Sender',sub:'',tone:'o'} },
+  links:[['sweep','sender'],['sweep','store']],
+  store:{x:250,y:20,w:670,h:190,title:'DELIVERIES."STATE"',kind:'json',json:{status:'"RETRY_SCHEDULED"',attempts:'1',nextAt:'"+30s"',lastError:'"timeout"'}},
+  phases:o=>[
+    {name:'Wake',cap:'The sweep finds due retries.',steps:[{n:['sweep','due: 1','run']},{p:['sweep','sender','retry','y']}]},
+    {name:'Attempt',cap:'Each attempt updates the same document under a revision check.',steps:[{j:['attempts','2']},{j:['status','"DELIVERED"']},{j:['lastError','null']},{n:['sender','delivered','ok']}]}
+  ]});
+
+Swimlanes({id:'fig-real', t0:D.t0, t1:D.t1, lanes:D.lanes, caption:'<b>Real data.</b> External parties draw hollow; system events are filled.'});
+</script>
