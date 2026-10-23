@@ -1,0 +1,65 @@
+/* Diagram theme. The preview page inlines it, and each downloaded SVG embeds it, so a saved
+   diagram follows the viewer's light or dark setting the same way the page does. Tone classes
+   come from tone.ts. Inline styles from a diagram's own classDef or style lines still win. */
+svg.pele {
+  --pele-bg: #ffffff; --pele-fg: #1f2328; --pele-muted: #59636e; --pele-line: #57606a;
+  --pele-surface: #f6f8fa; --pele-surface-alt: #eaeef2; --pele-border: #d0d7de;
+  --pele-accent: #0969da; --pele-error: #cf222e; --pele-radius: 6px;
+  --pele-font: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --pele-font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --tone-danger: #cf222e; --tone-warning: #9a6700; --tone-success: #1a7f37;
+  --tone-active: #0969da; --tone-changed: #8250df; --tone-removed: #cf222e; --tone-muted: #6e7781;
+  --tone-tint: 12%; --shadow: rgb(31 35 40 / 0.12);
+  background: var(--pele-bg);
+}
+@media (prefers-color-scheme: dark) {
+  svg.pele {
+    --pele-bg: #0d1117; --pele-fg: #e6edf3; --pele-muted: #9198a1; --pele-line: #8b949e;
+    --pele-surface: #161b22; --pele-surface-alt: #1f2630; --pele-border: #3d444d;
+    --pele-accent: #4493f8; --pele-error: #f85149;
+    --tone-danger: #f85149; --tone-warning: #d29922; --tone-success: #3fb950;
+    --tone-active: #4493f8; --tone-changed: #a371f7; --tone-removed: #f85149; --tone-muted: #8b949e;
+    --tone-tint: 18%; --shadow: rgb(0 0 0 / 0.45);
+  }
+}
+
+/* Shading: every node shape sits on a soft shadow; group titles are bold. */
+svg.pele .pele-node > :not(text) { filter: drop-shadow(0 1px 2px var(--shadow)); }
+svg.pele .pele-cluster-label { font-weight: 600; }
+
+.pele-tone-danger { --tone: var(--tone-danger); }
+.pele-tone-warning { --tone: var(--tone-warning); }
+.pele-tone-success { --tone: var(--tone-success); }
+.pele-tone-active { --tone: var(--tone-active); }
+.pele-tone-changed { --tone: var(--tone-changed); }
+.pele-tone-removed { --tone: var(--tone-removed); }
+.pele-tone-muted { --tone: var(--tone-muted); }
+
+/* Toned nodes and groups: tinted fill, colored border, bold label in the tone's color. */
+svg.pele :is(.pele-node, .pele-cluster)[class*="pele-tone-"] > :not(text) {
+  fill: color-mix(in srgb, var(--tone) var(--tone-tint), var(--_bg));
+  fill-opacity: 1;
+  stroke: var(--tone);
+  stroke-width: 1.5px;
+}
+svg.pele :is(.pele-node, .pele-cluster)[class*="pele-tone-"] text {
+  fill: color-mix(in srgb, var(--tone) 75%, var(--_fg));
+  font-weight: 600;
+}
+svg.pele .pele-node.pele-tone-changed > :not(text) { stroke-width: 2.5px; }
+svg.pele .pele-node.pele-tone-removed > :not(text) { stroke-dasharray: 5 3; }
+svg.pele .pele-node.pele-tone-removed text { text-decoration: line-through; }
+svg.pele .pele-node.pele-tone-muted text { font-weight: 400; font-style: italic; }
+
+/* Toned transitions: the line, its arrowhead, and its label share the tone. */
+svg.pele .pele-edge[class*="pele-tone-"] { stroke: var(--tone); }
+svg.pele .pele-edge[class*="pele-tone-"] > path:not(.pele-marker) { stroke-width: 1.75px; }
+svg.pele .pele-edge[class*="pele-tone-"] .pele-marker { fill: var(--tone); }
+svg.pele .pele-edge.pele-tone-muted > path { stroke-dasharray: 4 3; }
+svg.pele .pele-edge-label[class*="pele-tone-"] text {
+  fill: var(--tone);
+  font-weight: 600;
+}
+svg.pele .pele-edge-label[class*="pele-tone-"] rect {
+  fill: color-mix(in srgb, var(--tone) var(--tone-tint), var(--_bg));
+}

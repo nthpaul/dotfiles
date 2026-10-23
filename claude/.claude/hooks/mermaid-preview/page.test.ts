@@ -81,13 +81,24 @@ describe("buildPage", () => {
       project: "<b>repo</b>",
       createdAt,
     });
-    expect(page).not.toContain("<script>");
+    expect(page).not.toContain("<script>alert(1)");
     expect(page).not.toContain("<b>repo</b>");
     expect(page).toContain("&lt;script&gt;");
   });
 
-  test("blocks scripts with a content security policy", () => {
-    const page = buildPage({ blocks: ["flowchart TB\n  A --> B"], project: "relay", createdAt });
+  test("allows only the download script, by hash", async () => {
+    const page = buildPage({ blocks: ["flowchart TB\n  A --> B"], project: "My Repo", createdAt });
     expect(page).toContain("default-src 'none'");
+    const hash = /script-src 'sha256-([^']+)'/.exec(page)?.[1];
+    const script = /<script>([\s\S]*?)<\/script>/.exec(page)?.[1] ?? "";
+    const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(script)));
+    expect(hash).toBe(Buffer.from(digest).toString("base64"));
+  });
+
+  test("offers SVG and PNG downloads named after the project", () => {
+    const page = buildPage({ blocks: ["flowchart TB\n  A --> B"], project: "My Repo", createdAt });
+    expect(page).toContain('data-filename="my-repo-diagram-1"');
+    expect(page).toContain('data-download="svg"');
+    expect(page).toContain('data-download="png"');
   });
 });

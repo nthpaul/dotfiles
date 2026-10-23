@@ -46,6 +46,9 @@ import { mkdir, readdir, rm as rm2, stat, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { basename, join } from "node:path";
 
+// page.ts
+import { createHash } from "node:crypto";
+
 // node_modules/pele/dist/pele.js
 var uS = [["flowchart", "flowchart-elk", /^\s*flowchart-elk/], ["mindmap", "mindmap", /^\s*mindmap/], ["architecture", "architecture", /^\s*architecture/], ["agentflow", "agentflow", /^\s*agentflow-beta\b/], ["c4", "c4", /^\s*C4Context|C4Container|C4Component|C4Dynamic|C4Deployment/], ["kanban", "kanban", /^\s*kanban/], ["class", "classDiagram", /^\s*classDiagram/], ["er", "er", /^\s*erDiagram/], ["gantt", "gantt", /^\s*gantt/], ["info", "info", /^\s*info/], ["pie", "pie", /^\s*pie/], ["requirement", "requirement", /^\s*requirement(Diagram)?/], ["sequence", "sequence", /^\s*sequenceDiagram/], ["swimlane", "swimlane", /^\s*swimlane-beta\b/], ["flowchart", "flowchart-v2", /^\s*(graph|flowchart)/], ["timeline", "timeline", /^\s*timeline/], ["gitGraph", "gitGraph", /^\s*gitGraph/], ["state", "stateDiagram", /^\s*stateDiagram/], ["journey", "journey", /^\s*journey/], ["quadrantChart", "quadrantChart", /^\s*quadrantChart/], ["sankey", "sankey", /^\s*sankey(-beta)?/], ["packet", "packet", /^\s*packet(-beta)?/], ["xychart", "xychart", /^\s*xychart(-beta)?/], ["block", "block", /^\s*block(-beta)?/], ["eventmodeling", "eventmodeling", /^\s*eventmodeling/], ["treeView", "treeView", /^\s*treeView-beta/], ["radar", "radar", /^\s*radar-beta/], ["ishikawa", "ishikawa", /^\s*ishikawa(-beta)?\b/i], ["treemap", "treemap", /^\s*treemap/], ["railroad", "railroad", /^\s*railroad-beta/i], ["railroad", "railroadEbnf", /^\s*railroad-ebnf-beta/i], ["railroad", "railroadAbnf", /^\s*railroad-abnf-beta/i], ["railroad", "railroadPeg", /^\s*railroad-peg-beta/i], ["venn", "venn", /^\s*venn-beta/], ["wardley", "wardley", /^\s*wardley-beta/i], ["cynefin", "cynefin", /^\s*cynefin-beta(?:[\s:]|$)/], ["usecase", "usecase", /^\s*usecase-beta(?:\s|$)/]];
 function rd(e) {
@@ -23324,7 +23327,218 @@ var lS = { type: "xychart", section: "xyChart", parse(e, t, n) {
 var dS = [_c, Vy, Xg, Oy, Ty, uA, Ay, yg, sE, lS, V0, Gb, Tm, JE, f0, Wy, hE, OA, oy, D0, ey, ig, Gm, WE, um, RA, Lg, Xx, ob, Mx, vx, py, nA];
 rh(...dS);
 
+// diagram.css
+var diagram_default = `/* Diagram theme. The preview page inlines it, and each downloaded SVG embeds it, so a saved
+   diagram follows the viewer's light or dark setting the same way the page does. Tone classes
+   come from tone.ts. Inline styles from a diagram's own classDef or style lines still win. */
+svg.pele {
+  --pele-bg: #ffffff; --pele-fg: #1f2328; --pele-muted: #59636e; --pele-line: #57606a;
+  --pele-surface: #f6f8fa; --pele-surface-alt: #eaeef2; --pele-border: #d0d7de;
+  --pele-accent: #0969da; --pele-error: #cf222e; --pele-radius: 6px;
+  --pele-font: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --pele-font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --tone-danger: #cf222e; --tone-warning: #9a6700; --tone-success: #1a7f37;
+  --tone-active: #0969da; --tone-changed: #8250df; --tone-removed: #cf222e; --tone-muted: #6e7781;
+  --tone-tint: 12%; --shadow: rgb(31 35 40 / 0.12);
+  background: var(--pele-bg);
+}
+@media (prefers-color-scheme: dark) {
+  svg.pele {
+    --pele-bg: #0d1117; --pele-fg: #e6edf3; --pele-muted: #9198a1; --pele-line: #8b949e;
+    --pele-surface: #161b22; --pele-surface-alt: #1f2630; --pele-border: #3d444d;
+    --pele-accent: #4493f8; --pele-error: #f85149;
+    --tone-danger: #f85149; --tone-warning: #d29922; --tone-success: #3fb950;
+    --tone-active: #4493f8; --tone-changed: #a371f7; --tone-removed: #f85149; --tone-muted: #8b949e;
+    --tone-tint: 18%; --shadow: rgb(0 0 0 / 0.45);
+  }
+}
+
+/* Shading: every node shape sits on a soft shadow; group titles are bold. */
+svg.pele .pele-node > :not(text) { filter: drop-shadow(0 1px 2px var(--shadow)); }
+svg.pele .pele-cluster-label { font-weight: 600; }
+
+.pele-tone-danger { --tone: var(--tone-danger); }
+.pele-tone-warning { --tone: var(--tone-warning); }
+.pele-tone-success { --tone: var(--tone-success); }
+.pele-tone-active { --tone: var(--tone-active); }
+.pele-tone-changed { --tone: var(--tone-changed); }
+.pele-tone-removed { --tone: var(--tone-removed); }
+.pele-tone-muted { --tone: var(--tone-muted); }
+
+/* Toned nodes and groups: tinted fill, colored border, bold label in the tone's color. */
+svg.pele :is(.pele-node, .pele-cluster)[class*="pele-tone-"] > :not(text) {
+  fill: color-mix(in srgb, var(--tone) var(--tone-tint), var(--_bg));
+  fill-opacity: 1;
+  stroke: var(--tone);
+  stroke-width: 1.5px;
+}
+svg.pele :is(.pele-node, .pele-cluster)[class*="pele-tone-"] text {
+  fill: color-mix(in srgb, var(--tone) 75%, var(--_fg));
+  font-weight: 600;
+}
+svg.pele .pele-node.pele-tone-changed > :not(text) { stroke-width: 2.5px; }
+svg.pele .pele-node.pele-tone-removed > :not(text) { stroke-dasharray: 5 3; }
+svg.pele .pele-node.pele-tone-removed text { text-decoration: line-through; }
+svg.pele .pele-node.pele-tone-muted text { font-weight: 400; font-style: italic; }
+
+/* Toned transitions: the line, its arrowhead, and its label share the tone. */
+svg.pele .pele-edge[class*="pele-tone-"] { stroke: var(--tone); }
+svg.pele .pele-edge[class*="pele-tone-"] > path:not(.pele-marker) { stroke-width: 1.75px; }
+svg.pele .pele-edge[class*="pele-tone-"] .pele-marker { fill: var(--tone); }
+svg.pele .pele-edge.pele-tone-muted > path { stroke-dasharray: 4 3; }
+svg.pele .pele-edge-label[class*="pele-tone-"] text {
+  fill: var(--tone);
+  font-weight: 600;
+}
+svg.pele .pele-edge-label[class*="pele-tone-"] rect {
+  fill: color-mix(in srgb, var(--tone) var(--tone-tint), var(--_bg));
+}
+`;
+
+// download.js
+var download_default = `// Download buttons on the preview page. page.ts inlines this file and allows it by hash in the
+// page's content security policy; no other script can run there.
+const css = document.getElementById("diagram-css").textContent;
+const SVG_NS = "http://www.w3.org/2000/svg";
+const PNG_SCALE = 2;
+
+// A standalone copy of the diagram with its stylesheet, so it keeps its colors outside the page.
+function standaloneSvg(svg, { bakeTheme }) {
+  const copy = svg.cloneNode(true);
+  const style = document.createElementNS(SVG_NS, "style");
+  style.textContent = css;
+  copy.insertBefore(style, copy.firstChild);
+  if (bakeTheme) {
+    // An image cannot follow the system theme later, so freeze the one on screen now. Inline
+    // custom properties beat the stylesheet, including its dark-mode media query.
+    const computed = getComputedStyle(svg);
+    for (const name of css.match(/--(?:pele|tone|shadow)[\\w-]*(?=:)/g) ?? []) {
+      copy.style.setProperty(name, computed.getPropertyValue(name));
+    }
+  }
+  return new XMLSerializer().serializeToString(copy);
+}
+
+function save(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function savePng(svg, filename) {
+  const { width, height } = svg.viewBox.baseVal;
+  const image = new Image();
+  image.onload = () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.ceil(width * PNG_SCALE);
+    canvas.height = Math.ceil(height * PNG_SCALE);
+    const context = canvas.getContext("2d");
+    context.fillStyle = getComputedStyle(svg).getPropertyValue("--pele-bg");
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob((blob) => save(blob, filename), "image/png");
+  };
+  const markup = standaloneSvg(svg, { bakeTheme: true });
+  // The canvas size above is what counts; drop max-width so the image is not squeezed.
+  image.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(markup.replace("max-width:100%;", ""));
+}
+
+document.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-download]");
+  if (!button) return;
+  const section = button.closest(".diagram");
+  const svg = section.querySelector("svg.pele");
+  const name = section.dataset.filename;
+  if (button.dataset.download === "svg") {
+    const markup = standaloneSvg(svg, { bakeTheme: false });
+    save(new Blob([markup], { type: "image/svg+xml" }), \`\${name}.svg\`);
+  } else {
+    savePng(svg, \`\${name}.png\`);
+  }
+});
+`;
+
+// tone.ts
+var CLASS_TONES = {
+  danger: "danger" /* Danger */,
+  fail: "danger" /* Danger */,
+  failed: "danger" /* Danger */,
+  error: "danger" /* Danger */,
+  warning: "warning" /* Warning */,
+  warn: "warning" /* Warning */,
+  pending: "warning" /* Warning */,
+  success: "success" /* Success */,
+  ok: "success" /* Success */,
+  done: "success" /* Success */,
+  active: "active" /* Active */,
+  current: "active" /* Active */,
+  info: "active" /* Active */,
+  changed: "changed" /* Changed */,
+  new: "changed" /* Changed */,
+  added: "changed" /* Changed */,
+  removed: "removed" /* Removed */,
+  deleted: "removed" /* Removed */,
+  muted: "muted" /* Muted */,
+  skipped: "muted" /* Muted */
+};
+var WORD_TONES = [
+  ["danger" /* Danger */, /\b(fail\w*|errors?|errored|reject\w*|denied|deny|crash\w*|abort\w*|timeouts?|timed out|invalid|panic\w*|dead letter\w*|dlq|refus\w*|exhausted)\b/],
+  ["warning" /* Warning */, /\b(retry\w*|retries|pending|waiting|wait|blocked|paused?|stale|on hold|backoff|throttl\w*|degraded|warn\w*|queued)\b/],
+  ["success" /* Success */, /\b(done|success\w*|succeed\w*|complete[ds]?|approved?|passed|pass|ok|merged|resolved|delivered|confirmed|accepted|healthy|ready)\b/],
+  ["active" /* Active */, /\b(running|processing|in progress|active|started|executing|sending|syncing)\b/],
+  ["muted" /* Muted */, /\b(cancel\w*|skip\w*|ignored?|expired|archived|noop|no-op|closed)\b/]
+];
+var ELEMENT = /<g class="(pele-(?:node|cluster|edge|edge-label)(?: [^"]*)?)" data-id="([^"]*)"/g;
+var TEXT = /<text[^>]*>([\s\S]*?)<\/text>/;
+var NEXT_ELEMENT = '<g class="pele-';
+function words(text) {
+  return text.replace(/<[^>]+>/g, " ").replace(/&amp;/g, "&").replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/[_\-./:]+/g, " ").toLowerCase();
+}
+function labelAt(svg, offset) {
+  const end = svg.indexOf(NEXT_ELEMENT, offset + 1);
+  return TEXT.exec(svg.slice(offset, end === -1 ? undefined : end))?.[1] ?? "";
+}
+function toneOf(classes, label) {
+  for (const name of classes) {
+    const tone = CLASS_TONES[name.toLowerCase()];
+    if (tone)
+      return tone;
+  }
+  const text = words(label);
+  if (text.trim().endsWith("?"))
+    return null;
+  for (const [tone, pattern] of WORD_TONES)
+    if (pattern.test(text))
+      return tone;
+  return null;
+}
+function applyTones(svg) {
+  const edgeTones = new Map;
+  for (const match of svg.matchAll(ELEMENT)) {
+    const [, classAttr, id2] = match;
+    if (!classAttr.startsWith("pele-edge-label"))
+      continue;
+    const tone = toneOf([], labelAt(svg, match.index));
+    if (tone)
+      edgeTones.set(id2, tone);
+  }
+  return svg.replace(ELEMENT, (tag, classAttr, id2, offset) => {
+    const [kind, ...classes] = classAttr.split(" ");
+    let tone;
+    if (kind === "pele-edge" || kind === "pele-edge-label") {
+      tone = toneOf(classes, "") ?? edgeTones.get(id2) ?? null;
+    } else {
+      tone = toneOf(classes, labelAt(svg, offset) || id2);
+    }
+    return tone ? `<g class="${classAttr} pele-tone-${tone}" data-id="${id2}"` : tag;
+  });
+}
+
 // page.ts
+var SCRIPT_HASH = createHash("sha256").update(download_default).digest("base64");
 var FENCE_OPEN = /^ {0,3}(`{3,}|~{3,})(.*)$/;
 function extractMermaidBlocks(markdown) {
   const blocks = [];
@@ -23361,11 +23575,16 @@ function extractMermaidBlocks(markdown) {
 function escapeHtml(text) {
   return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
 }
-function renderDiagram(source, index) {
+function fileSlug(text) {
+  return text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "diagram";
+}
+function renderDiagram(source, index, filePrefix) {
   const sourceDetails = `<details><summary>Source</summary><pre>${escapeHtml(source)}</pre></details>`;
   try {
-    const { svg } = d1(source);
-    return `<section class="diagram"><h2>Diagram ${index + 1}</h2><div class="svg">${svg}</div>${sourceDetails}</section>`;
+    const svg = applyTones(d1(source).svg);
+    const filename = `${filePrefix}-diagram-${index + 1}`;
+    const actions = `<div class="actions"><button type="button" data-download="svg">SVG</button><button type="button" data-download="png">PNG</button></div>`;
+    return `<section class="diagram" data-filename="${filename}"><div class="bar"><h2>Diagram ${index + 1}</h2>${actions}</div><div class="svg">${svg}</div>${sourceDetails}</section>`;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return `<section class="diagram error"><h2>Diagram ${index + 1} could not be rendered</h2><pre class="message">${escapeHtml(message)}</pre>${sourceDetails}</section>`;
@@ -23374,34 +23593,30 @@ function renderDiagram(source, index) {
 function buildPage({ blocks, project, createdAt }) {
   const time = createdAt.toLocaleString();
   const title = `${project} · ${time}`;
+  const filePrefix = fileSlug(project);
   return `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:; script-src 'sha256-${SCRIPT_HASH}'">
 <title>${escapeHtml(title)}</title>
 <style>
   :root {
     color-scheme: light dark;
-    --page-bg: #fafafa; --page-fg: #1f1f1f; --page-muted: #6e6e6e; --page-card: #fff;
-    --page-border: #e2e2e2; --page-error: #b3261e;
-    --pele-bg: var(--page-card); --pele-fg: var(--page-fg); --pele-muted: var(--page-muted);
-    --pele-line: #4a4a4a; --pele-surface: #f3f3f3; --pele-surface-alt: #e9e9e9;
-    --pele-border: #c8c8c8; --pele-accent: #2f6fde; --pele-error: var(--page-error);
-    --pele-font: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    --pele-font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+    --page-bg: #f6f8fa; --page-fg: #1f2328; --page-muted: #59636e; --page-card: #ffffff;
+    --page-border: #d0d7de; --page-error: #cf222e; --page-button: #f6f8fa; --page-button-hover: #eaeef2;
+    --page-font: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --page-font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --page-bg: #161616; --page-fg: #e6e6e6; --page-muted: #9a9a9a; --page-card: #1f1f1f;
-      --page-border: #333; --page-error: #f2867e;
-      --pele-line: #b5b5b5; --pele-surface: #2a2a2a; --pele-surface-alt: #323232;
-      --pele-border: #4a4a4a; --pele-accent: #7aa7ff;
+      --page-bg: #010409; --page-fg: #e6edf3; --page-muted: #9198a1; --page-card: #0d1117;
+      --page-border: #3d444d; --page-error: #f85149; --page-button: #212830; --page-button-hover: #2a313c;
     }
   }
   body { margin: 0; padding: 24px 16px 48px; background: var(--page-bg); color: var(--page-fg);
-    font: 14px/1.5 var(--pele-font); }
+    font: 14px/1.5 var(--page-font); }
   main { max-width: 1100px; margin: 0 auto; }
   header { margin-bottom: 20px; }
   header h1 { font-size: 16px; margin: 0; }
@@ -23409,19 +23624,27 @@ function buildPage({ blocks, project, createdAt }) {
   .diagram { background: var(--page-card); border: 1px solid var(--page-border); border-radius: 10px;
     padding: 16px; margin-bottom: 16px; }
   .diagram h2 { font-size: 13px; font-weight: 600; color: var(--page-muted); margin: 0 0 12px; }
+  .bar { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .actions { display: flex; gap: 6px; }
+  button { font: 12px/1 var(--page-font); color: var(--page-fg); background: var(--page-button);
+    border: 1px solid var(--page-border); border-radius: 6px; padding: 5px 10px; cursor: pointer; }
+  button:hover { background: var(--page-button-hover); }
   .svg { display: flex; justify-content: center; overflow-x: auto; }
   .error h2, .message { color: var(--page-error); }
   details { margin-top: 12px; }
   summary { cursor: pointer; color: var(--page-muted); }
-  pre { font: 12px/1.45 var(--pele-font-mono); white-space: pre-wrap; margin: 8px 0 0; }
+  pre { font: 12px/1.45 var(--page-font-mono); white-space: pre-wrap; margin: 8px 0 0; }
 </style>
+<style id="diagram-css">
+${diagram_default}</style>
 </head>
 <body>
 <main>
 <header><h1>${escapeHtml(project)}</h1><p>${escapeHtml(time)} · ${blocks.length} diagram${blocks.length === 1 ? "" : "s"}</p></header>
-${blocks.map(renderDiagram).join(`
+${blocks.map((block, index) => renderDiagram(block, index, filePrefix)).join(`
 `)}
 </main>
+<script>${download_default}</script>
 </body>
 </html>
 `;
