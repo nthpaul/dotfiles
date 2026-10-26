@@ -75,15 +75,12 @@ A working installation is never reinstalled. Run `origin update` only when
 the CLI's own update hint suggests it; if the update fails, re-run the
 installer (step 2).
 
-## Useful commands once working
+## Once it works
 
-- `origin repo clone <org>/<name>` — clone a Cursor-hosted repo using the
-  saved login (later git push/pull relies on the credential helper that
-  `origin auth login` configured).
-- `origin repo list` — list repos the account can access.
-- `origin repo create <name>` — create a repo; the CLI resolves the
-  account's namespace automatically, so no org prefix is needed (namespace
-  failures are in the recovery table above).
+Run `origin agent prompt` before your first other `origin` command in a
+session. It prints the commands and topics for the installed version, so
+trust it over commands remembered from this skill or from `gh`.
+`origin <command> --help` lists every flag.
 
 ## Hard limits
 

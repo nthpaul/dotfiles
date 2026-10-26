@@ -41,7 +41,7 @@ Never change CI checks, workflows, or configs just to make failures pass, and ne
 
 ## Git rules
 - Batch known fixes into one push where possible; every push restarts checks.
-- Integrate the latest remote state of the PR branch before adding new commits. Never force-push.
+- Integrate the latest remote state of the PR branch before adding new commits. Force-push only with `--force-with-lease`, and only on a PR you own.
 - Never merge the PR, enable auto-merge, or mark a draft ready yourself; report readiness and leave PR state changes to the user.
 
 ## Reporting
