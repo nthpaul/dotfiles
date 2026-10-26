@@ -69,7 +69,7 @@ etime_to_min() {
   else
     ss=$1
   fi
-  echo $(( days * 1440 + 10#$hh * 60 + 10#$mm ))
+  echo $(( 10#$days * 1440 + 10#$hh * 60 + 10#$mm ))
 }
 
 rss_mb() {
