@@ -1,8 +1,5 @@
 {
   "model": "opus[1m]",
-  "effortLevel": "high",
-  "skipDangerousModePermissionPrompt": true,
-  "theme": "dark-ansi",
   "hooks": {
     "Stop": [
       {
@@ -16,5 +13,21 @@
         ]
       }
     ]
-  }
+  },
+  "enabledPlugins": {
+    "slack@anthropic-plugin-directory": true,
+    "pstack@cursor-plugins": true
+  },
+  "extraKnownMarketplaces": {
+    "cursor-plugins": {
+      "source": {
+        "source": "github",
+        "repo": "cursor/plugins"
+      },
+      "autoUpdate": true
+    }
+  },
+  "effortLevel": "high",
+  "skipDangerousModePermissionPrompt": true,
+  "theme": "dark-ansi"
 }
