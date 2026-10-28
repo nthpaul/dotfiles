@@ -53,7 +53,13 @@ Scale verification to consequence and uncertainty. Use direct checks for small, 
 - Keep per-file setup under 10 seconds. Start one app and worker per file and build only the records the cases need. Extend existing fixtures and tests before adding another heavy spec. Avoid unnecessary Postgres or Redis round trips and broad regression matrices that duplicate existing coverage. Preserve the real boundaries needed to expose the defect.
 - Give each spec unique keys, such as ZIP codes, phone numbers, and regions. Specs batched into one process share caches, so a shared key fails unrelated specs. When a test fails on branches that did not touch its code, trace the cause instead of re-running.
 - When slimming tests, map unique contracts to the coverage that remains. Replace an important uncovered contract with a small focused test. Check importers before deleting helpers, and update timing manifests and stale coverage claims. During upstream integration, preserve intentional suite deletions and move new assertions into focused tests.
-- CI is not the test runner. Before every push, run the specs you touched locally, unit and integration.
+- CI is not the test runner. Before every push, run locally what CI will run on the touched scope, and push only when all of it passes:
+  - every unit and integration spec the branch adds or changes, with integration specs against local infra (`pnpm infra:start`) and their timings checked against the budget;
+  - the typecheck of each touched project, even without a warm cache (in traba, `pnpm typecheck` in `apps/traba-server-node` is a tsgo run of seconds and is the most common failed check);
+  - the repository's quick checks last (in traba, `./scripts/quick-checks.sh`).
+- If a gate check cannot run locally, fix the local setup first. If it still cannot run, name the skipped check and the reason in the steering thread before pushing. Never push to see what CI says.
+- When CI fails a spec the branch did not touch, run that spec locally on the current head before calling it a flake or someone else's break.
+- Subagents and delegated workers pass the same gate before they push, and report which checks they ran.
 - Measure changed integration specs and their slowest cases before pushing. Follow the repository's runtime budgets and investigate warnings. Without a repository budget, keep each integration spec under 60 seconds and each test under 30 seconds. Reduce avoidable work before shipping. A reviewed exception needs a measured reason and owner. Missing timings or a passing retry do not establish a runtime pass.
 - Measure total test work and the slowest shard separately. Split independent cases only when a spec prevents useful distribution; splitting does not reduce total work. Distinguish local timings and projected savings from measured CI improvements. Preserve useful assertions and race coverage. Do not weaken checks or raise timeouts to hide the cost.
 
@@ -81,7 +87,10 @@ Applies to system prompts, agent and tool instructions, LLM call templates, skil
 - Use `git commit` and `git push` for commits and pushes, and `gh` for GitHub pull requests.
 - A request to commit and push means commit the scoped changes and push the intended branch. Create a new PR only when requested or already part of the active task.
 - Keep each PR atomic and ensure it passes required CI checks. Keep each PR under about 1,000 added lines, excluding generated files and lockfiles; split larger work into a sequence of reviewable PRs. Stacked PRs are optional.
-- Batch fixes into one push per CI round and let every check on that head finish before the next push. Re-run a head only when its run was cancelled or failed for a traced infrastructure cause. Correct a known broken head when necessary, but avoid cosmetic pushes that cancel useful runs.
+- Batch fixes into one push per CI round: collect the failures and bot findings on a head, fix them all, rerun the local gate, then push once. Let every check on that head finish before the next push. Do not push wording, comment, or formatting-only commits while checks run; fold them into the next real fix.
+- Before pushing, if the branch is behind its base, rebase onto it and rerun the local gate. In a stack, the base is the parent PR.
+- Re-run a head only when its run was cancelled or failed for a traced infrastructure cause.
+- Where the repository defers test suites until review bots finish (traba's `unit-tests` and `integration-tests` statuses), fix bot findings before waiting on tests. Add the `run-tests` label only when results are needed now, never in place of the local gate.
 - Work bottom-up when PRs depend on each other. Integrate each merged parent once, then verify the new head.
 
 ## Tool use
