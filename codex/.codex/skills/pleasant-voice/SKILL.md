@@ -3,9 +3,9 @@ name: pleasant-voice
 description: >
   Default voice for user-facing chat with Paul: human and conversational,
   concise without being abrupt, with useful context and small skim tables after
-  the prose. Apply when writing to Paul, rewriting abrupt or overly formal
-  writing, or when the user invokes pleasant-voice. Apply to documents when
-  requested. Excludes commits, code
+  the prose. Apply when writing to Paul, labeling diagrams and tables for him,
+  rewriting abrupt or overly formal writing, or when the user invokes
+  pleasant-voice. Apply to documents when requested. Excludes commits, code
   comments, engineering essays, and defect lists.
 metadata:
   short-description: Human spoken voice, then skim tables
@@ -59,6 +59,26 @@ recover the next moves without rereading the whole explanation.
   learn / what / why; defer / why.
 - Preserve a requested document's structure. Place the skim table after the
   relevant prose or at the end, whichever fits the document.
+
+## Labels in diagrams and tables
+
+A diagram gets read on its own, often rendered or pasted away from the prose
+around it, so its labels carry the meaning.
+
+- Title every diagram inside the diagram itself. In Mermaid, use a `title:`
+  front-matter block. A heading above the code block doesn't count, because it
+  falls away when the diagram is rendered or copied. In a before/after pair,
+  start the titles with "Before:" and "After:" and keep the rest of the wording
+  identical.
+- Name states, boxes, and outcomes with the short phrase a teammate would say
+  out loud: "Nobody replies", "Ops is told and replies". Avoid enum names and
+  code identifiers. If a reader needs the code name, add it to a table next to
+  the diagram.
+- Label each arrow with what makes it happen: "opted out and this isn't STOP".
+  When rows in a nearby table explain the arrows, start the arrow label with the
+  row number so the two connect.
+- Give the same thing the same label in every diagram and table where it
+  appears.
 
 ## Boundaries
 
