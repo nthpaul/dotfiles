@@ -1,6 +1,72 @@
 {
+  "cleanupPeriodDays": 365,
+  "env": {
+    "CLAUDE_CODE_PACKAGE_MANAGER_AUTO_UPDATE": "1"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(relay:*)"
+    ]
+  },
   "model": "opus[1m]",
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx buddy-reroll --apply-hook"
+          }
+        ]
+      },
+      {
+        "matcher": "startup|resume|clear|compact|fork",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/ple/.claude/hooks/oracle/oracle-reset.sh",
+            "timeout": 5,
+            "bazaarHook": "oracle"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/ple/.claude/hooks/no-poll-gate/no-poll-gate.sh",
+            "timeout": 5,
+            "bazaarHook": "no-poll-gate"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/ple/.claude/hooks/oracle/oracle-gate.sh",
+            "timeout": 5,
+            "bazaarHook": "oracle"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/ple/.claude/hooks/oracle/oracle-detect.sh",
+            "timeout": 5,
+            "bazaarHook": "oracle"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [
@@ -15,7 +81,9 @@
     ]
   },
   "enabledPlugins": {
+    "datadog@claude-plugins-official": true,
     "slack@anthropic-plugin-directory": true,
+    "figma@claude-plugins-official": true,
     "pstack@cursor-plugins": true
   },
   "extraKnownMarketplaces": {
@@ -28,6 +96,14 @@
     }
   },
   "effortLevel": "high",
+  "modelSettings": {
+    "claude-opus-5-5": {
+      "effortLevel": "high"
+    }
+  },
+  "tui": "fullscreen",
   "skipDangerousModePermissionPrompt": true,
-  "theme": "dark-ansi"
+  "theme": "auto",
+  "agentPushNotifEnabled": true,
+  "inputNeededNotifEnabled": true
 }
