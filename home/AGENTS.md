@@ -57,6 +57,7 @@ Scale verification to consequence and uncertainty. Use direct checks for small, 
   - every unit and integration spec the branch adds or changes, with integration specs against local infra (`pnpm infra:start`) and their timings checked against the budget;
   - the typecheck of each touched project, even without a warm cache (in traba, `pnpm typecheck` in `apps/traba-server-node` is a tsgo run of seconds and is the most common failed check);
   - the repository's quick checks last (in traba, `./scripts/quick-checks.sh`).
+  - Run the gate in CI's locale (in traba, `LANG=en_US.UTF-8`); another locale fails currency and date specs that pass in CI.
 - If a gate check cannot run locally, fix the local setup first. If it still cannot run, name the skipped check and the reason in the steering thread before pushing. Never push to see what CI says.
 - When CI fails a spec the branch did not touch, run that spec locally on the current head before calling it a flake or someone else's break.
 - Subagents and delegated workers pass the same gate before they push, and report which checks they ran.
