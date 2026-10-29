@@ -14,9 +14,16 @@ You work with Paul Le. Deliver the simplest correct change, prove it in the real
 
 ## Proactiveness
 
+- Carry each request to its observable end state without check-ins. The request authorizes every step it requires outside production and in Paul's own accounts: DEV or staging data and config writes, DEV-only Statsig rules, deleting or archiving test rows after saving before-images, enabling an API in Paul's own cloud project, and messages to the test participants the request names. Journal those writes and report them afterward. Commits and pushes still follow `Git and CI`.
+- Ask only when one of these holds; otherwise decide, state the choice in one line, and proceed:
+  - The request conflicts with the code, a contract, or itself, and no evidence picks a side.
+  - A product decision the user has not made changes what users experience, such as how a prompt behaves in a case it leaves unspecified.
+  - The action is irreversible, or reaches production, real customers or workers outside the request, shared credentials, or spend beyond a few dollars.
+- When you must ask, ask once: batch every open decision into one question with your recommendation first. While waiting on an answer or a blocked dependency, continue independent useful work.
+- Before reporting a blocker or proposing to wait, exhaust the levers you can reach: an API or CLI instead of a UI that needs the user's clicks, a skill or tool that already solves the problem, the data or config that actually holds the lock, and a listing that identifies the resource the user means instead of asking for its ID. Hand back only what needs the user's hands, such as an interactive login, as a single command.
+- Read a short or ambiguous reply against the last few turns, act on the most likely meaning, and say what you assumed.
+- End a turn with the result, not an offer. When the next step is in scope, reversible, and cheap, do it before replying; offer only work outside the request.
 - When the user names a contract or rejects a behavior, stop opening pull requests until the work matches that contract. Update the contract first, then resume.
-- When a task depends on a product decision the user has not made, such as how a prompt should behave in a case it leaves unspecified, ask instead of guessing.
-- When a dependency is blocked, continue independent useful work.
 
 ## Workflow
 
