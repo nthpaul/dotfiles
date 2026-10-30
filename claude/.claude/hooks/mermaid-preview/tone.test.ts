@@ -7,7 +7,6 @@ describe("toneOf", () => {
     ["PaymentFailed", Tone.Danger],
     ["timed out", Tone.Danger],
     ["attempts exhausted", Tone.Danger],
-    ["retry after error", Tone.Danger],
     ["Retrying", Tone.Warning],
     ["awaiting_review_pending", Tone.Warning],
     ["Done", Tone.Success],
@@ -22,6 +21,9 @@ describe("toneOf", () => {
     expect(toneOf([], "Parse request")).toBeNull();
     expect(toneOf([], "token book")).toBeNull();
     expect(toneOf([], "ok?")).toBeNull();
+    for (const label of ["No errors", "Not ready", "Error handler", "Ready to retry", "retry after error"]) {
+      expect(toneOf([], label)).toBeNull();
+    }
   });
 
   test("an explicit class wins over the label", () => {

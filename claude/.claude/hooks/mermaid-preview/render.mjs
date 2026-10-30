@@ -23337,8 +23337,6 @@ svg.pele {
   --pele-accent: #0969da; --pele-error: #cf222e; --pele-radius: 6px;
   --pele-font: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --pele-font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
-  --tone-danger: #cf222e; --tone-warning: #9a6700; --tone-success: #1a7f37;
-  --tone-active: #0969da; --tone-changed: #8250df; --tone-removed: #cf222e; --tone-muted: #6e7781;
   --tone-tint: 12%; --shadow: rgb(31 35 40 / 0.12);
   background: var(--pele-bg);
 }
@@ -23347,8 +23345,6 @@ svg.pele {
     --pele-bg: #0d1117; --pele-fg: #e6edf3; --pele-muted: #9198a1; --pele-line: #8b949e;
     --pele-surface: #161b22; --pele-surface-alt: #1f2630; --pele-border: #3d444d;
     --pele-accent: #4493f8; --pele-error: #f85149;
-    --tone-danger: #f85149; --tone-warning: #d29922; --tone-success: #3fb950;
-    --tone-active: #4493f8; --tone-changed: #a371f7; --tone-removed: #f85149; --tone-muted: #8b949e;
     --tone-tint: 18%; --shadow: rgb(0 0 0 / 0.45);
   }
 }
@@ -23372,6 +23368,8 @@ svg.pele :is(.pele-node, .pele-cluster)[class*="pele-tone-"] > :not(text) {
   stroke: var(--tone);
   stroke-width: 1.5px;
 }
+svg.pele :is(.pele-node, .pele-cluster)[class*="pele-tone-"] > [fill="none"] { fill: none; }
+svg.pele :is(.pele-node, .pele-cluster)[class*="pele-tone-"] > [stroke="none"] { stroke: none; }
 svg.pele :is(.pele-node, .pele-cluster)[class*="pele-tone-"] text {
   fill: color-mix(in srgb, var(--tone) 75%, var(--_fg));
   font-weight: 600;
@@ -23461,81 +23459,136 @@ document.addEventListener("click", (event) => {
 });
 `;
 
-// tone.ts
+// ../../../../home/.local/share/mermaid-theme/tone.mjs
+var Tone = Object.freeze({
+  Danger: "danger",
+  Warning: "warning",
+  Success: "success",
+  Active: "active",
+  Changed: "changed",
+  Removed: "removed",
+  Muted: "muted"
+});
 var CLASS_TONES = {
-  danger: "danger" /* Danger */,
-  fail: "danger" /* Danger */,
-  failed: "danger" /* Danger */,
-  error: "danger" /* Danger */,
-  warning: "warning" /* Warning */,
-  warn: "warning" /* Warning */,
-  pending: "warning" /* Warning */,
-  success: "success" /* Success */,
-  ok: "success" /* Success */,
-  done: "success" /* Success */,
-  active: "active" /* Active */,
-  current: "active" /* Active */,
-  info: "active" /* Active */,
-  changed: "changed" /* Changed */,
-  new: "changed" /* Changed */,
-  added: "changed" /* Changed */,
-  removed: "removed" /* Removed */,
-  deleted: "removed" /* Removed */,
-  muted: "muted" /* Muted */,
-  skipped: "muted" /* Muted */
+  danger: Tone.Danger,
+  fail: Tone.Danger,
+  failed: Tone.Danger,
+  error: Tone.Danger,
+  warning: Tone.Warning,
+  warn: Tone.Warning,
+  pending: Tone.Warning,
+  success: Tone.Success,
+  ok: Tone.Success,
+  done: Tone.Success,
+  active: Tone.Active,
+  current: Tone.Active,
+  info: Tone.Active,
+  changed: Tone.Changed,
+  new: Tone.Changed,
+  added: Tone.Changed,
+  removed: Tone.Removed,
+  deleted: Tone.Removed,
+  muted: Tone.Muted,
+  skipped: Tone.Muted
 };
-var WORD_TONES = [
-  ["danger" /* Danger */, /\b(fail\w*|errors?|errored|reject\w*|denied|deny|crash\w*|abort\w*|timeouts?|timed out|invalid|panic\w*|dead letter\w*|dlq|refus\w*|exhausted)\b/],
-  ["warning" /* Warning */, /\b(retry\w*|retries|pending|waiting|wait|blocked|paused?|stale|on hold|backoff|throttl\w*|degraded|warn\w*|queued)\b/],
-  ["success" /* Success */, /\b(done|success\w*|succeed\w*|complete[ds]?|approved?|passed|pass|ok|merged|resolved|delivered|confirmed|accepted|healthy|ready)\b/],
-  ["active" /* Active */, /\b(running|processing|in progress|active|started|executing|sending|syncing)\b/],
-  ["muted" /* Muted */, /\b(cancel\w*|skip\w*|ignored?|expired|archived|noop|no-op|closed)\b/]
+var STATE_WORDS = [
+  [Tone.Danger, "failed|failure|errors?|errored|rejected|denied|crashed|aborted|timeouts?|timed out|invalid|panicked|refused|exhausted|dead letters?|dlq"],
+  [Tone.Warning, "retry|retrying|retries|pending|waiting|blocked|paused|stale|on hold|backoff|throttled|degraded|warning|queued"],
+  [Tone.Success, "done|success|successful|succeeded|complete|completed|approved|passed|ok|merged|resolved|delivered|confirmed|accepted|healthy|ready"],
+  [Tone.Active, "running|processing|in progress|active|started|executing|sending|syncing"],
+  [Tone.Muted, "cancelled|canceled|skipped|ignored|expired|archived|noop|closed"]
 ];
-var ELEMENT = /<g class="(pele-(?:node|cluster|edge|edge-label)(?: [^"]*)?)" data-id="([^"]*)"/g;
-var TEXT = /<text[^>]*>([\s\S]*?)<\/text>/;
-var NEXT_ELEMENT = '<g class="pele-';
+var STATES = STATE_WORDS.map(([tone, states]) => [tone, new RegExp(`^(?:([a-z][a-z0-9]*(?: [a-z][a-z0-9]*){0,2}) )?(?:${states})$`)]);
+var STATUS_IN_SUBJECT = new RegExp(`\\b(?:${STATE_WORDS.map(([, states]) => states).join("|")})\\b`);
 function words(text) {
-  return text.replace(/<[^>]+>/g, " ").replace(/&amp;/g, "&").replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/[_\-./:]+/g, " ").toLowerCase();
-}
-function labelAt(svg, offset) {
-  const end = svg.indexOf(NEXT_ELEMENT, offset + 1);
-  return TEXT.exec(svg.slice(offset, end === -1 ? undefined : end))?.[1] ?? "";
+  return text.replace(/<[^>]+>/g, " ").replace(/&amp;/g, "&").replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/[_\-./:]+/g, " ").toLowerCase().replace(/\s+/g, " ").replace(/\bno op\b/g, "noop").trim();
 }
 function toneOf(classes, label) {
-  for (const name of classes) {
-    const tone = CLASS_TONES[name.toLowerCase()];
-    if (tone)
-      return tone;
+  const names = classes.map((name) => name.toLowerCase());
+  if (names.includes("neutral"))
+    return null;
+  for (const name of names) {
+    if (Object.hasOwn(CLASS_TONES, name))
+      return CLASS_TONES[name];
   }
   const text = words(label);
-  if (text.trim().endsWith("?"))
+  if (/[?？]/.test(text) || /\b(no|not|never|without|after|before|if|unless|until|while|when|to|then|and|or|but|because)\b/.test(text))
     return null;
-  for (const [tone, pattern] of WORD_TONES)
-    if (pattern.test(text))
-      return tone;
+  for (const [tone, pattern] of STATES) {
+    const match = pattern.exec(text);
+    if (!match)
+      continue;
+    const subject = match[1] ?? "";
+    if (/\b(handle|handles|handling|show|shows|count|counts|log|logs|ignore|ignores|detect|detects|report|reports|return|returns|send|sends|mark|marks)\b/.test(subject))
+      return null;
+    if (STATUS_IN_SUBJECT.test(subject))
+      return null;
+    return tone;
+  }
   return null;
 }
+var ELEMENT = /<g\b(?=[^>]*\sclass="(pele-(?:node|cluster|edge|edge-label)(?: [^"]*)?)")(?=[^>]*\sdata-id="([^"]*)")[^>]*>/g;
+var TEXT = /<text\b[^>]*>([\s\S]*?)<\/text>/g;
+function ownElement(svg, offset) {
+  const from = svg.indexOf(">", offset) + 1;
+  const next = svg.slice(from).search(/<g\b[^>]*\sclass="pele-[^"]*"/);
+  return svg.slice(offset, next === -1 ? undefined : from + next);
+}
+function labelAt(svg, offset) {
+  return [...ownElement(svg, offset).matchAll(TEXT)].map((match) => match[1]).join(" ");
+}
+function hasAuthorColor(svg, offset) {
+  const shapes = /<(?:g|rect|path|circle|ellipse|polygon|polyline|line)\b[^>]*\sstyle="([^"]*)"/g;
+  return [...ownElement(svg, offset).matchAll(shapes)].some((match) => /(?:^|;)\s*(?:stroke|fill)\s*:/.test(match[1]));
+}
 function applyTones(svg) {
-  const edgeTones = new Map;
+  const edges = new Map;
   for (const match of svg.matchAll(ELEMENT)) {
     const [, classAttr, id2] = match;
-    if (!classAttr.startsWith("pele-edge-label"))
+    const [kind, ...classes] = classAttr.split(" ");
+    if (kind !== "pele-edge" && kind !== "pele-edge-label")
       continue;
-    const tone = toneOf([], labelAt(svg, match.index));
-    if (tone)
-      edgeTones.set(id2, tone);
+    const edge = edges.get(id2) ?? { classes: [], label: "", styled: false };
+    edge.classes.push(...classes);
+    if (kind === "pele-edge-label")
+      edge.label = labelAt(svg, match.index);
+    if (kind === "pele-edge" && hasAuthorColor(svg, match.index))
+      edge.styled = true;
+    edges.set(id2, edge);
   }
+  const edgeTones = new Map([...edges].map(([id2, edge]) => [id2, edge.styled ? null : toneOf(edge.classes, edge.label)]));
   return svg.replace(ELEMENT, (tag, classAttr, id2, offset) => {
     const [kind, ...classes] = classAttr.split(" ");
-    let tone;
-    if (kind === "pele-edge" || kind === "pele-edge-label") {
-      tone = toneOf(classes, "") ?? edgeTones.get(id2) ?? null;
-    } else {
-      tone = toneOf(classes, labelAt(svg, offset) || id2);
-    }
-    return tone ? `<g class="${classAttr} pele-tone-${tone}" data-id="${id2}"` : tag;
+    const tone = kind === "pele-edge" || kind === "pele-edge-label" ? edgeTones.get(id2) : hasAuthorColor(svg, offset) ? null : toneOf(classes, labelAt(svg, offset) || id2);
+    return tone ? tag.replace(/\sclass="[^"]*"/, (attribute) => `${attribute.slice(0, -1)} pele-tone-${tone}"`) : tag;
   });
 }
+// ../../../../home/.local/share/mermaid-theme/theme.mjs
+var palettes = {
+  light: {
+    danger: "#cf222e",
+    warning: "#9a6700",
+    success: "#1a7f37",
+    active: "#0969da",
+    changed: "#8250df",
+    removed: "#cf222e",
+    muted: "#6e7781"
+  },
+  dark: {
+    danger: "#f85149",
+    warning: "#d29922",
+    success: "#3fb950",
+    active: "#4493f8",
+    changed: "#a371f7",
+    removed: "#f85149",
+    muted: "#8b949e"
+  }
+};
+function variables(colors) {
+  return Object.entries(colors).map(([tone, color]) => `--tone-${tone}:${color};`).join("");
+}
+var browserPaletteCss = `svg.pele {${variables(palettes.light)}}
+@media (prefers-color-scheme: dark) {svg.pele {${variables(palettes.dark)}}}`;
 
 // page.ts
 var SCRIPT_HASH = createHash("sha256").update(download_default).digest("base64");
@@ -23636,7 +23689,8 @@ function buildPage({ blocks, project, createdAt }) {
   pre { font: 12px/1.45 var(--page-font-mono); white-space: pre-wrap; margin: 8px 0 0; }
 </style>
 <style id="diagram-css">
-${diagram_default}</style>
+${diagram_default}
+${browserPaletteCss}</style>
 </head>
 <body>
 <main>

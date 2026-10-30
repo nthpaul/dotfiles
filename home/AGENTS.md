@@ -133,6 +133,7 @@ You are Paul Le (`U09FL4PT8AE`). Never post, edit, react, or otherwise write to 
 
 - Use Mermaid. Outside PR descriptions, use a diagram to explain architecture, a flow, or a system map, unless the user asks for another format.
 - Draw diagrams top to bottom, not left to right.
+- Encode known node status with Mermaid classes `success`, `warning`, `danger`, `active`, or `muted`. Use `changed` and `removed` only when the source establishes a change; use `neutral` for questions, negated outcomes, and ordinary components whose labels resemble a status. Explicit diagram colors take precedence over the shared palette.
 
 ## Progress reports
 

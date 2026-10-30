@@ -7,8 +7,6 @@ svg.pele {
   --pele-accent: #0969da; --pele-error: #cf222e; --pele-radius: 6px;
   --pele-font: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --pele-font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
-  --tone-danger: #cf222e; --tone-warning: #9a6700; --tone-success: #1a7f37;
-  --tone-active: #0969da; --tone-changed: #8250df; --tone-removed: #cf222e; --tone-muted: #6e7781;
   --tone-tint: 12%; --shadow: rgb(31 35 40 / 0.12);
   background: var(--pele-bg);
 }
@@ -17,8 +15,6 @@ svg.pele {
     --pele-bg: #0d1117; --pele-fg: #e6edf3; --pele-muted: #9198a1; --pele-line: #8b949e;
     --pele-surface: #161b22; --pele-surface-alt: #1f2630; --pele-border: #3d444d;
     --pele-accent: #4493f8; --pele-error: #f85149;
-    --tone-danger: #f85149; --tone-warning: #d29922; --tone-success: #3fb950;
-    --tone-active: #4493f8; --tone-changed: #a371f7; --tone-removed: #f85149; --tone-muted: #8b949e;
     --tone-tint: 18%; --shadow: rgb(0 0 0 / 0.45);
   }
 }
@@ -42,6 +38,8 @@ svg.pele :is(.pele-node, .pele-cluster)[class*="pele-tone-"] > :not(text) {
   stroke: var(--tone);
   stroke-width: 1.5px;
 }
+svg.pele :is(.pele-node, .pele-cluster)[class*="pele-tone-"] > [fill="none"] { fill: none; }
+svg.pele :is(.pele-node, .pele-cluster)[class*="pele-tone-"] > [stroke="none"] { stroke: none; }
 svg.pele :is(.pele-node, .pele-cluster)[class*="pele-tone-"] text {
   fill: color-mix(in srgb, var(--tone) 75%, var(--_fg));
   font-weight: 600;

@@ -2,7 +2,8 @@
 // Implements the Mermaid CLI flags used by Snacks, with no browser process.
 import { existsSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { parseArgs } from 'node:util';
-import { fileURLToPath } from 'node:url';
+import { homedir } from 'node:os';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { render } from 'pele';
 import { Resvg } from '@resvg/resvg-js';
 
@@ -30,17 +31,20 @@ try {
     if (!['dark', 'neutral', 'default'].includes(values.theme)) throw new Error('Use the dark or neutral theme.');
 
     const source = readFileSync(values.input, 'utf8');
+    const { colorizeSvg } = await import(pathToFileURL(`${homedir()}/.local/share/mermaid-theme/theme.mjs`));
     let { svg } = render(source, {
       responsive: false,
       autoDirection: false,
       fontFamily: 'Arial',
       fontFamilyMono: 'Menlo',
     });
+    svg = colorizeSvg(svg, values.theme);
 
     // resvg does not implement CSS variables. Resolve Pele's root aliases and
     // their fallbacks before rasterizing, including diagram-specific variables.
     const rootStyle = svg.match(/^<svg\b[^>]*\bstyle="([^"]*)"/)?.[1] ?? '';
     const variables = Object.fromEntries([...rootStyle.matchAll(/(--[\w-]+):([^;]+)/g)].map((m) => [m[1], m[2]]));
+    variables['--pele-radius'] = '12px';
     if (values.theme === 'dark') {
       Object.assign(variables, {
         '--pele-bg': '#111111',
@@ -68,6 +72,16 @@ try {
         return `${attribute}="${value}"`;
       },
     ));
+
+    // resvg needs the SVG attribute; it ignores CSS corner radii on rectangles.
+    svg = svg.replace(/<rect\b[^>]*>/g, (tag) => {
+      const style = tag.match(/\sstyle="([^"]*)"/)?.[1] ?? '';
+      for (const [, axis, radius] of style.matchAll(/(?:^|;)\s*(rx|ry):\s*(\d+(?:\.\d+)?)(?:px)?\s*(?=;|$)/g)) {
+        tag = tag.replace(new RegExp(`\\s${axis}="[^"]*"`, 'g'), '');
+        tag = tag.replace('<rect', `<rect ${axis}="${radius}"`);
+      }
+      return tag;
+    });
 
     // Load only the fonts used here on macOS; scanning every system font adds
     // seconds to a short-lived renderer. Other platforms use their system fonts.

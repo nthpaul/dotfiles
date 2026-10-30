@@ -3,6 +3,7 @@ import { render } from "pele";
 import diagramCss from "./diagram.css" with { type: "text" };
 import downloadScript from "./download.js" with { type: "text" };
 import { applyTones } from "./tone.ts";
+import { browserPaletteCss } from "../../../../home/.local/share/mermaid-theme/theme.mjs";
 
 // The only script the page may run, allowed by its hash so the CSP still blocks everything else.
 const SCRIPT_HASH = createHash("sha256").update(downloadScript).digest("base64");
@@ -119,7 +120,8 @@ export function buildPage({ blocks, project, createdAt }: PageInput): string {
   pre { font: 12px/1.45 var(--page-font-mono); white-space: pre-wrap; margin: 8px 0 0; }
 </style>
 <style id="diagram-css">
-${diagramCss}</style>
+${diagramCss}
+${browserPaletteCss}</style>
 </head>
 <body>
 <main>
