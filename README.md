@@ -47,6 +47,12 @@ verification scripts and eight complete examples from
 vendored at commit `454a0ef801b6d9b905f08309d094491c7085b3dd` under the MIT license.
 Invoke it as `$anatomy` in Codex or `/anatomy` in Claude Code, Cursor and Grok.
 
+The [pstack bundle](codex/.local/share/cursor-pstack/README.md) is vendored at
+commit `4dd1d05818d19792e7cd6e818f1667f95f7e1dbe` under the MIT license.
+Stowing `codex` installs its 58 skills through relative links, including
+`$pstack:poteto-mode`. The [Codex adapter](codex/.local/share/cursor-pstack/docs/harness/codex.md)
+maps Cursor tool names to Codex and defaults helpers to the parent model.
+
 ## Adding new configs
 
 1. Create a new package folder at repo root.
