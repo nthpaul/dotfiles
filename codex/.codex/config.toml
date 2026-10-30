@@ -271,6 +271,8 @@ source = "https://github.com/DietrichGebert/ponytail.git"
 js_repl = false
 
 [desktop]
+enabled-reasoning-efforts = ["low", "medium", "high", "xhigh", "max", "ultra"]
+show-ultra-in-model-picker-slider = true
 followUpQueueMode = "queue"
 dock-icon-preference = "app-default"
 appearanceLightCodeThemeId = "linear"
