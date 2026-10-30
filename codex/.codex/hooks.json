@@ -1,0 +1,17 @@
+{
+  "description": "Render Mermaid diagrams from Codex replies in a background browser tab using Pele.",
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME/.local/bin/codex-pele\" hook",
+            "timeout": 10,
+            "async": true
+          }
+        ]
+      }
+    ]
+  }
+}

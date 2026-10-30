@@ -251,6 +251,9 @@ enabled = true
 theme = "dark-neon"
 screen_reader_detection_done = true
 
+[tui.rendering]
+mermaid = false
+
 [tui.model_availability_nux]
 gpt-6-astra = 4
 "gpt-6.1-sol" = 4
@@ -326,6 +329,11 @@ NODE_REPL_TRUSTED_BROWSER_CLIENT_SHA256S = "028a14b6eaa6d98dac2aae00764345ab9f24
 [[skills.config]]
 path = "/Users/ple/.dotfiles/codex/.codex/skills/hatch-pet/SKILL.md"
 enabled = false
+
+[hooks.state]
+
+[hooks.state."/Users/ple/.codex/hooks.json:stop:0:0"]
+trusted_hash = "sha256:f994c0be2c0b4ceabd7d758a2423325dfca2e9372de4b6f7e6e2d25625109cf4"
 
 [mcp_servers.grok_bridge]
 command = "/Users/ple/.local/bin/grok-bridge"

@@ -1,0 +1,29 @@
+#!/usr/bin/env python3
+"""Render Mermaid from Codex Stop events in a background browser tab."""
+import json
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+
+if sys.argv[1:] not in ([], ['hook']):
+    raise SystemExit('Usage: codex-pele [hook] < stop-event.json')
+
+environment = os.environ.copy()
+environment['CLAUDE_CONFIG_DIR'] = environment.get('CODEX_HOME') or str(Path.home() / '.codex')
+renderer = Path.home() / '.claude' / 'hooks' / 'mermaid-preview' / 'render.mjs'
+runtime = next((path for path in (
+    shutil.which('bun'), str(Path.home() / '.bun/bin/bun'), shutil.which('node'),
+    '/opt/homebrew/bin/node', '/usr/local/bin/node',
+) if path and os.access(path, os.X_OK)), None)
+try:
+    if environment.get('MERMAID_PREVIEW') != '0':
+        if runtime is None:
+            raise OSError('Bun or Node is required to render diagrams.')
+        # Codex runs this hook asynchronously; keep its renderer attached until
+        # the page is written rather than starting a second background process.
+        subprocess.run([runtime, str(renderer)], env=environment, check=True)
+    print('{}')
+except (OSError, subprocess.SubprocessError) as error:
+    print(json.dumps({'systemMessage': f'Pele browser preview could not start: {error}'}))
