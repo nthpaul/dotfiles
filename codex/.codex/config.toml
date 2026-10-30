@@ -1,5 +1,5 @@
 model = "gpt-6.1-sol"
-model_reasoning_effort = "ultra"
+model_reasoning_effort = "xhigh"
 tool_output_token_limit = 25000
 web_search = "live"
 approval_policy = "never"
@@ -8,13 +8,14 @@ sandbox_mode = "danger-full-access"
 # leave room for native compaction near the 272-273k context window
 # formula: 273000 - (tool_output_token_limit +15000)
 # with tool_output_token_limit = 273000 - (25000 + 15000) = 233000
-model_auto_compact_token_limit = 233000
+# model_auto_compact_token_limit = 233000
 personality = "pragmatic"
 approvals_reviewer = "user"
 plan_mode_reasoning_effort = "high"
 
 notify = ["/Users/ple/.codex/computer-use/Codex Computer Use.app/Contents/SharedSupport/SkyComputerUseClient.app/Contents/MacOS/SkyComputerUseClient", "turn-ended"]
 service_tier = "default"
+model_verbosity = "high"
 
 [projects."/Users/ple/projects/traba/traba-server-node"]
 trust_level = "trusted"
@@ -186,8 +187,8 @@ NODE_REPL_INSTRUCTIONS_USE_CASE_BROWSER = ""
 NODE_REPL_INSTRUCTIONS_USE_CASE_CHROME = ""
 NODE_REPL_INSTRUCTIONS_USE_CASE_COMPUTER_USE = ""
 BROWSER_USE_CODEX_APP_BUILD_FLAVOR = "prod"
-BROWSER_USE_CODEX_APP_VERSION = "26.1023.51421"
-NODE_REPL_TRUSTED_SERVICES = '{"browser":"/Users/ple/.codex/plugins/cache/openai-bundled/browser/26.1023.51421/scripts/browser-service.mjs","sky":"@oai/sky/service"}'
+BROWSER_USE_CODEX_APP_VERSION = "26.1027.30824"
+NODE_REPL_TRUSTED_SERVICES = '{"browser":"/Users/ple/.codex/plugins/cache/openai-bundled/browser/26.1027.30824/scripts/browser-service.mjs","sky":"@oai/sky/service"}'
 SKY_CUA_SERVICE_PATH = "/Users/ple/.codex/computer-use/Codex Computer Use.app"
 CODEX_CLI_PATH = "/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex"
 
@@ -247,7 +248,7 @@ enabled = true
 enabled = true
 
 [tui]
-theme = "gruvbox-light"
+theme = "dark-neon"
 screen_reader_detection_done = true
 
 [tui.model_availability_nux]
@@ -281,6 +282,7 @@ usePointerCursors = false
 show-context-window-usage = true
 keepRemoteControlAwakeWhilePluggedIn = true
 avatar-overlay-pet-visible = false
+appearanceDarkCodeThemeId = "linear"
 
 [desktop.appearanceLightChromeTheme]
 accent = "#5e6ad2"
@@ -298,6 +300,23 @@ ui = "Inter"
 diffAdded = "#52a450"
 diffRemoved = "#c94446"
 skill = "#8160d8"
+
+[desktop.appearanceDarkChromeTheme]
+accent = "#606acc"
+accentSource = "custom"
+contrast = 60
+ink = "#e3e4e6"
+opaqueWindows = true
+surface = "#0f0f11"
+
+[desktop.appearanceDarkChromeTheme.fonts]
+code = '"SFMono-Medium"'
+ui = "Inter"
+
+[desktop.appearanceDarkChromeTheme.semanticColors]
+diffAdded = "#69c967"
+diffRemoved = "#ff7e78"
+skill = "#c2a1ff"
 
 [shell_environment_policy.set]
 NODE_REPL_TRUSTED_BROWSER_CLIENT_SHA256S = "028a14b6eaa6d98dac2aae00764345ab9f244801ed8493d42b9af3be5575006e,f204d340535055781952b10ed396de20b842f00a19e430852f7e121ad1ce91f6"

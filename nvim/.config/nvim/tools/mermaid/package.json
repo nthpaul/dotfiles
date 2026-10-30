@@ -1,0 +1,12 @@
+{
+  "name": "nvim-pele-renderer",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@resvg/resvg-js": "2.6.2",
+    "pele": "1.12.0"
+  }
+}

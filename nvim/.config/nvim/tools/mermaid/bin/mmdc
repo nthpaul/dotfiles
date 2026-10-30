@@ -1,0 +1,100 @@
+#!/usr/bin/env node
+// Implements the Mermaid CLI flags used by Snacks, with no browser process.
+import { existsSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { parseArgs } from 'node:util';
+import { fileURLToPath } from 'node:url';
+import { render } from 'pele';
+import { Resvg } from '@resvg/resvg-js';
+
+const usage = 'Usage: mmdc -i input.mmd -o output.png [-t dark|neutral] [-b transparent] [-s 1]';
+
+try {
+  const { values } = parseArgs({
+    options: {
+      input: { type: 'string', short: 'i' },
+      output: { type: 'string', short: 'o' },
+      theme: { type: 'string', short: 't', default: 'dark' },
+      backgroundColor: { type: 'string', short: 'b', default: 'transparent' },
+      scale: { type: 'string', short: 's', default: '1' },
+      version: { type: 'boolean', short: 'V' },
+      help: { type: 'boolean', short: 'h' },
+    },
+  });
+  if (values.help || values.version) {
+    const pkg = JSON.parse(readFileSync(new URL('../node_modules/pele/package.json', import.meta.url)));
+    console.log(values.help ? usage : `Pele ${pkg.version} (Snacks adapter)`);
+  } else {
+    if (!values.input || !values.output) throw new Error(usage);
+    const scale = Number(values.scale);
+    if (!Number.isFinite(scale) || scale <= 0) throw new Error('Scale must be a positive number.');
+    if (!['dark', 'neutral', 'default'].includes(values.theme)) throw new Error('Use the dark or neutral theme.');
+
+    const source = readFileSync(values.input, 'utf8');
+    let { svg } = render(source, {
+      responsive: false,
+      autoDirection: false,
+      fontFamily: 'Arial',
+      fontFamilyMono: 'Menlo',
+    });
+
+    // resvg does not implement CSS variables. Resolve Pele's root aliases and
+    // their fallbacks before rasterizing, including diagram-specific variables.
+    const rootStyle = svg.match(/^<svg\b[^>]*\bstyle="([^"]*)"/)?.[1] ?? '';
+    const variables = Object.fromEntries([...rootStyle.matchAll(/(--[\w-]+):([^;]+)/g)].map((m) => [m[1], m[2]]));
+    if (values.theme === 'dark') {
+      Object.assign(variables, {
+        '--pele-bg': '#111111',
+        '--pele-fg': '#e0e0e0',
+        '--pele-muted': '#a0a0a0',
+        '--pele-line': '#b8b8b8',
+        '--pele-surface': '#1d1d1d',
+        '--pele-surface-alt': '#292929',
+        '--pele-border': '#777777',
+        '--pele-accent': '#8ab4f8',
+      });
+    }
+    // Only presentation attributes contain CSS; labels may literally say var(...).
+    svg = svg.replace(/<[^>]+>/g, (tag) => tag.replace(
+      /(\s(?:style|fill|stroke|color|font-family|font-weight|font-size|rx|ry))="([^"]*)"/g,
+      (_, attribute, value) => {
+        for (let depth = 0; depth < 10 && value.includes('var('); depth++) {
+          value = value.replace(/var\((--[\w-]+)(?:,([^()]*))?\)/g, (_, name, fallback) => {
+            const resolved = variables[name] ?? fallback;
+            if (resolved === undefined) throw new Error(`Unresolved SVG variable: ${name}`);
+            return resolved;
+          });
+        }
+        if (value.includes('var(')) throw new Error('Could not resolve SVG theme variables.');
+        return `${attribute}="${value}"`;
+      },
+    ));
+
+    // Load only the fonts used here on macOS; scanning every system font adds
+    // seconds to a short-lived renderer. Other platforms use their system fonts.
+    const macFonts = [
+      '/System/Library/Fonts/Supplemental/Arial.ttf',
+      '/System/Library/Fonts/Supplemental/Arial Bold.ttf',
+      '/System/Library/Fonts/Supplemental/Arial Italic.ttf',
+      '/System/Library/Fonts/Supplemental/Arial Bold Italic.ttf',
+      '/System/Library/Fonts/Supplemental/Arial Unicode.ttf',
+      '/System/Library/Fonts/Menlo.ttc',
+    ].filter(existsSync);
+    const png = new Resvg(svg, {
+      fitTo: { mode: 'zoom', value: scale },
+      background: values.backgroundColor === 'transparent' ? undefined : values.backgroundColor,
+      font: {
+        fontFiles: [...macFonts, fileURLToPath(new URL('../fonts/NotoEmoji.ttf', import.meta.url))],
+        loadSystemFonts: macFonts.length === 0,
+        defaultFontFamily: 'Arial',
+        sansSerifFamily: 'Arial',
+        monospaceFamily: 'Menlo',
+      },
+    }).render().asPng();
+    const temporary = `${values.output}.${process.pid}.tmp`;
+    writeFileSync(temporary, png);
+    renameSync(temporary, values.output);
+  }
+} catch (error) {
+  console.error(`Pele: ${error.message}`);
+  process.exitCode = 1;
+}
