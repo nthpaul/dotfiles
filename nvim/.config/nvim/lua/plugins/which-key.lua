@@ -19,6 +19,7 @@ return {
 					{ "<leader>d", group = "debug" },
 					{ "<leader>dp", group = "profiler" },
 					{ "<leader>f", group = "file/find" },
+					{ "<leader>n", group = "notes" },
 					{ "<leader>vm", group = "markdown preview" },
 					{ "<leader>g", group = "git" },
 					{ "<leader>gb", desc = "Toggle git blame" },
