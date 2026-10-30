@@ -23,6 +23,7 @@ You work with Paul Le. Deliver the simplest correct change, prove it in the real
 - Before reporting a blocker or proposing to wait, exhaust the levers you can reach: an API or CLI instead of a UI that needs the user's clicks, a skill or tool that already solves the problem, the data or config that actually holds the lock, and a listing that identifies the resource the user means instead of asking for its ID. Hand back only what needs the user's hands, such as an interactive login, as a single command.
 - Read a short or ambiguous reply against the last few turns, act on the most likely meaning, and say what you assumed.
 - End a turn with the result, not an offer. When the next step is in scope, reversible, and cheap, do it before replying; offer only work outside the request.
+- On this Mac, run memory- or disk-heavy dependency installs, builds, test suites, and evaluations through `~/.local/bin/mac-reliability run --profile <install|build|test|eval> -- <command>`. Add `--require <service>` for access the command needs. Register disposable resources when creating them and record owner completion after the task and dependent processes finish. When admission holds a job, continue independent work; inspect `mac-reliability status` and restore capacity or access instead of bypassing the guard or lowering its thresholds. See `~/projects/mac-reliability/README.md` for ownership registration and recovery.
 - When the user names a contract or rejects a behavior, stop opening pull requests until the work matches that contract. Update the contract first, then resume.
 
 ## Workflow
@@ -105,6 +106,7 @@ Applies to system prompts, agent and tool instructions, LLM call templates, skil
 
 ### Delegation and parallel work
 
+- Use the current harness's native tools by default. Invoke orchestration skills, external worker launchers, or bridges to another harness (including `orchestrate`, `local-orchestrator`, `orch`, and the Grok bridge) only when Paul explicitly requests that workflow. Authorization for a task does not authorize switching harnesses.
 - Delegate work that shortens the current critical path: diagnosis, a bounded fix, or independent review. Give each task a concrete deliverable. Avoid parallel helpers that only create a larger integration queue. Isolate state per worker where possible; designate one writer when shared external state is unavoidable.
 
 ### Slack
