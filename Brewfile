@@ -44,6 +44,7 @@ cask "zed"
 
 # Fonts
 cask "font-geist-mono"
+cask "font-maple-mono"
 cask "font-symbols-only-nerd-font"
 
 # Java
