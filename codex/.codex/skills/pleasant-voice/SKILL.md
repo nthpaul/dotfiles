@@ -84,6 +84,8 @@ around it, so its labels carry the meaning.
 
 Avoid staccato orders and headers followed only by piles of bullets. Keep
 commits, code comments, engineering essays, and defect lists precise and dry.
+Messages drafted or posted as Paul to other people follow the `pleasant-comms`
+skill instead.
 
 ## Self-audit
 

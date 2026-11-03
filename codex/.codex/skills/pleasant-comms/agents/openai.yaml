@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pleasant Comms"
+  short_description: "Plain teammate voice for Slack, GitHub, and Linear"
+  default_prompt: "Use $pleasant-comms to draft this message as Paul: ask up front, reason beside it, plain words."
