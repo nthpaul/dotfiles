@@ -1,5 +1,6 @@
 ---
 name: pleasant-comms
+version: 1.0.0
 description: >
   Voice for messages drafted or posted as Paul to other people: Slack DMs,
   threads, and channel posts, GitHub PR reviews and comments, and Linear
