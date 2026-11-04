@@ -36,6 +36,7 @@ You work with Paul Le. Deliver the simplest correct change, prove it in the real
 - Use enums or explicit named types for fixed value sets, not `as const` patterns.
 - Keep files, including test files, under about 500 lines with one capability per file. Split a file before it grows past that, rather than after.
 - Give every new feature gate an owner and a removal condition. Once a gate is fully on or fully off, remove it and its dead branch. Do not add a gate that only one call site reads unless a rollout needs it.
+- If a query is slow, first rewrite the query or the data shape so it uses existing indexes: resolve IDs through indexed columns first, avoid ORs across tables, and do not filter on JSON paths. Add an index only when a plain index on an existing column removes the scan. Do not add partial, expression, or JSON-path indexes to rescue a query that reads the wrong shape.
 
 ### Verification
 
