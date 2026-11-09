@@ -5,15 +5,16 @@ description: >-
   Cursor SDK - TypeScript (`@cursor/sdk`) or Python (`cursor-sdk` /
   `cursor_sdk`). Use when the user mentions integrating, installing, or writing
   code against the Cursor SDK; says `Agent.create`, `Agent.prompt`,
-  `Agent.resume`, `agent.send`, `run.stream`, `run.messages`,
-  `CursorAgentError`, `@cursor/sdk`, `cursor-sdk`, or `cursor_sdk`; asks to run
-  Cursor agents programmatically from a script, CI/CD pipeline, GitHub Action,
-  backend service, or other code outside the Cursor IDE; wants to pick between
-  local and cloud runtime, configure MCP servers for an SDK agent, or handle
-  streaming, cancellation, or errors; or is wiring Cursor into an automation,
-  bot, or REST `/v1/agents` migration. Use eagerly rather than answering from
-  memory; the SDK surface evolves and this skill is the source of truth for the
-  external packages.
+  `Agent.resume`, `agent.send`, `agent.summarize`, `run.stream`, `run.messages`,
+  `SDKSummaryMessage`, `CursorAgentError`, `@cursor/sdk`, `cursor-sdk`, or
+  `cursor_sdk`; asks to run Cursor agents programmatically from a script, CI/CD
+  pipeline, GitHub Action, backend service, or other code outside the Cursor
+  IDE; wants to pick between local and cloud runtime, configure MCP servers for
+  an SDK agent, handle streaming, cancellation, or errors, or keep a long
+  conversation within the context window; or is wiring Cursor into an
+  automation, bot, or REST `/v1/agents` migration. Use eagerly rather than
+  answering from memory; the SDK surface evolves and this skill is the source of
+  truth for the external packages.
 ---
 # Cursor SDK
 
@@ -129,7 +130,7 @@ await run2.wait();
 
 ```python
 import os
-from cursor_sdk import Agent, LocalAgentOptions
+from cursor_sdk import Agent, LocalAgentOptions, SDKAssistantMessage, TextBlock
 
 with Agent.create(
     model="composer-2.5",
@@ -138,9 +139,9 @@ with Agent.create(
 ) as agent:
     run = agent.send("Find the bug in src/auth.py")
     for message in run.messages():
-        if message.type == "assistant":
+        if isinstance(message, SDKAssistantMessage):
             for block in message.message.content:
-                if block.type == "text":
+                if isinstance(block, TextBlock):
                     print(block.text, end="")
     run.wait()
 
@@ -180,6 +181,58 @@ with Agent.resume(
 ```
 
 **Inline MCP servers are not persisted across resume** - they often carry secrets and live in memory only. Pass them again on the resume call in either language.
+
+## Long Conversations: `agent.summarize()`
+
+Agents summarize on their own when a conversation nears the model's context limit. To free context sooner, for example between phases of a long session, call `agent.summarize()` on a local agent. It's the same action as `/summarize` in the Cursor CLI: the conversation is condensed into a summary, and later sends give the model the summary instead of the full transcript. It returns a `Run` like `send()` does, so you can stream it, `wait()` for it, or `cancel()` it.
+
+**TypeScript:**
+
+```typescript
+const run = await agent.summarize();
+const result = await run.wait();
+if (result.status === "finished") console.log(result.result); // the summary text
+```
+
+**Python** (`cursor-sdk` releases after 1.3.1; `await agent.summarize()` on `AsyncAgent`):
+
+```python
+run = agent.summarize()
+result = run.wait()
+if result.status == "finished":
+    print(result.result)  # the summary text
+```
+
+- **Local agents only.** It throws `ConfigurationError` on cloud agents, including self-hosted pools and machines, and on a local agent with no saved conversation yet (nothing has been sent). Python raises `ConfigurationError` for cloud agents and `BadRequestError` for the missing conversation. Cloud agents only summarize automatically.
+- **One run at a time.** Like `send()`, it throws while another run on the agent is active. Wait for that run or cancel it first.
+- **All or nothing.** If you cancel mid-summary, or the run ends with status `error`, later sends still see the full conversation.
+- **Fixed prompt.** It takes no arguments, so you can't steer what the summary keeps.
+
+### Summary messages in streams
+
+Every summarization streams `summary` messages (`SDKSummaryMessage`), whether it came from `summarize()` or happened automatically inside a `send()` run, on local or cloud agents, in both SDKs: one with `status: "running"` when it starts, then one with `"completed"` or `"error"`. `"error"` leaves the conversation unchanged. `fallback: true` on a completed message means the model couldn't write the summary, so the agent saved a trimmed copy of the transcript instead. Context is still freed, but a summarize run's `result` then holds that copy rather than a summary, so check for it before showing `result` to a user.
+
+**TypeScript:**
+
+```typescript
+for await (const event of run.stream()) {
+  if (event.type === "summary") {
+    console.log("summary: " + event.status + (event.fallback === true ? " (fallback)" : ""));
+  }
+}
+```
+
+**Python:**
+
+```python
+from cursor_sdk import SDKSummaryMessage
+
+for message in run.messages():
+    if isinstance(message, SDKSummaryMessage):
+        print("summary: " + message.status + (" (fallback)" if message.fallback else ""))
+```
+
+A TypeScript `switch` that's exhaustive over `SDKMessage["type"]` needs a `"summary"` case. More generally, skip message types you don't handle instead of throwing on them: minor releases can add new ones.
 
 ## Top Five Traps
 
@@ -256,7 +309,7 @@ The SDK holds handles to local executors, persisted run stores, and HTTP clients
 The stream is how you observe; `wait()` is how you get the terminal result. You can skip streaming, but skipping `wait()` means you can't tell whether the run finished, errored, or was cancelled, and you'll leak the run's internal watchers. Always call `wait()`. If you don't want live output, call `wait()` alone.
 
 - **TypeScript:** `run.stream()` is an async iterable of `SDKMessage`. `await run.wait()` returns `RunResult`.
-- **Python:** `run.messages()` yields typed SDK messages; `run.events()` yields lower-level envelopes. `run.wait()` returns `RunResult`. Async equivalents are `async for ...` and `await run.wait()`. Convenience helpers: `run.text()` blocks on `wait()` and returns the final assistant text; `run.iter_text()` streams text-only chunks. `run.stream()` is an alias for `run.messages()`.
+- **Python:** `run.messages()` yields typed SDK messages, and plain dicts for message types this SDK version can't parse, so match with `isinstance` rather than reading `.type`; `run.events()` yields lower-level envelopes. `run.wait()` returns `RunResult`. Async equivalents are `async for ...` and `await run.wait()`. Convenience helpers: `run.text()` blocks on `wait()` and returns the final assistant text; `run.iter_text()` streams text-only chunks. `run.stream()` is an alias for `run.messages()`.
 
 ### 5. Not every `run` operation is supported on every runtime
 

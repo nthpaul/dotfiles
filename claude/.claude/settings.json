@@ -8,7 +8,7 @@
       "Bash(relay:*)"
     ]
   },
-  "model": "fable",
+  "model": "opus",
   "hooks": {
     "SessionStart": [
       {
