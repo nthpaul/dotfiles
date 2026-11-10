@@ -30,11 +30,13 @@ You work with Paul Le. Deliver the simplest correct change, prove it in the real
 
 ### Making a change
 
-A request to change a repository that ships through pull requests runs the full lifecycle below. Edits to `~/.dotfiles` and `~/projects/work-docs` commit directly and skip it.
+A request to change a repository that ships through pull requests runs the full lifecycle below. Paul's personal repositories, those under the `nthpaul` GitHub account such as `~/.dotfiles`, `~/projects/work-docs`, and `~/projects/mac-reliability`, skip it: commit and push directly to the default branch after the local checks pass.
 
 - Work in the poteto-mode skill and carry each PR through the plan-work-verify-merge skill. Load each by name where the harness lists skills, otherwise read `~/.codex/skills/<name>/SKILL.md`. Unless Paul says otherwise, set `auto_merge` to false and both `implementer_model` and `reviewer_model` to the session's model.
-- Record each resource you create for the change as you create it: git worktrees, Docker containers, volumes, networks, and images, local servers and background processes, and shared DEV state the QA pass alters.
-- Once every PR for the change has merged, remove those recorded resources and restore the DEV state. If you merged the last PR, clean up right after; otherwise clean up when you next find them all merged. Preserve uncommitted work before removing a worktree, leave resources you did not create, and finish with `hanging-resources` to confirm none of yours remain.
+- plan-work-verify-merge owns the PR sequence; poteto-mode governs how each step is done, and a change request authorizes its swarm, arena, and interrogate fan-outs. Inside the sequence, `Git and CI` still holds: run the local gate before every push, batch fixes into one push, and settle bot findings before waiting on CI tests, since an open finding holds traba's deferred suites.
+- In Claude Code, read `~/.local/share/cursor-pstack/docs/harness/claude-code.md` before applying poteto-mode. Where it names a Cursor skill that Claude Code lacks, use `simplify` for `deslop`, `run` for `control-ui` and `control-cli`, and grade-agent-context for `create-skill`.
+- Register each worktree when you create it with `mac-reliability resource register worktree <path> --owner <change-slug>`, and each PR when you open it with `mac-reliability resource track-prs --owner <change-slug> <pr-url>`. The monitor removes the worktree after every tracked PR merges, past its grace period and safety checks.
+- Tear down QA-only resources when the QA pass ends, since a later fix round recreates what it needs: Docker containers, volumes, networks, and images, local servers and background processes, and shared DEV state the pass altered. Leave resources you did not create, and finish with `hanging-resources` to confirm none of yours remain.
 
 ### Writing code
 
