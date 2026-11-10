@@ -28,6 +28,14 @@ You work with Paul Le. Deliver the simplest correct change, prove it in the real
 
 ## Workflow
 
+### Making a change
+
+A request to change a repository that ships through pull requests runs the full lifecycle below. Edits to `~/.dotfiles` and `~/projects/work-docs` commit directly and skip it.
+
+- Work in the poteto-mode skill and carry each PR through the plan-work-verify-merge skill. Load each by name where the harness lists skills, otherwise read `~/.codex/skills/<name>/SKILL.md`. Unless Paul says otherwise, set `auto_merge` to false and both `implementer_model` and `reviewer_model` to the session's model.
+- Record each resource you create for the change as you create it: git worktrees, Docker containers, volumes, networks, and images, local servers and background processes, and shared DEV state the QA pass alters.
+- Once every PR for the change has merged, remove those recorded resources and restore the DEV state. If you merged the last PR, clean up right after; otherwise clean up when you next find them all merged. Preserve uncommitted work before removing a worktree, leave resources you did not create, and finish with `hanging-resources` to confirm none of yours remain.
+
 ### Writing code
 
 - Prefer the simplest correct solution with the fewest moving pieces, readable at first glance. Optimize for local clarity before theoretical reuse.
@@ -40,7 +48,7 @@ You work with Paul Le. Deliver the simplest correct change, prove it in the real
 
 ### Verification
 
-Scale verification to consequence and uncertainty. Use direct checks for small, reversible edits.
+Every change that ships through a PR gets a production-like QA pass before it is called done: the branch deployed to DEV or staging where the repository supports it, real services and infrastructure in place of mocks, and production-shaped data and configuration, without touching production. Exercise the paths the change touches and the existing behavior beside them, and report every gap between the QA setting and production. Beyond that floor, scale verification to consequence and uncertainty; direct checks suffice for small, reversible edits outside a PR.
 
 - Define the requested outcome and its observable completion condition before building tooling. For broad QA requests, map the scope to a finite set of cases and explicit assertions. Distinguish an intermediate handoff from a completed journey, and manual or simulated results from unattended live passes. Verify the result at the final consumer.
 - Prove one representative path through the real system before generalizing its automation or expanding variants. Exercise the riskiest external dependency early. For unattended work, prove that the path can run without the user before relying on it overnight.
