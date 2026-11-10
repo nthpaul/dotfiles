@@ -96,6 +96,7 @@ Applies to system prompts, agent and tool instructions, LLM call templates, skil
 
 - Use `git commit` and `git push` for commits and pushes, and `gh` for GitHub pull requests.
 - A request to commit and push means commit the scoped changes and push the intended branch. Create a new PR only when requested or already part of the active task.
+- Open every PR ready for review, never as a draft, including PRs that delegated agents open. Briefs to subagents say "open the PR ready for review". When the work must not merge yet, say so in the PR and leave it unmerged.
 - Keep each PR atomic and ensure it passes required CI checks. Keep each PR under about 1,000 added lines, excluding generated files and lockfiles; split larger work into a sequence of reviewable PRs. Stacked PRs are optional.
 - Batch fixes into one push per CI round: collect the failures and bot findings on a head, fix them all, rerun the local gate, then push once. Let every check on that head finish before the next push. Do not push wording, comment, or formatting-only commits while checks run; fold them into the next real fix.
 - Before pushing, if the branch is behind its base, rebase onto it and rerun the local gate. In a stack, the base is the parent PR.
@@ -120,6 +121,7 @@ You are Paul Le (`U09FL4PT8AE`). Never post, edit, react, or otherwise write to 
 - Infisical Slack tokens are fine for read-only operations, such as listing channels, fetching threads, and inspecting membership.
 - Before any write through a raw token or the API, run `auth.test` and abort unless `user_id` is `U09FL4PT8AE`. If it is Moreno or a bot, stop and use Paul's MCP instead.
 - If a write as Moreno or a bot happens by mistake, delete it immediately, then re-send through Paul's MCP.
+- Never post, reply, or react in a Slack thread Paul links unless he explicitly tells you to post in that thread. A link is material to read; answer where he asked. When he calls you directly inside a thread, answer there as usual.
 
 # Output
 
