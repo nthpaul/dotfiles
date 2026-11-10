@@ -1,4 +1,4 @@
-model = "gpt-6.1-sol"
+model = "gpt-6.2-sol"
 model_reasoning_effort = "ultra"
 tool_output_token_limit = 25000
 web_search = "live"
@@ -187,8 +187,8 @@ NODE_REPL_INSTRUCTIONS_USE_CASE_BROWSER = ""
 NODE_REPL_INSTRUCTIONS_USE_CASE_CHROME = ""
 NODE_REPL_INSTRUCTIONS_USE_CASE_COMPUTER_USE = ""
 BROWSER_USE_CODEX_APP_BUILD_FLAVOR = "prod"
-BROWSER_USE_CODEX_APP_VERSION = "26.1027.30824"
-NODE_REPL_TRUSTED_SERVICES = '{"browser":"/Users/ple/.codex/plugins/cache/openai-bundled/browser/26.1027.30824/scripts/browser-service.mjs","sky":"@oai/sky/service"}'
+BROWSER_USE_CODEX_APP_VERSION = "26.1103.60933"
+NODE_REPL_TRUSTED_SERVICES = '{"browser":"/Users/ple/.codex/plugins/cache/openai-bundled/browser/26.1103.60933/scripts/browser-service.mjs","sky":"@oai/sky/service"}'
 SKY_CUA_SERVICE_PATH = "/Users/ple/.codex/computer-use/Codex Computer Use.app"
 CODEX_CLI_PATH = "/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex"
 
@@ -276,7 +276,6 @@ js_repl = false
 [desktop]
 enabled-reasoning-efforts = ["low", "medium", "high", "xhigh", "max", "ultra"]
 show-ultra-in-model-picker-slider = true
-followUpQueueMode = "queue"
 dock-icon-preference = "app-default"
 appearanceLightCodeThemeId = "linear"
 selected-avatar-id = "null-signal"
@@ -288,6 +287,7 @@ show-context-window-usage = true
 keepRemoteControlAwakeWhilePluggedIn = true
 avatar-overlay-pet-visible = false
 appearanceDarkCodeThemeId = "linear"
+migratedFollowUpQueueToSteer = true
 
 [desktop.appearanceLightChromeTheme]
 accent = "#5e6ad2"
