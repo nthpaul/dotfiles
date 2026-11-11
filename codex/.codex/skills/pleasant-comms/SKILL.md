@@ -42,6 +42,11 @@ Slack identity and token rules live in `~/AGENTS.md` under `Tool use` → `Slack
 
 ## Shape
 
+- Write for a reader with no time to read and no context on the problem. Say
+  the problem in one plain line, then the asks, then stop. Move evidence, rule
+  names, raw counts, and before/after detail into a thread reply, the PR, or a
+  diagram, and cut whatever the reader doesn't need to answer. A channel post
+  fits on a phone screen without scrolling.
 - Lead with the ask or the news in the first line. A follow-up opens with what
   changed since the last message, then the asks that remain.
 - Attach the reason to each ask, so the reader can decide in one reply:
@@ -50,8 +55,8 @@ Slack identity and token rules live in `~/AGENTS.md` under `Tool use` → `Slack
 - Number several questions so replies can say "1. yes". Put one or two points in
   prose. Keep lists short and flat; bold labels over piles of bullets read as a
   report, not a message.
-- Preserve facts, numbers, links, owners, and uncertainty. Never turn a plan
-  into a claim that something shipped.
+- Keep every fact, number, link, owner, and uncertainty you leave in accurate.
+  Never turn a plan into a claim that something shipped.
 - Sign nothing. The Slack integration adds its own "Sent using Claude" footer, so
   a hand-written signature shows up twice.
 

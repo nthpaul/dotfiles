@@ -150,7 +150,7 @@ Post to Slack as computah, Paul's bridge bot (`U0BFTDMR3P1`, bot ID `B0BGAN0B89X
 
 ## Diagrams
 
-- Use Mermaid. Outside PR descriptions, use a diagram to explain architecture, a flow, or a system map, unless the user asks for another format.
+- Use Mermaid. When a diagram has to be an image, such as one posted to Slack, render it with Pele through `~/.config/nvim/tools/mermaid/bin/mmdc` (`-t neutral -b white -s 2`), not the stock mermaid-cli. Outside PR descriptions, use a diagram to explain architecture, a flow, or a system map, unless the user asks for another format.
 - Draw diagrams top to bottom, not left to right.
 - Encode known node status with Mermaid classes `success`, `warning`, `danger`, `active`, or `muted`. Use `changed` and `removed` only when the source establishes a change; use `neutral` for questions, negated outcomes, and ordinary components whose labels resemble a status. Explicit diagram colors take precedence over the shared palette.
 
