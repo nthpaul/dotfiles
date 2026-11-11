@@ -117,6 +117,10 @@ Applies to system prompts, agent and tool instructions, LLM call templates, skil
 
 ## Tool use
 
+### Browser
+
+- Prefer a purpose-built connector when it covers the task. For browser work, first use a separate agent-owned session in the background. Use Paul's personal Brave or other browser only when he explicitly requests that browser or tab, or authorizes it after the separate session cannot complete the task.
+
 ### Delegation and parallel work
 
 - Use the current harness's native tools by default. Invoke orchestration skills, external worker launchers, or bridges to another harness (including `orchestrate`, `local-orchestrator`, `orch`, and the Grok bridge) only when Paul explicitly requests that workflow. Authorization for a task does not authorize switching harnesses.
