@@ -173,6 +173,10 @@ Every PR description has a `Blast radius` section, and a `System design` and a `
   - A new feature gate: its owner and removal condition.
   - A changed integration spec: its measured CI time, added once CI finishes, and the unit specs that cover its logic.
   - A visual change: screenshots inline and, when recorded, a playable video or durable video link. State when evidence uses synthetic data and which backend, authentication, or persistence paths were not exercised.
+    - Add each screenshot and video to the description as soon as you have inspected it and it shows the intended result; do not hold media for a final handoff. Leave out captures that show a defect or the wrong state, and fix the cause first.
+    - Caption each item with what it shows and the commit it was captured on.
+    - When a later push changes what a screenshot or video shows, recapture it, replace it in the description, and delete the stale media, so every item matches the current head. If you cannot recapture yet, mark the item stale with the commit that superseded it.
+    - Host media where GitHub renders it inline without committing it to the product repository. If you can only link it, say so in the description.
 - Keep the repository's required template sections and bot-managed markers. Before submitting a PR or updating its description, check that every required section, diagram, and applicable item above is present and accurate for the current diff. Read back the published body after submission.
 
 ## Documents and evidence
