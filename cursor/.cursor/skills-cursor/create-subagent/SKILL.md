@@ -25,14 +25,14 @@ If you have previous conversation context, infer the subagent's purpose and beha
 
 | Location | Scope | Priority |
 |----------|-------|----------|
-| `.cursor/agents/` | Current project | Higher |
-| `~/.cursor/agents/` | All your projects | Lower |
+| `.cursor/agents/` | Current project, in the Cursor app, CLI, and cloud agents | Higher |
+| `~/.cursor/agents/` | All your projects, in the Cursor desktop app and on self-hosted workers where that support is enabled | Lower |
 
 When multiple subagents share the same name, the higher-priority location wins.
 
 **Project subagents** (`.cursor/agents/`): Ideal for codebase-specific agents. Check into version control to share with your team.
 
-**User subagents** (`~/.cursor/agents/`): Personal agents available across all your projects.
+**User subagents** (`~/.cursor/agents/`): Personal agents for every project you open in the Cursor desktop app. Self-hosted workers (pool workers and My Machines) also read the worker machine's own `~/.cursor/agents/` where that support is enabled. The CLI and hosted cloud agents don't read this folder, so there, create the subagent in the project's `.cursor/agents/` instead. Do the same on a self-hosted worker that doesn't pick up a subagent from `~/.cursor/agents/`.
 
 ## Subagent File Format
 
@@ -176,7 +176,7 @@ Always ensure queries are efficient and cost-effective.
 ### Step 1: Decide the Scope
 
 - **Project-level** (`.cursor/agents/`): For codebase-specific agents shared with team
-- **User-level** (`~/.cursor/agents/`): For personal agents across all projects
+- **User-level** (`~/.cursor/agents/`): For personal agents across all projects in the Cursor desktop app, and on self-hosted workers where that support is enabled
 
 ### Step 2: Create the File
 
@@ -220,6 +220,6 @@ Use the my-agent subagent to [task description]
 ## Troubleshooting
 
 ### Subagent Not Found
-- Ensure file is in `.cursor/agents/` or `~/.cursor/agents/`
+- Ensure file is in `.cursor/agents/` or `~/.cursor/agents/` (the home folder is read by the Cursor desktop app, and by self-hosted workers where that support is enabled; not by the CLI or hosted cloud agents)
 - Check file has `.md` extension
 - Verify YAML frontmatter syntax is valid
