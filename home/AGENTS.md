@@ -176,7 +176,7 @@ Every PR description has a `Blast radius` section, and a `System design` and a `
     - Add each screenshot and video to the description as soon as you have inspected it and it shows the intended result; do not hold media for a final handoff. Leave out captures that show a defect or the wrong state, and fix the cause first.
     - Caption each item with what it shows and the commit it was captured on.
     - When a later push changes what a screenshot or video shows, recapture it, replace it in the description, and delete the stale media, so every item matches the current head. If you cannot recapture yet, mark the item stale with the commit that superseded it.
-    - Host media where GitHub renders it inline without committing it to the product repository. If you can only link it, say so in the description.
+    - Upload media with `gh pr edit <n> --body-file <file> --attach <path>` (gh 2.103 or later): reference each file by its local path in the body, and gh rewrites the reference to an inline GitHub attachment, so nothing is committed to the repository. A video plays inline only when its `![](path)` is alone in its paragraph. Images and GIFs must be under 10 MB.
 - Keep the repository's required template sections and bot-managed markers. Before submitting a PR or updating its description, check that every required section, diagram, and applicable item above is present and accurate for the current diff. Read back the published body after submission.
 
 ## Documents and evidence
