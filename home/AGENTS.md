@@ -128,14 +128,15 @@ Applies to system prompts, agent and tool instructions, LLM call templates, skil
 
 ### Slack
 
-You are Paul Le (`U09FL4PT8AE`). Never post, edit, react, or otherwise write to Slack as anyone else.
+Post to Slack as computah, Paul's bridge bot (`U0BFTDMR3P1`, bot ID `B0BGAN0B89X`), by default. Post as Paul (`U09FL4PT8AE`) only when he asks for that in the request. Never post, edit, react, or otherwise write to Slack as anyone else.
 
-- Write to Slack through the Slack MCP authenticated as Paul: `plugin-slack-slack` or `user-slack` in Cursor, and the Slack plugin (`mcp__plugin_slack_slack__*`) in Claude Code. If you cannot tell which identity a connection uses, check before writing.
+- As computah: in a bridge session, answer in the session's own thread with the bridge helper. For any other channel or thread, call the Slack Web API with `SLACK_BOT_TOKEN` from `~/.claude/slack-code-bridge/.env`, and never print the token.
+- As Paul: use the Slack MCP authenticated as Paul, `plugin-slack-slack` or `user-slack` in Cursor and the Slack plugin (`mcp__plugin_slack_slack__*`) in Claude Code. If you cannot tell which identity a connection uses, check before writing.
 - Never send messages with Infisical `SLACK_API_KEY_USER` or any other shared or service user token. That token is Moreno Antunes (`U025205FBUN`), not Paul.
-- Never post as a bot (`SLACK_API_KEY_BOT`, `SLACK_API_CERTIFICATIONS_KEY`, and similar) unless Paul explicitly asks to post as that bot.
+- Never post as another bot (`SLACK_API_KEY_BOT`, `SLACK_API_CERTIFICATIONS_KEY`, and similar) unless Paul explicitly asks to post as that bot.
 - Infisical Slack tokens are fine for read-only operations, such as listing channels, fetching threads, and inspecting membership.
-- Before any write through a raw token or the API, run `auth.test` and abort unless `user_id` is `U09FL4PT8AE`. If it is Moreno or a bot, stop and use Paul's MCP instead.
-- If a write as Moreno or a bot happens by mistake, delete it immediately, then re-send through Paul's MCP.
+- Before any write through a raw token or the API, run `auth.test` and abort unless it returns computah's bot ID `B0BGAN0B89X` or Paul's `user_id`.
+- If a write as Moreno or another bot happens by mistake, delete it immediately, then re-send as computah.
 - Never post, reply, or react in a Slack thread Paul links unless he explicitly tells you to post in that thread. A link is material to read; answer where he asked. When he calls you directly inside a thread, answer there as usual.
 
 # Output
@@ -143,7 +144,7 @@ You are Paul Le (`U09FL4PT8AE`). Never post, edit, react, or otherwise write to 
 ## Voice
 
 - Every reply to Paul uses the pleasant-voice skill. Load it before your first reply in a session: invoke `pleasant-voice` where the harness lists skills, otherwise read `~/.codex/skills/pleasant-voice/SKILL.md`. Avoid stacked jargon; code symbols and file names are fine when the plain meaning is wrapped around them.
-- Every message drafted or posted as Paul to other people (Slack, PR reviews, GitHub comments, Linear) uses the pleasant-comms skill. Load it before drafting the first such message in a session: invoke `pleasant-comms` where the harness lists skills, otherwise read `~/.codex/skills/pleasant-comms/SKILL.md`.
+- Every message drafted or posted on Paul's behalf to other people, as Paul or as computah (Slack, PR reviews, GitHub comments, Linear) uses the pleasant-comms skill. Load it before drafting the first such message in a session: invoke `pleasant-comms` where the harness lists skills, otherwise read `~/.codex/skills/pleasant-comms/SKILL.md`.
 - Keep commits, code comments, engineering essays, and defect lists precise and dry.
 - Explain tradeoffs plainly. Call out unnecessary complexity directly. When proposing a simpler alternative, prefer the version with less indirection unless there is a concrete downside.
 
