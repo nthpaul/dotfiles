@@ -19,6 +19,67 @@ function variables(colors) {
 export const browserPaletteCss = `svg.pele {${variables(palettes.light)}}
 @media (prefers-color-scheme: dark) {svg.pele {${variables(palettes.dark)}}}`;
 
+const NODE_SHAPES = new Set(['rect', 'circle', 'ellipse', 'path', 'polygon', 'polyline']);
+
+function solidColor(value) {
+  return /^#[\da-f]{3}(?:[\da-f]{3})?$/i.test(value)
+    || (/^(?:rgb|hsl|hwb|lab|lch|oklab|oklch)\([^/]*\)$/i.test(value)
+      && value.split(',').length <= 3)
+    || (/^[a-z]+$/i.test(value)
+      && !/^(?:none|transparent|currentcolor|inherit|initial|unset|revert)$/i.test(value));
+}
+
+function authoredFill(tag) {
+  const style = tag.match(/\sstyle="([^"]*)"/)?.[1] ?? '';
+  return style.match(/(?:^|;)\s*fill\s*:\s*([^;]+)(?=;|$)/i)?.[1].trim()
+    ?? tag.match(/\sfill="([^"]*)"/)?.[1].trim();
+}
+
+function adaptiveFill(tag, color, role) {
+  const variable = `--pele-author-${role}`;
+  const fill = `color-mix(in srgb,var(${variable}) var(${variable}-weight),var(--_bg))`;
+  const value = role === 'text'
+    ? fill.replace('var(--_bg)', 'var(--_fg)')
+    : fill;
+  const declarations = `${variable}:${color};fill:${value};`;
+  if (/\sstyle="/.test(tag)) {
+    return tag.replace(/\sstyle="([^"]*)"/, (_, style) => {
+      const rest = style.split(';').filter((declaration) =>
+        declaration.trim() && !/^\s*fill\s*:/i.test(declaration)).join(';');
+      return ` style="${rest}${rest ? ';' : ''}${declarations}"`;
+    });
+  }
+  return tag.replace(/\s*\/?>(?=$)/, (end) => ` style="${declarations}"${end}`);
+}
+
+// Authored pale fills otherwise keep their light surface while labels inherit dark-mode text.
+export function adaptAuthoredNodeColors(svg) {
+  const parents = [];
+  return svg.replace(/<\/?[a-z][^>]*>/ig, (tag) => {
+    const name = tag.match(/^<\/?([a-z][\w:-]*)/i)?.[1].toLowerCase();
+    if (tag.startsWith('</')) {
+      parents.pop();
+      return tag;
+    }
+    const parent = parents.at(-1);
+    const fill = authoredFill(tag);
+    if (parent?.node && fill) {
+      if (NODE_SHAPES.has(name) && solidColor(fill)) {
+        parent.authored = true;
+        tag = adaptiveFill(tag, fill, 'fill');
+      } else if (name === 'text' && parent.authored
+        && (solidColor(fill) || /^var\(--pele-fg-on-(?:light|dark),/.test(fill))) {
+        tag = adaptiveFill(tag, fill, 'text');
+      }
+    }
+    if (!tag.endsWith('/>')) {
+      const classes = tag.match(/\sclass="([^"]*)"/)?.[1].split(/\s+/) ?? [];
+      parents.push({ node: name === 'g' && classes.some((value) => value === 'pele-node' || value === 'pele-cluster'), authored: false });
+    }
+    return tag;
+  });
+}
+
 function mix(color, background, weight) {
   const channels = [1, 3, 5].map((offset) => {
     const front = parseInt(color.slice(offset, offset + 2), 16);

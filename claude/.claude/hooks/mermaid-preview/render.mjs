@@ -23330,7 +23330,7 @@ rh(...dS);
 // diagram.css
 var diagram_default = `/* Diagram theme. The preview page inlines it, and each downloaded SVG embeds it, so a saved
    diagram follows the viewer's light or dark setting the same way the page does. Tone classes
-   come from tone.ts. Inline styles from a diagram's own classDef or style lines still win. */
+   come from tone.ts. Authored colors keep their hue and adapt to the viewer's background. */
 svg.pele {
   --pele-bg: #ffffff; --pele-fg: #1f2328; --pele-muted: #59636e; --pele-line: #57606a;
   --pele-surface: #f6f8fa; --pele-surface-alt: #eaeef2; --pele-border: #d0d7de;
@@ -23338,6 +23338,7 @@ svg.pele {
   --pele-font: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --pele-font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   --tone-tint: 12%; --shadow: rgb(31 35 40 / 0.12);
+  --pele-author-fill-weight: 100%; --pele-author-text-weight: 100%;
   background: var(--pele-bg);
 }
 @media (prefers-color-scheme: dark) {
@@ -23346,6 +23347,7 @@ svg.pele {
     --pele-surface: #161b22; --pele-surface-alt: #1f2630; --pele-border: #3d444d;
     --pele-accent: #4493f8; --pele-error: #f85149;
     --tone-tint: 18%; --shadow: rgb(0 0 0 / 0.45);
+    --pele-author-fill-weight: 18%; --pele-author-text-weight: 25%;
   }
 }
 
@@ -23589,6 +23591,52 @@ function variables(colors) {
 }
 var browserPaletteCss = `svg.pele {${variables(palettes.light)}}
 @media (prefers-color-scheme: dark) {svg.pele {${variables(palettes.dark)}}}`;
+var NODE_SHAPES = new Set(["rect", "circle", "ellipse", "path", "polygon", "polyline"]);
+function solidColor(value) {
+  return /^#[\da-f]{3}(?:[\da-f]{3})?$/i.test(value) || /^(?:rgb|hsl|hwb|lab|lch|oklab|oklch)\([^/]*\)$/i.test(value) && value.split(",").length <= 3 || /^[a-z]+$/i.test(value) && !/^(?:none|transparent|currentcolor|inherit|initial|unset|revert)$/i.test(value);
+}
+function authoredFill(tag) {
+  const style = tag.match(/\sstyle="([^"]*)"/)?.[1] ?? "";
+  return style.match(/(?:^|;)\s*fill\s*:\s*([^;]+)(?=;|$)/i)?.[1].trim() ?? tag.match(/\sfill="([^"]*)"/)?.[1].trim();
+}
+function adaptiveFill(tag, color, role) {
+  const variable = `--pele-author-${role}`;
+  const fill = `color-mix(in srgb,var(${variable}) var(${variable}-weight),var(--_bg))`;
+  const value = role === "text" ? fill.replace("var(--_bg)", "var(--_fg)") : fill;
+  const declarations = `${variable}:${color};fill:${value};`;
+  if (/\sstyle="/.test(tag)) {
+    return tag.replace(/\sstyle="([^"]*)"/, (_, style) => {
+      const rest = style.split(";").filter((declaration) => declaration.trim() && !/^\s*fill\s*:/i.test(declaration)).join(";");
+      return ` style="${rest}${rest ? ";" : ""}${declarations}"`;
+    });
+  }
+  return tag.replace(/\s*\/?>(?=$)/, (end) => ` style="${declarations}"${end}`);
+}
+function adaptAuthoredNodeColors(svg) {
+  const parents = [];
+  return svg.replace(/<\/?[a-z][^>]*>/ig, (tag) => {
+    const name = tag.match(/^<\/?([a-z][\w:-]*)/i)?.[1].toLowerCase();
+    if (tag.startsWith("</")) {
+      parents.pop();
+      return tag;
+    }
+    const parent = parents.at(-1);
+    const fill = authoredFill(tag);
+    if (parent?.node && fill) {
+      if (NODE_SHAPES.has(name) && solidColor(fill)) {
+        parent.authored = true;
+        tag = adaptiveFill(tag, fill, "fill");
+      } else if (name === "text" && parent.authored && (solidColor(fill) || /^var\(--pele-fg-on-(?:light|dark),/.test(fill))) {
+        tag = adaptiveFill(tag, fill, "text");
+      }
+    }
+    if (!tag.endsWith("/>")) {
+      const classes = tag.match(/\sclass="([^"]*)"/)?.[1].split(/\s+/) ?? [];
+      parents.push({ node: name === "g" && classes.some((value) => value === "pele-node" || value === "pele-cluster"), authored: false });
+    }
+    return tag;
+  });
+}
 
 // page.ts
 var SCRIPT_HASH = createHash("sha256").update(download_default).digest("base64");
@@ -23634,7 +23682,7 @@ function fileSlug(text) {
 function renderDiagram(source, index, filePrefix) {
   const sourceDetails = `<details><summary>Source</summary><pre>${escapeHtml(source)}</pre></details>`;
   try {
-    const svg = applyTones(d1(source).svg);
+    const svg = applyTones(adaptAuthoredNodeColors(d1(source).svg));
     const filename = `${filePrefix}-diagram-${index + 1}`;
     const actions = `<div class="actions"><button type="button" data-download="svg">SVG</button><button type="button" data-download="png">PNG</button></div>`;
     return `<section class="diagram" data-filename="${filename}"><div class="bar"><h2>Diagram ${index + 1}</h2>${actions}</div><div class="svg">${svg}</div>${sourceDetails}</section>`;

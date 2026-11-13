@@ -101,4 +101,30 @@ describe("buildPage", () => {
     expect(page).toContain('data-download="svg"');
     expect(page).toContain('data-download="png"');
   });
+
+  test("adapts the RCA's authored pale boxes and dark labels to the viewer's theme", () => {
+    const page = buildPage({
+      blocks: [`flowchart TB
+  A[Old page tells ops to mark Contacted]:::warning
+  B[Contacted records an attempt]:::neutral
+  C[New server still awaits actual dialogue]:::active
+  D[Row and count remain in New leads]:::warning
+  A -->|operator follows the guidance| B
+  B -->|reachedAt stays empty| C
+  C -->|isNewLead remains true| D
+  classDef warning fill:#fff4d6,stroke:#b8860b,color:#222
+  classDef active fill:#e8f0ff,stroke:#3b6fd8
+  classDef neutral fill:#f5f5f5,stroke:#777`],
+      project: "RCA", createdAt,
+    });
+    expect(page).not.toContain("could not be rendered");
+    expect(page.match(/--pele-author-fill:#fff4d6/g)).toHaveLength(2);
+    expect(page).toContain("--pele-author-fill:#e8f0ff");
+    expect(page).toContain("--pele-author-fill:#f5f5f5");
+    expect(page).toContain("--pele-author-text:#222");
+    expect(page).toContain("--pele-author-fill-weight: 100%");
+    expect(page).toContain("--pele-author-fill-weight: 18%");
+    expect(page).toContain("--pele-author-text-weight: 25%");
+    expect(page).toContain("stroke:#b8860b");
+  });
 });

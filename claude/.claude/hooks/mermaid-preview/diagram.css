@@ -1,6 +1,6 @@
 /* Diagram theme. The preview page inlines it, and each downloaded SVG embeds it, so a saved
    diagram follows the viewer's light or dark setting the same way the page does. Tone classes
-   come from tone.ts. Inline styles from a diagram's own classDef or style lines still win. */
+   come from tone.ts. Authored colors keep their hue and adapt to the viewer's background. */
 svg.pele {
   --pele-bg: #ffffff; --pele-fg: #1f2328; --pele-muted: #59636e; --pele-line: #57606a;
   --pele-surface: #f6f8fa; --pele-surface-alt: #eaeef2; --pele-border: #d0d7de;
@@ -8,6 +8,7 @@ svg.pele {
   --pele-font: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --pele-font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   --tone-tint: 12%; --shadow: rgb(31 35 40 / 0.12);
+  --pele-author-fill-weight: 100%; --pele-author-text-weight: 100%;
   background: var(--pele-bg);
 }
 @media (prefers-color-scheme: dark) {
@@ -16,6 +17,7 @@ svg.pele {
     --pele-surface: #161b22; --pele-surface-alt: #1f2630; --pele-border: #3d444d;
     --pele-accent: #4493f8; --pele-error: #f85149;
     --tone-tint: 18%; --shadow: rgb(0 0 0 / 0.45);
+    --pele-author-fill-weight: 18%; --pele-author-text-weight: 25%;
   }
 }
 

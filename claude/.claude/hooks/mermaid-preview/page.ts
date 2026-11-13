@@ -3,7 +3,7 @@ import { render } from "pele";
 import diagramCss from "./diagram.css" with { type: "text" };
 import downloadScript from "./download.js" with { type: "text" };
 import { applyTones } from "./tone.ts";
-import { browserPaletteCss } from "../../../../home/.local/share/mermaid-theme/theme.mjs";
+import { adaptAuthoredNodeColors, browserPaletteCss } from "../../../../home/.local/share/mermaid-theme/theme.mjs";
 
 // The only script the page may run, allowed by its hash so the CSP still blocks everything else.
 const SCRIPT_HASH = createHash("sha256").update(downloadScript).digest("base64");
@@ -58,7 +58,7 @@ function fileSlug(text: string): string {
 function renderDiagram(source: string, index: number, filePrefix: string): string {
   const sourceDetails = `<details><summary>Source</summary><pre>${escapeHtml(source)}</pre></details>`;
   try {
-    const svg = applyTones(render(source).svg);
+    const svg = applyTones(adaptAuthoredNodeColors(render(source).svg));
     const filename = `${filePrefix}-diagram-${index + 1}`;
     const actions = `<div class="actions"><button type="button" data-download="svg">SVG</button><button type="button" data-download="png">PNG</button></div>`;
     return `<section class="diagram" data-filename="${filename}"><div class="bar"><h2>Diagram ${index + 1}</h2>${actions}</div><div class="svg">${svg}</div>${sourceDetails}</section>`;
