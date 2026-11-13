@@ -160,6 +160,10 @@ Post to Slack as computah, Paul's bridge bot (`U0BFTDMR3P1`, bot ID `B0BGAN0B89X
 - For a visual change, include the screenshots and video in the final handoff.
 - Background monitors write a journal or log. Post into the steering thread only for a new bug, a merge, a failure, or a question only the user can answer. Unchanged status stays in the log.
 
+## Database migration flag
+
+- Mark every PR, plan, or idea that needs a database migration with ⚠️ (`:warning:` in Slack) right beside its name or link, wherever you mention it to Paul: chat replies, Slack posts, task notes, plans, and tables. A change needs a migration when it adds, alters, or drops a schema object, or backfills stored data. Leave other changes unmarked so the flag keeps its meaning.
+
 ## Pull request descriptions
 
 Every PR description has a `Blast radius` section, and a `System design` and a `State machine` diagram when they help a reviewer. This applies to every repository and every PR in a stack, including drafts.
